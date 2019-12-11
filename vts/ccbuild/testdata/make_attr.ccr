@@ -1,0 +1,4 @@
+attr (
+  name = "amd64",
+  parent_class = "//test/arch",
+)
