@@ -1,5 +1,5 @@
 attr(
-  name = "amd64",
+  name         = "amd64",
   parent_class = "//test/arch",
-  value = "yeet",
+  value        = "yeet",
 )

@@ -1,3 +1,3 @@
-attr_class (
-  name = "arch"
+attr_class(
+  name = "arch",
 )
