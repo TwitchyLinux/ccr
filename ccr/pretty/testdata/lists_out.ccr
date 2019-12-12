@@ -1,0 +1,9 @@
+component(
+  name   = "whelp",
+  parent = "//umm",
+  deps   = [
+    "yolo",
+    swaggins,
+    4,
+  ],
+)

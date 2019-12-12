@@ -1,3 +1,6 @@
 attr_class(
-  name = "arch",
+  name       = "arch",
+  validators = [
+    "//somepath",
+  ],
 )

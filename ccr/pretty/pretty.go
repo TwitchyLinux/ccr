@@ -87,6 +87,13 @@ func annotateAST(ast syntax.Node, ann *annotations) error {
 	switch n := ast.(type) {
 	case *syntax.Ident, *syntax.Literal:
 
+	case *syntax.ListExpr:
+		for _, l := range n.List {
+			if err := annotateAST(l, ann); err != nil {
+				return err
+			}
+		}
+
 	case *syntax.BinaryExpr:
 		if err := annotateAST(n.X, ann); err != nil {
 			return err
@@ -145,6 +152,22 @@ func fmtAST(ast syntax.Node, b *bytes.Buffer, opts fmtOpts) error {
 		if w := opts.annotations.identWidths[n]; w > 0 {
 			b.WriteString(strings.Repeat(" ", w-len(n.Name)))
 		}
+
+	case *syntax.ListExpr:
+		b.WriteString("[")
+		if len(n.List) > 0 {
+			b.WriteString("\n" + strings.Repeat(" ", opts.indentLevel+2))
+		}
+		for i, l := range n.List {
+			if err := fmtAST(l, b, opts); err != nil {
+				return err
+			}
+			b.WriteString(",\n" + strings.Repeat(" ", opts.indentLevel))
+			if i < len(n.List)-1 {
+				b.WriteString(strings.Repeat(" ", 2))
+			}
+		}
+		b.WriteString("]")
 
 	case *syntax.BinaryExpr:
 		if err := fmtAST(n.X, b, opts); err != nil {
