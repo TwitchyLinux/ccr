@@ -1,0 +1,20 @@
+# Leading comment.
+attr(
+  name   = "whelp",
+  pclass = ":yeet",
+)
+
+attr_class(
+  name = "yeet",
+)
+
+component(
+  # yeet.
+  name = "okies",
+)
+
+component(
+  name = "ah", # trailing
+)
+
+# Trailing comment.

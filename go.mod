@@ -2,4 +2,7 @@ module github.com/twitchylinux/ccr
 
 go 1.13
 
-require go.starlark.net v0.0.0-20191202231402-1e82a9dd93ba
+require (
+	github.com/google/go-cmp v0.3.1
+	go.starlark.net v0.0.0-20191202231402-1e82a9dd93ba
+)
