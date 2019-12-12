@@ -49,7 +49,7 @@ func makeAttr(s *Script) *starlark.Builtin {
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var name, class string
 		var value starlark.Value
-		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name", &name, "parent_class", &class, "value", &value); err != nil {
+		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name?", &name, "parent_class", &class, "value", &value); err != nil {
 			return starlark.None, err
 		}
 		s.targets = append(s.targets, &vts.Attr{Path: s.makePath(name), Name: name, ParentClass: vts.TargetRef{Path: class}})
