@@ -10,3 +10,11 @@ type AttrClass struct {
 func (t *AttrClass) Type() TargetType {
 	return TargetAttrClass
 }
+
+func (t *AttrClass) GlobalPath() string {
+	return t.Path
+}
+
+func (t *AttrClass) TargetName() string {
+	return t.Name
+}

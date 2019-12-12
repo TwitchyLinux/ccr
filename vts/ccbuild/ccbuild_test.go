@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/twitchylinux/ccr/vts"
 )
 
 var (
@@ -47,6 +49,11 @@ func TestMakeTarget(t *testing.T) {
 			tt := strings.Replace(s.targets[0].Type().String(), "_", "", -1)
 			if got, want := tt, targetType; got != want {
 				t.Errorf("target.type = %v, want %v", got, want)
+			}
+			if gt, ok := s.targets[0].(vts.GlobalTarget); ok {
+				if gt.GlobalPath() != "" && gt.GlobalPath() != "//test/"+targetType+":"+gt.TargetName() {
+					t.Errorf("target.path = %v, want %v", gt.GlobalPath(), "//test/"+targetType+":"+gt.TargetName())
+				}
 			}
 		})
 	}

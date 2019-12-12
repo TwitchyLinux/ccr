@@ -56,6 +56,13 @@ type ClassedTarget interface {
 	Class() TargetRef
 }
 
+// GlobalTarget describes a node which has an absolute path.
+type GlobalTarget interface {
+	Target
+	GlobalPath() string
+	TargetName() string
+}
+
 // TargetRef refers to another target either by path or by
 // a pointer to its object.
 type TargetRef struct {

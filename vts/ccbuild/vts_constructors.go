@@ -7,11 +7,11 @@ import (
 	"go.starlark.net/starlark"
 )
 
-func makeValidatorTarget(v starlark.Value) (vts.TargetRef, error) {
+func toValidatorTarget(v starlark.Value) (vts.TargetRef, error) {
 	if s, ok := v.(starlark.String); ok {
 		return vts.TargetRef{Path: string(s)}, nil
 	}
-	return vts.TargetRef{}, fmt.Errorf("cannot reference validator with starklark type %T (%s)", v, v)
+	return vts.TargetRef{}, fmt.Errorf("cannot reference validator with starklark type %T (%s)", v, v.String())
 }
 
 func makeAttrClass(s *Script) *starlark.Builtin {
@@ -20,7 +20,7 @@ func makeAttrClass(s *Script) *starlark.Builtin {
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var name string
 		var validators *starlark.List
-		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name", &name, "validators?", &validators); err != nil {
+		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name", &name, "chks?", &validators); err != nil {
 			return starlark.None, err
 		}
 
@@ -30,7 +30,7 @@ func makeAttrClass(s *Script) *starlark.Builtin {
 			defer i.Done()
 			var x starlark.Value
 			for i.Next(&x) {
-				v, err := makeValidatorTarget(x)
+				v, err := toValidatorTarget(x)
 				if err != nil {
 					return nil, fmt.Errorf("invalid validator: %v", err)
 				}
@@ -49,7 +49,7 @@ func makeAttr(s *Script) *starlark.Builtin {
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var name, class string
 		var value starlark.Value
-		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name?", &name, "parent_class", &class, "value", &value); err != nil {
+		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name?", &name, "parent", &class, "value", &value); err != nil {
 			return starlark.None, err
 		}
 		s.targets = append(s.targets, &vts.Attr{Path: s.makePath(name), Name: name, ParentClass: vts.TargetRef{Path: class}})

@@ -104,5 +104,8 @@ func (s *Script) resolveImport(path string) ([]byte, error) {
 }
 
 func (s *Script) makePath(targetName string) string {
+	if targetName == "" {
+		return ""
+	}
 	return fmt.Sprintf("%s:%s", s.path, targetName)
 }

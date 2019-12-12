@@ -1,4 +1,4 @@
 attr(
-  parent_class = "//test/arch",
-  value        = "yeet",
+  parent = "//test/arch",
+  value  = "yeet",
 )
