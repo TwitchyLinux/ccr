@@ -41,7 +41,7 @@ func (t TargetType) String() string {
 // Target describes a node, such as a resource or component, that
 // participates in the the web of nodes declaring a system.
 type Target interface {
-	Type() TargetType
+	TargetType() TargetType
 }
 
 // DepTarget describes a node which depends on other nodes.

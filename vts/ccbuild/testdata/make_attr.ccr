@@ -1,4 +1,5 @@
 attr(
+  name   = "amd64",
   parent = "//test/arch",
-  value  = "yeet",
+  value  = "amd64",
 )

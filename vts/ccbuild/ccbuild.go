@@ -77,7 +77,7 @@ func (s *Script) loadScript(script []byte, fname string, loader ScriptLoader) (*
 }
 
 // NewScript initializes a new .ccr interpreter. The data parameter should
-// contain the contents of the ccr file, and the targetPath parameters should
+// contain the contents of the ccr file, and the targetPath parameter should
 // represent the CCR path to the file.
 func NewScript(data []byte, targetPath string, loader ScriptLoader, printer func(string)) (*Script, error) {
 	return makeScript(data, targetPath, loader, nil, printer)
