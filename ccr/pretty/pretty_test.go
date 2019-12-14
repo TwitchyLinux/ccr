@@ -45,9 +45,8 @@ func TestFormatCCR(t *testing.T) {
 				t.Errorf("changed = %v, want %v", got, want)
 			}
 
-			if !bytes.Equal(out.Bytes(), outF) {
-				t.Errorf("output = %q, want %q", out.String(), string(outF))
-				t.Log(cmp.Diff(out.String(), string(outF)))
+			if diff := cmp.Diff(string(outF), out.String()); diff != "" {
+				t.Errorf("output mismatch (+got, -want): \n%s", diff)
 			}
 		})
 	}

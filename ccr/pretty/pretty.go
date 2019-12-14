@@ -42,6 +42,8 @@ type fmtOpts struct {
 	indentLevel int
 	annotations *annotations
 	Context     string
+	fnNested    bool
+	binNested   bool
 }
 
 func (o fmtOpts) AddIndent(i int) fmtOpts {
@@ -50,10 +52,16 @@ func (o fmtOpts) AddIndent(i int) fmtOpts {
 	return dupe
 }
 
+func (o fmtOpts) shouldCondense() bool {
+	return o.binNested && o.fnNested
+}
+
 func (o fmtOpts) LeadIn(b *bytes.Buffer) {
 	switch o.Context {
 	case "arg":
-		b.WriteString("\n" + strings.Repeat(" ", o.indentLevel))
+		if !o.shouldCondense() {
+			b.WriteString("\n" + strings.Repeat(" ", o.indentLevel))
+		}
 	}
 }
 
@@ -136,6 +144,9 @@ func fmtAST(ast syntax.Node, b *bytes.Buffer, opts fmtOpts) error {
 		for _, c := range c.Before {
 			b.WriteString(fmtComment(c.Text))
 			b.WriteString("\n" + strings.Repeat(" ", opts.indentLevel))
+			if opts.shouldCondense() {
+				b.WriteString("  ")
+			}
 		}
 	}
 
@@ -174,7 +185,9 @@ func fmtAST(ast syntax.Node, b *bytes.Buffer, opts fmtOpts) error {
 			return err
 		}
 		b.WriteString(" " + n.Op.String() + " ")
-		if err := fmtAST(n.Y, b, opts); err != nil {
+		rhsOpts := opts
+		rhsOpts.binNested = true
+		if err := fmtAST(n.Y, b, rhsOpts); err != nil {
 			return err
 		}
 
@@ -190,13 +203,19 @@ func fmtAST(ast syntax.Node, b *bytes.Buffer, opts fmtOpts) error {
 			}
 		}
 
-		for _, arg := range n.Args {
+		for i, arg := range n.Args {
 			argOpt := opts.AddIndent(2)
 			argOpt.Context = "arg"
+			argOpt.fnNested = true
 			if err := fmtAST(arg, b, argOpt); err != nil {
 				return err
 			}
-			b.WriteString(",")
+			if !opts.shouldCondense() || i < len(n.Args)-1 {
+				b.WriteString(",")
+				if opts.shouldCondense() {
+					b.WriteRune(' ')
+				}
+			}
 			if bin, ok := arg.(*syntax.BinaryExpr); ok {
 				if c := bin.Comments(); c != nil {
 					for _, comment := range c.Suffix {
@@ -205,7 +224,11 @@ func fmtAST(ast syntax.Node, b *bytes.Buffer, opts fmtOpts) error {
 				}
 			}
 		}
-		b.WriteString("\n)\n")
+		if opts.shouldCondense() {
+			b.WriteString(")")
+		} else {
+			b.WriteString("\n)\n")
+		}
 
 	case *syntax.ExprStmt:
 		if err := fmtAST(n.X, b, opts); err != nil {

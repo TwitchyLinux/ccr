@@ -5,6 +5,7 @@ resource(
     "common://targets/libc",
   ],
   details = [
+    # wut
     attr(parent = "common://attrs:arch", value = "yeetos"),
   ],
 )

@@ -1,10 +1,15 @@
-resource(
-  name    = "yeet",
+resource(name    = "yeet",
   parent  = "common://resource/file",
+
   deps    = [
     "common://targets/libc",
   ],
+
+
   details = [
-    attr(parent = "common://attrs:arch", value = "yeetos"),
+  # wut
+    attr(
+    parent = "common://attrs:arch",
+    value = "yeetos"),
   ],
 )
