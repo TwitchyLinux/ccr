@@ -30,5 +30,8 @@ func (t *ResourceClass) Checkers() []TargetRef {
 }
 
 func (t *ResourceClass) Validate() error {
+	if err := validateDeps(t.Deps); err != nil {
+		return err
+	}
 	return nil
 }

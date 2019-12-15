@@ -82,3 +82,23 @@ type TargetRef struct {
 	Path   string
 	Target Target
 }
+
+func validateDeps(deps []TargetRef) error {
+	for i, dep := range deps {
+		_, component := dep.Target.(*Component)
+		_, resource := dep.Target.(*Resource)
+		if !component && !resource {
+			return fmt.Errorf("deps[%d] is type %T, but must be resource or component", i, dep.Target)
+		}
+	}
+	return nil
+}
+
+func validateDetails(details []TargetRef) error {
+	for i, deet := range details {
+		if _, ok := deet.Target.(*Attr); !ok {
+			return fmt.Errorf("details[%d] is type %T, but must be attr", i, deet.Target)
+		}
+	}
+	return nil
+}

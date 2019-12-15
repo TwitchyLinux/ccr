@@ -1,7 +1,5 @@
 package vts
 
-import "fmt"
-
 // Component is a target representing a component.
 type Component struct {
 	Path string
@@ -32,17 +30,11 @@ func (t *Component) Attributes() []TargetRef {
 }
 
 func (t *Component) Validate() error {
-	for i, deet := range t.Details {
-		if _, ok := deet.Target.(*Attr); !ok {
-			return fmt.Errorf("details[%d] is type %T, but must be attr", i, deet.Target)
-		}
+	if err := validateDetails(t.Details); err != nil {
+		return err
 	}
-	for i, dep := range t.Deps {
-		_, component := dep.Target.(*Component)
-		_, resource := dep.Target.(*Resource)
-		if !component && !resource {
-			return fmt.Errorf("deps[%d] is type %T, but must be resource or component", i, dep.Target)
-		}
+	if err := validateDeps(t.Deps); err != nil {
+		return err
 	}
 	return nil
 }
