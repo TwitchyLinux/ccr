@@ -70,7 +70,7 @@ func makeAttr(s *Script) *starlark.Builtin {
 			return starlark.None, err
 		}
 
-		attr := &vts.Attr{Path: s.makePath(name), Name: name, ParentClass: vts.TargetRef{Path: parent}, Value: value}
+		attr := &vts.Attr{Path: s.makePath(name), Name: name, Parent: vts.TargetRef{Path: parent}, Value: value}
 		// If theres no name, it must be an anonymous attr as part of another
 		// target. We don't add it to the targets list.
 		if name == "" {
@@ -102,6 +102,47 @@ func makeResource(s *Script) *starlark.Builtin {
 					return nil, fmt.Errorf("invalid detail: %v", err)
 				}
 				r.Details = append(r.Details, v)
+			}
+		}
+		if deps != nil {
+			i := deps.Iterate()
+			defer i.Done()
+			var x starlark.Value
+			for i.Next(&x) {
+				v, err := toDepTarget(x)
+				if err != nil {
+					return nil, fmt.Errorf("invalid dep: %v", err)
+				}
+				r.Deps = append(r.Deps, v)
+			}
+		}
+
+		s.targets = append(s.targets, r)
+		return starlark.None, nil
+	})
+}
+
+func makeResourceClass(s *Script) *starlark.Builtin {
+	t := vts.TargetResourceClass
+
+	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+		var name string
+		var chks, deps *starlark.List
+		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name", &name, "chks?", &chks, "deps?", &deps); err != nil {
+			return starlark.None, err
+		}
+
+		r := &vts.ResourceClass{Path: s.makePath(name), Name: name}
+		if chks != nil {
+			i := chks.Iterate()
+			defer i.Done()
+			var x starlark.Value
+			for i.Next(&x) {
+				v, err := toCheckTarget(x)
+				if err != nil {
+					return nil, fmt.Errorf("invalid check: %v", err)
+				}
+				r.Checks = append(r.Checks, v)
 			}
 		}
 		if deps != nil {

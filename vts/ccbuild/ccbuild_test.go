@@ -35,10 +35,10 @@ var newScriptTestcases = []struct {
 		filename: "testdata/make_attr.ccr",
 		want: []vts.Target{
 			&vts.Attr{
-				Path:        "//test:amd64",
-				Name:        "amd64",
-				ParentClass: vts.TargetRef{Path: "//test/arch"},
-				Value:       starlark.String("amd64"),
+				Path:   "//test:amd64",
+				Name:   "amd64",
+				Parent: vts.TargetRef{Path: "//test/arch"},
+				Value:  starlark.String("amd64"),
 			},
 		},
 	},
@@ -53,15 +53,30 @@ var newScriptTestcases = []struct {
 				Details: []vts.TargetRef{
 					{
 						Target: &vts.Attr{
-							ParentClass: vts.TargetRef{Path: "common://attrs:arch"},
-							Value:       starlark.String("yeetos"),
+							Parent: vts.TargetRef{Path: "common://attrs:arch"},
+							Value:  starlark.String("yeetos"),
 						},
 					},
 				},
 				Deps: []vts.TargetRef{
-					{
-						Path: "common://targets/libc",
-					},
+					{Path: "common://targets/libc"},
+				},
+			},
+		},
+	},
+	{
+		name:     "resource class",
+		filename: "testdata/make_resourceclass.ccr",
+		want: []vts.Target{
+			&vts.ResourceClass{
+				Path: "//test:shared_library",
+				Name: "shared_library",
+				Deps: []vts.TargetRef{
+					{Path: "common://targets/ldd"},
+				},
+				Checks: []vts.TargetRef{
+					{Path: "common://elf/samearch"},
+					{Path: "common://elf/ldd-satisfiable"},
 				},
 			},
 		},

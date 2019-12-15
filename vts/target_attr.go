@@ -9,15 +9,19 @@ import (
 
 // Attr is a target representing an attribute.
 type Attr struct {
-	Path        string
-	Name        string
-	ParentClass TargetRef
+	Path   string
+	Name   string
+	Parent TargetRef
 
 	Value starlark.Value
 }
 
 func (t *Attr) TargetType() TargetType {
 	return TargetAttr
+}
+
+func (t *Attr) Class() TargetRef {
+	return t.Parent
 }
 
 func (t *Attr) GlobalPath() string {

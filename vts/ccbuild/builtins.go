@@ -6,8 +6,9 @@ import (
 
 func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 	return starlark.StringDict{
-		"attr_class": makeAttrClass(s),
-		"attr":       makeAttr(s),
-		"resource":   makeResource(s),
+		"attr_class":     makeAttrClass(s),
+		"attr":           makeAttr(s),
+		"resource":       makeResource(s),
+		"resource_class": makeResourceClass(s),
 	}, nil
 }

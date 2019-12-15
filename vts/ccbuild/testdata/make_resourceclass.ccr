@@ -1,0 +1,10 @@
+resource_class(
+  name = "shared_library",
+  deps = [
+    "common://targets/ldd",
+  ],
+  chks = [
+    "common://elf/samearch",
+    "common://elf/ldd-satisfiable",
+  ],
+)
