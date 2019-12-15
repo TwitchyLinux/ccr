@@ -1,3 +1,4 @@
+// Package ccr works with component contracts.
 package ccr
 
 import (
@@ -7,6 +8,7 @@ import (
 	"github.com/twitchylinux/ccr/vts"
 )
 
+// ErrNotExists is returned if a referenced target could not be found.
 type ErrNotExists string
 
 func (e ErrNotExists) Error() string {
@@ -183,6 +185,7 @@ func (u *Universe) EnumeratedTargets() []vts.GlobalTarget {
 	return u.allTargets
 }
 
+// NewUniverse constructs an empty universe.
 func NewUniverse() *Universe {
 	return &Universe{
 		allTargets: make([]vts.GlobalTarget, 0, 4096),

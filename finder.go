@@ -17,6 +17,8 @@ import (
 // os.ErrNotExist.
 type CCRResolver func(fqPath string) (vts.Target, error)
 
+// NewDirResolver constructs a resolver that reads targets from the directory
+// tree under the path provided.
 func NewDirResolver(dir string) *DirResolver {
 	return &DirResolver{
 		dir:     dir,
@@ -30,6 +32,7 @@ type DirResolver struct {
 	targets map[string]vts.GlobalTarget
 }
 
+// Resolve returns the target addressesd by the given target path.
 func (r *DirResolver) Resolve(fqPath string) (vts.Target, error) {
 	if t, ok := r.targets[fqPath]; ok {
 		return t, nil
@@ -73,6 +76,8 @@ type FindOptions struct {
 	FallbackResolvers []CCRResolver
 }
 
+// Find searches through configured resolvers to find the target with
+// the provided path.
 func (o *FindOptions) Find(path string) (vts.Target, error) {
 	if path == "" {
 		return nil, errors.New("cannot find target at empty path")
