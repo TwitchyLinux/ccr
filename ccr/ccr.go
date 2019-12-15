@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-
-	"github.com/twitchylinux/ccr/ccr/pretty"
+	"path/filepath"
 )
 
 var (
@@ -16,6 +15,11 @@ var (
 
 func main() {
 	flag.Parse()
+
+	if *inline && flag.Arg(0) != "fmt" {
+		fmt.Fprintf(os.Stderr, "Error: %s\n", "--inline may only be specified with the fmt sub-command.")
+		os.Exit(1)
+	}
 
 	if err := run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -27,8 +31,10 @@ func run() error {
 	switch flag.Arg(0) {
 	case "fmt":
 		return doFmtCmd(flag.Args()[1:])
+	case "lint":
+		return doLintCmd(flag.Args()[1:])
 	case "":
-		fmt.Fprintf(os.Stderr, "Error: Expected command \"fmt\" or xxxx.\n")
+		fmt.Fprintf(os.Stderr, "Error: Expected command \"fmt\", \"lint\", \"check\", or \"generate\".\n")
 		os.Exit(1)
 	default:
 		fmt.Fprintf(os.Stderr, "Error: Unknown command %q.\n", flag.Arg(0))
@@ -37,35 +43,43 @@ func run() error {
 	return nil
 }
 
-func doFmtCmd(paths []string) error {
+type file struct {
+	path string
+	mode os.FileMode
+}
+
+func filesInPaths(paths []string) ([]file, error) {
+	var out []file
 	if len(paths) == 0 {
 		paths = []string{"."}
 	}
 
+	var recurseTargets []string
 	for _, f := range paths {
 		s, err := os.Stat(f)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		if s.IsDir() {
-			return fmt.Errorf("cannot format directory %q: not implemented", f)
+		if !s.IsDir() {
+			out = append(out, file{f, s.Mode()})
+			continue
 		}
 
-		changed, out, err := pretty.FormatCCR(f)
+		contents, err := ioutil.ReadDir(f)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		if changed {
-			if *inline {
-				if err := ioutil.WriteFile(f, out.Bytes(), s.Mode()&os.ModePerm); err != nil {
-					return err
-				}
-			} else {
-				if _, err := os.Stdout.Write(out.Bytes()); err != nil {
-					return err
-				}
-			}
+		for _, c := range contents {
+			recurseTargets = append(recurseTargets, filepath.Join(f, c.Name()))
 		}
 	}
-	return nil
+
+	if len(recurseTargets) > 0 {
+		extra, err := filesInPaths(recurseTargets)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, extra...)
+	}
+	return out, nil
 }
