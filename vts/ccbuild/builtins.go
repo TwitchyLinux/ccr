@@ -10,5 +10,6 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 		"attr":           makeAttr(s),
 		"resource":       makeResource(s),
 		"resource_class": makeResourceClass(s),
+		"component":      makeComponent(s),
 	}, nil
 }

@@ -162,3 +162,44 @@ func makeResourceClass(s *Script) *starlark.Builtin {
 		return starlark.None, nil
 	})
 }
+
+func makeComponent(s *Script) *starlark.Builtin {
+	t := vts.TargetComponent
+
+	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+		var name string
+		var details, deps *starlark.List
+		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name", &name, "details?", &details, "deps?", &deps); err != nil {
+			return starlark.None, err
+		}
+
+		r := &vts.Component{Path: s.makePath(name), Name: name}
+		if details != nil {
+			i := details.Iterate()
+			defer i.Done()
+			var x starlark.Value
+			for i.Next(&x) {
+				v, err := toDetailsTarget(x)
+				if err != nil {
+					return nil, fmt.Errorf("invalid detail: %v", err)
+				}
+				r.Details = append(r.Details, v)
+			}
+		}
+		if deps != nil {
+			i := deps.Iterate()
+			defer i.Done()
+			var x starlark.Value
+			for i.Next(&x) {
+				v, err := toDepTarget(x)
+				if err != nil {
+					return nil, fmt.Errorf("invalid dep: %v", err)
+				}
+				r.Deps = append(r.Deps, v)
+			}
+		}
+
+		s.targets = append(s.targets, r)
+		return starlark.None, nil
+	})
+}

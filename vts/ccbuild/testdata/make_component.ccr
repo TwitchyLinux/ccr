@@ -1,0 +1,10 @@
+component(
+  name    = "yeet",
+  deps    = [
+    "common://targets/libc",
+  ],
+  details = [
+    attr(parent = "common://attrs:arch", value = "yeetos"),
+    attr(parent = "common://attrs:license", value = "MIT"),
+  ],
+)
