@@ -1,0 +1,4 @@
+checker(
+  name = "valid_json",
+  kind = const.check.each_resource,
+)

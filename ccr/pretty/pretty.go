@@ -93,6 +93,14 @@ func maybeAnnotateCall(c *syntax.CallExpr, ann *annotations) {
 
 func annotateAST(ast syntax.Node, ann *annotations) error {
 	switch n := ast.(type) {
+	case *syntax.DotExpr:
+		if err := annotateAST(n.X, ann); err != nil {
+			return err
+		}
+		if err := annotateAST(n.Name, ann); err != nil {
+			return err
+		}
+
 	case *syntax.Ident, *syntax.Literal:
 
 	case *syntax.ListExpr:
@@ -155,6 +163,15 @@ func fmtAST(ast syntax.Node, b *bytes.Buffer, opts fmtOpts) error {
 	}
 
 	switch n := ast.(type) {
+	case *syntax.DotExpr:
+		if err := fmtAST(n.X, b, opts); err != nil {
+			return err
+		}
+		b.WriteRune('.')
+		if err := fmtAST(n.Name, b, opts); err != nil {
+			return err
+		}
+
 	case *syntax.Literal:
 		b.WriteString(n.Raw)
 

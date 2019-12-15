@@ -19,6 +19,8 @@ const (
 	TargetAttr
 	// TargetAttrClass represents an attribute class target.
 	TargetAttrClass
+	// TargetChecker represents a checker target.
+	TargetChecker
 )
 
 func (t TargetType) String() string {
@@ -33,6 +35,8 @@ func (t TargetType) String() string {
 		return "attr"
 	case TargetAttrClass:
 		return "attr_class"
+	case TargetChecker:
+		return "checker"
 	default:
 		return fmt.Sprintf("TargetType<%d>", int(t))
 	}

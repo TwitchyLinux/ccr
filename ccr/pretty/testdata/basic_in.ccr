@@ -1,2 +1,3 @@
 attr(name = "whelp", pclass = ":yeet")
 attr_class(name = "yeet")
+checker(kind = const.checker.each_resource)
