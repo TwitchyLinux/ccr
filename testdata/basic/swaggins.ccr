@@ -1,0 +1,8 @@
+resource(
+  name   = "kek",
+  parent = ":slang",
+)
+
+resource_class(
+  name = "slang",
+)

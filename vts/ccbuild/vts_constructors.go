@@ -2,30 +2,40 @@ package ccbuild
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/twitchylinux/ccr/vts"
 	"go.starlark.net/starlark"
 )
 
-func toCheckTarget(v starlark.Value) (vts.TargetRef, error) {
+func toCheckTarget(currentPath string, v starlark.Value) (vts.TargetRef, error) {
 	if s, ok := v.(starlark.String); ok {
+		if strings.HasPrefix(string(s), ":") {
+			return vts.TargetRef{Path: currentPath + string(s)}, nil
+		}
 		return vts.TargetRef{Path: string(s)}, nil
 	}
 	return vts.TargetRef{}, fmt.Errorf("cannot reference check with starklark type %T (%s)", v, v.String())
 }
 
-func toDepTarget(v starlark.Value) (vts.TargetRef, error) {
+func toDepTarget(currentPath string, v starlark.Value) (vts.TargetRef, error) {
 	if s, ok := v.(starlark.String); ok {
+		if strings.HasPrefix(string(s), ":") {
+			return vts.TargetRef{Path: currentPath + string(s)}, nil
+		}
 		return vts.TargetRef{Path: string(s)}, nil
 	}
 	return vts.TargetRef{}, fmt.Errorf("cannot reference dep with starklark type %T (%s)", v, v.String())
 }
 
-func toDetailsTarget(v starlark.Value) (vts.TargetRef, error) {
+func toDetailsTarget(currentPath string, v starlark.Value) (vts.TargetRef, error) {
 	if a, ok := v.(*vts.Attr); ok {
 		return vts.TargetRef{Target: a}, nil
 	}
 	if s, ok := v.(starlark.String); ok {
+		if strings.HasPrefix(string(s), ":") {
+			return vts.TargetRef{Path: currentPath + string(s)}, nil
+		}
 		return vts.TargetRef{Path: string(s)}, nil
 	}
 	return vts.TargetRef{}, fmt.Errorf("cannot reference detail with starklark type %T (%s)", v, v.String())
@@ -47,7 +57,7 @@ func makeAttrClass(s *Script) *starlark.Builtin {
 			defer i.Done()
 			var x starlark.Value
 			for i.Next(&x) {
-				v, err := toCheckTarget(x)
+				v, err := toCheckTarget(s.path, x)
 				if err != nil {
 					return nil, fmt.Errorf("invalid check: %v", err)
 				}
@@ -70,7 +80,12 @@ func makeAttr(s *Script) *starlark.Builtin {
 			return starlark.None, err
 		}
 
-		attr := &vts.Attr{Path: s.makePath(name), Name: name, Parent: vts.TargetRef{Path: parent}, Value: value}
+		parentClass := vts.TargetRef{Path: parent}
+		if strings.HasPrefix(parent, ":") {
+			parentClass.Path = s.path + parent
+		}
+
+		attr := &vts.Attr{Path: s.makePath(name), Name: name, Parent: parentClass, Value: value}
 		// If theres no name, it must be an anonymous attr as part of another
 		// target. We don't add it to the targets list.
 		if name == "" {
@@ -91,13 +106,18 @@ func makeResource(s *Script) *starlark.Builtin {
 			return starlark.None, err
 		}
 
-		r := &vts.Resource{Path: s.makePath(name), Name: name, Parent: vts.TargetRef{Path: parent}}
+		parentClass := vts.TargetRef{Path: parent}
+		if strings.HasPrefix(parent, ":") {
+			parentClass.Path = s.path + parent
+		}
+
+		r := &vts.Resource{Path: s.makePath(name), Name: name, Parent: parentClass}
 		if details != nil {
 			i := details.Iterate()
 			defer i.Done()
 			var x starlark.Value
 			for i.Next(&x) {
-				v, err := toDetailsTarget(x)
+				v, err := toDetailsTarget(s.path, x)
 				if err != nil {
 					return nil, fmt.Errorf("invalid detail: %v", err)
 				}
@@ -109,7 +129,7 @@ func makeResource(s *Script) *starlark.Builtin {
 			defer i.Done()
 			var x starlark.Value
 			for i.Next(&x) {
-				v, err := toDepTarget(x)
+				v, err := toDepTarget(s.path, x)
 				if err != nil {
 					return nil, fmt.Errorf("invalid dep: %v", err)
 				}
@@ -138,7 +158,7 @@ func makeResourceClass(s *Script) *starlark.Builtin {
 			defer i.Done()
 			var x starlark.Value
 			for i.Next(&x) {
-				v, err := toCheckTarget(x)
+				v, err := toCheckTarget(s.path, x)
 				if err != nil {
 					return nil, fmt.Errorf("invalid check: %v", err)
 				}
@@ -150,7 +170,7 @@ func makeResourceClass(s *Script) *starlark.Builtin {
 			defer i.Done()
 			var x starlark.Value
 			for i.Next(&x) {
-				v, err := toDepTarget(x)
+				v, err := toDepTarget(s.path, x)
 				if err != nil {
 					return nil, fmt.Errorf("invalid dep: %v", err)
 				}
@@ -179,7 +199,7 @@ func makeComponent(s *Script) *starlark.Builtin {
 			defer i.Done()
 			var x starlark.Value
 			for i.Next(&x) {
-				v, err := toDetailsTarget(x)
+				v, err := toDetailsTarget(s.path, x)
 				if err != nil {
 					return nil, fmt.Errorf("invalid detail: %v", err)
 				}
@@ -191,7 +211,7 @@ func makeComponent(s *Script) *starlark.Builtin {
 			defer i.Done()
 			var x starlark.Value
 			for i.Next(&x) {
-				v, err := toDepTarget(x)
+				v, err := toDepTarget(s.path, x)
 				if err != nil {
 					return nil, fmt.Errorf("invalid dep: %v", err)
 				}

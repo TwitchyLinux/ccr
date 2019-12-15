@@ -3,8 +3,6 @@ package ccr
 import (
 	"errors"
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/twitchylinux/ccr/vts"
 )
@@ -15,15 +13,12 @@ func (e ErrNotExists) Error() string {
 	return fmt.Sprintf("target %q does not exist", string(e))
 }
 
-// dir represents a directory within a universe.
-type dir struct {
-	targets map[string]vts.Target
-}
-
 // Universe stores a tree representation of targets.
 type Universe struct {
 	// fqTargets enumerates all targets by their full path.
 	fqTargets map[string]vts.GlobalTarget
+	// allTargets contains a list of all known targets in enumeration order.
+	allTargets []vts.GlobalTarget
 }
 
 func (u *Universe) makeTargetRef(from vts.TargetRef) (vts.TargetRef, error) {
@@ -110,6 +105,7 @@ func (u *Universe) insertResolvedTarget(t vts.GlobalTarget) error {
 		return nil
 	}
 	u.fqTargets[p] = t
+	u.allTargets = append(u.allTargets, t)
 	return nil
 }
 
@@ -175,40 +171,15 @@ func (u *Universe) Build(targets []vts.TargetRef, findOpts *FindOptions) error {
 	return nil
 }
 
-// A CCRResolver returns a target at the given path. If a target is not present
-// under the resolver but no other error occurred, the resolver should return
-// os.ErrNotExist.
-type CCRResolver func(fqPath string) (vts.Target, error)
-
-// FindOptions describes how targets referenced by path should be found.
-type FindOptions struct {
-	PrefixResolvers   map[string]CCRResolver
-	FallbackResolvers []CCRResolver
+// EnumeratedTargets returns an ordered list of all targets,
+// in the order they were enumerated.
+func (u *Universe) EnumeratedTargets() []vts.GlobalTarget {
+	return u.allTargets
 }
 
-func (o *FindOptions) Find(path string) (vts.Target, error) {
-	if path == "" {
-		return nil, errors.New("cannot find target at empty path")
+func NewUniverse() *Universe {
+	return &Universe{
+		allTargets: make([]vts.GlobalTarget, 0, 4096),
+		fqTargets:  make(map[string]vts.GlobalTarget, 4096),
 	}
-
-	if !strings.HasPrefix(path, "//") { // Working tree paths can't be a prefix resolver.
-		spl := strings.Split(path, "://")
-		if resolve, ok := o.PrefixResolvers[spl[0]]; ok {
-			t, err := resolve(path)
-			if err == os.ErrNotExist {
-				return nil, ErrNotExists(path)
-			}
-			return t, err
-		}
-	}
-
-	for _, r := range o.FallbackResolvers {
-		target, err := r(path)
-		if err == os.ErrNotExist {
-			continue
-		}
-		return target, err
-	}
-
-	return nil, ErrNotExists(path)
 }

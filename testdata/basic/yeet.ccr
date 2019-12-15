@@ -1,0 +1,23 @@
+component(
+  name    = "floop",
+  details = [
+    "//swaggins:kek",
+    attr(parent = ":age", value = "18"),
+  ],
+  deps    = [
+    ":sheep",
+  ],
+)
+
+resource(
+  name   = "sheep",
+  parent = ":animal",
+)
+
+resource_class(
+  name = "animal",
+)
+
+attr_class(
+  name = "age",
+)

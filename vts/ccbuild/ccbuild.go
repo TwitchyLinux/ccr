@@ -4,6 +4,7 @@ package ccbuild
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/twitchylinux/ccr/vts"
 	"go.starlark.net/starlark"
@@ -26,6 +27,11 @@ type Script struct {
 // Close shuts down all resources associated with the script.
 func (s *Script) Close() error {
 	return nil
+}
+
+// Targets returns a list of all globally-reachable targets.
+func (s *Script) Targets() []vts.Target {
+	return s.targets
 }
 
 func (s *Script) loadScript(script []byte, fname string, loader ScriptLoader) (*starlark.Thread, starlark.StringDict, error) {
@@ -106,6 +112,9 @@ func (s *Script) resolveImport(path string) ([]byte, error) {
 func (s *Script) makePath(targetName string) string {
 	if targetName == "" {
 		return ""
+	}
+	if strings.HasPrefix(targetName, ":") {
+		return s.path + targetName
 	}
 	return fmt.Sprintf("%s:%s", s.path, targetName)
 }

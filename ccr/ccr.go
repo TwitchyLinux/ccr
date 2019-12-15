@@ -11,6 +11,7 @@ import (
 
 var (
 	inline = flag.Bool("i", false, "When formatting, update files inline.")
+	dir    = flag.String("contracts-dir", "", "Use the provided directory when reading contracts instead of the working directory.")
 )
 
 func main() {
@@ -33,6 +34,8 @@ func run() error {
 		return doFmtCmd(flag.Args()[1:])
 	case "lint":
 		return doLintCmd(flag.Args()[1:])
+	case "coverage":
+		return doCoverageCmd()
 	case "":
 		fmt.Fprintf(os.Stderr, "Error: Expected command \"fmt\", \"lint\", \"check\", or \"generate\".\n")
 		os.Exit(1)

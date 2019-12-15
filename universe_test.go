@@ -36,6 +36,26 @@ func testResolver(path string) (vts.Target, error) {
 	return nil, os.ErrNotExist
 }
 
+func TestDirResolver(t *testing.T) {
+	uv := Universe{
+		fqTargets: map[string]vts.GlobalTarget{},
+	}
+	dr := DirResolver{
+		dir:     "testdata/basic",
+		targets: map[string]vts.GlobalTarget{},
+	}
+	findOpts := FindOptions{
+		FallbackResolvers: []CCRResolver{dr.Resolve},
+		PrefixResolvers: map[string]CCRResolver{
+			"common": common.Resolve,
+		},
+	}
+
+	if err := uv.Build([]vts.TargetRef{{Path: "//yeet:floop"}}, &findOpts); err != nil {
+		t.Errorf("universe.Build(%q) failed: %v", "//yeet:floop", err)
+	}
+}
+
 func TestUniverseBuild(t *testing.T) {
 	uv := Universe{
 		fqTargets: map[string]vts.GlobalTarget{},
