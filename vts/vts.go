@@ -42,6 +42,7 @@ func (t TargetType) String() string {
 // participates in the the web of nodes declaring a system.
 type Target interface {
 	TargetType() TargetType
+	Validate() error
 }
 
 // DepTarget describes a node which depends on other nodes.

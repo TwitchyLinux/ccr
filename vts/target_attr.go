@@ -2,6 +2,7 @@ package vts
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 
 	"go.starlark.net/starlark"
@@ -30,6 +31,17 @@ func (t *Attr) GlobalPath() string {
 
 func (t *Attr) TargetName() string {
 	return t.Name
+}
+
+func (t *Attr) Validate() error {
+	if t.Parent.Target != nil {
+		if _, ok := t.Parent.Target.(*AttrClass); !ok {
+			return fmt.Errorf("parent is type %T, but must be attr_class", t.Parent.Target)
+		}
+	} else if t.Parent.Path == "" {
+		return errors.New("no parent attr_class specified")
+	}
+	return nil
 }
 
 func (t *Attr) String() string {

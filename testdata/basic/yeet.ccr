@@ -1,10 +1,10 @@
 component(
   name    = "floop",
   details = [
-    "//swaggins:kek",
     attr(parent = ":age", value = "18"),
   ],
   deps    = [
+  "//swaggins:kek",
     ":sheep",
   ],
 )

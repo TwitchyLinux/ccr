@@ -22,3 +22,7 @@ func (t *AttrClass) TargetName() string {
 func (t *AttrClass) Checkers() []TargetRef {
 	return t.Checks
 }
+
+func (t *AttrClass) Validate() error {
+	return nil
+}

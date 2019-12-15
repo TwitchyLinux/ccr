@@ -28,3 +28,7 @@ func (t *ResourceClass) Dependencies() []TargetRef {
 func (t *ResourceClass) Checkers() []TargetRef {
 	return t.Checks
 }
+
+func (t *ResourceClass) Validate() error {
+	return nil
+}

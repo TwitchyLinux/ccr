@@ -143,7 +143,13 @@ func (u *Universe) resolveTarget(findOpts *FindOptions, t vts.Target) error {
 			}
 		}
 	}
-	return u.linkTarget(t)
+	if err := u.linkTarget(t); err != nil {
+		return err
+	}
+	if err := t.Validate(); err != nil {
+		return err // TODO: Plumb file/line numbers here somehow
+	}
+	return nil
 }
 
 func (u *Universe) resolveRef(findOpts *FindOptions, t vts.TargetRef) error {
