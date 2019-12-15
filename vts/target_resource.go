@@ -28,3 +28,7 @@ func (t *Resource) TargetName() string {
 func (t *Resource) Dependencies() []TargetRef {
 	return t.Deps
 }
+
+func (t *Resource) Attributes() []TargetRef {
+	return t.Details
+}

@@ -18,3 +18,7 @@ func (t *AttrClass) GlobalPath() string {
 func (t *AttrClass) TargetName() string {
 	return t.Name
 }
+
+func (t *AttrClass) Checkers() []TargetRef {
+	return t.Checks
+}

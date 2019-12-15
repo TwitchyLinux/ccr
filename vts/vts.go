@@ -50,6 +50,18 @@ type DepTarget interface {
 	Dependencies() []TargetRef
 }
 
+// CheckedTarget describes a node which has checkers attached.
+type CheckedTarget interface {
+	Target
+	Checkers() []TargetRef
+}
+
+// DetailedTarget describes a node which has details attached.
+type DetailedTarget interface {
+	Target
+	Attributes() []TargetRef
+}
+
 // ClassedTarget describes a node which represents an instance of a class node.
 type ClassedTarget interface {
 	Target

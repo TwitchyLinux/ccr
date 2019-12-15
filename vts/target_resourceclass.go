@@ -24,3 +24,7 @@ func (t *ResourceClass) TargetName() string {
 func (t *ResourceClass) Dependencies() []TargetRef {
 	return t.Deps
 }
+
+func (t *ResourceClass) Checkers() []TargetRef {
+	return t.Checks
+}

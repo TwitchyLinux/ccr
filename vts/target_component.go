@@ -24,3 +24,7 @@ func (t *Component) TargetName() string {
 func (t *Component) Dependencies() []TargetRef {
 	return t.Deps
 }
+
+func (t *Component) Attributes() []TargetRef {
+	return t.Details
+}
