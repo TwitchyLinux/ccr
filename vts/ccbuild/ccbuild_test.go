@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/twitchylinux/ccr/vts"
+	"github.com/twitchylinux/ccr/vts/common"
 	"go.starlark.net/starlark"
 )
 
@@ -77,6 +78,25 @@ var newScriptTestcases = []struct {
 				Checks: []vts.TargetRef{
 					{Path: "common://elf/samearch"},
 					{Path: "common://elf/ldd-satisfiable"},
+				},
+			},
+		},
+	},
+	{
+		name:     "resource with helper attrs",
+		filename: "testdata/resource_with_helpers.ccr",
+		want: []vts.Target{
+			&vts.Resource{
+				Path:   "//test:somefile",
+				Name:   "somefile",
+				Parent: vts.TargetRef{Path: "common://resource/file"},
+				Details: []vts.TargetRef{
+					{
+						Target: &vts.Attr{
+							Parent: vts.TargetRef{Target: common.PathClass},
+							Value:  starlark.String("/etc/yeet"),
+						},
+					},
 				},
 			},
 		},

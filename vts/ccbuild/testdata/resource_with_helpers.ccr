@@ -1,0 +1,5 @@
+resource(
+  name    = "somefile",
+  parent  = "common://resource/file",
+  path    = "/etc/yeet",
+)

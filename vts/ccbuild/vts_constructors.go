@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/twitchylinux/ccr/vts"
+	"github.com/twitchylinux/ccr/vts/common"
 	"go.starlark.net/starlark"
 )
 
@@ -101,8 +102,13 @@ func makeResource(s *Script) *starlark.Builtin {
 
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var name, parent string
+		var path string
 		var details, deps *starlark.List
-		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name", &name, "parent", &parent, "details?", &details, "deps?", &deps); err != nil {
+		if err := starlark.UnpackArgs(t.String(), args, kwargs,
+			// Core arguments.
+			"name", &name, "parent", &parent, "details?", &details, "deps?", &deps,
+			// Helper arguments.
+			"path?", &path); err != nil {
 			return starlark.None, err
 		}
 
@@ -135,6 +141,14 @@ func makeResource(s *Script) *starlark.Builtin {
 				}
 				r.Deps = append(r.Deps, v)
 			}
+		}
+
+		// Apply any helpers that were present.
+		if path != "" {
+			r.Details = append(r.Details, vts.TargetRef{Target: &vts.Attr{
+				Parent: vts.TargetRef{Target: common.PathClass},
+				Value:  starlark.String(path),
+			}})
 		}
 
 		s.targets = append(s.targets, r)

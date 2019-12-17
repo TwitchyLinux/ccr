@@ -7,6 +7,12 @@ var archClass = &vts.AttrClass{
 	Name: "arch",
 }
 
+// PathClass is the class for a string representing a path on the filesystem.
+var PathClass = &vts.AttrClass{
+	Path: "common://attrs:path",
+	Name: "path",
+}
+
 // archDir contains targets in common://attrs.
 var archDir = map[string]vts.Target{
 	"arch": archClass,
