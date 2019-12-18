@@ -1,4 +1,5 @@
 checker(
   name = "valid_json",
   kind = const.check.each_resource,
+  run  = builtin.json.check_valid,
 )

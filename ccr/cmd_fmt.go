@@ -3,6 +3,7 @@ package main
 import (
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/twitchylinux/ccr/ccr/pretty"
 )
@@ -14,6 +15,9 @@ func doFmtCmd(paths []string) error {
 	}
 
 	for _, f := range files {
+		if !strings.HasSuffix(f.path, ".ccr") {
+			continue
+		}
 		changed, out, err := pretty.FormatCCR(f.path)
 		if err != nil {
 			return err

@@ -21,6 +21,8 @@ type Universe struct {
 	fqTargets map[string]vts.GlobalTarget
 	// allTargets contains a list of all known targets in enumeration order.
 	allTargets []vts.GlobalTarget
+
+	resolved bool
 }
 
 func (u *Universe) makeTargetRef(from vts.TargetRef) (vts.TargetRef, error) {
@@ -95,6 +97,9 @@ func (u *Universe) linkTarget(t vts.Target) error {
 				return err
 			}
 		}
+		return nil
+
+	case *vts.Checker:
 		return nil
 	}
 
@@ -176,6 +181,7 @@ func (u *Universe) Build(targets []vts.TargetRef, findOpts *FindOptions) error {
 			return err
 		}
 	}
+	u.resolved = true
 	return nil
 }
 
@@ -183,6 +189,75 @@ func (u *Universe) Build(targets []vts.TargetRef, findOpts *FindOptions) error {
 // in the order they were enumerated.
 func (u *Universe) EnumeratedTargets() []vts.GlobalTarget {
 	return u.allTargets
+}
+
+type targetSet map[vts.Target]struct{}
+
+// Check runs the checkers for all reachable targets against the system
+// in basePath.
+func (u *Universe) Check(targets []vts.TargetRef, basePath string) error {
+	if !u.resolved {
+		return errors.New("universe must be resolved first")
+	}
+
+	var (
+		evaluatedTargets = make(targetSet, 4096)
+		opts             = vts.CheckerOpts{
+			Dir: basePath,
+		}
+	)
+	for _, t := range targets {
+		target := t.Target
+		if target == nil {
+			var ok bool
+			target, ok = u.fqTargets[t.Path]
+			if !ok {
+				return ErrNotExists(t.Path)
+			}
+		}
+		if err := u.checkTarget(target, &opts, evaluatedTargets); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (u *Universe) checkTarget(t vts.Target, opts *vts.CheckerOpts, checked targetSet) error {
+	if _, checked := checked[t]; checked {
+		return nil
+	}
+	checked[t] = struct{}{}
+
+	// Check dependencies first.
+	if deps, hasDeps := t.(vts.DepTarget); hasDeps {
+		for _, dep := range deps.Dependencies() {
+			if err := u.checkTarget(dep.Target, opts, checked); err != nil {
+				return err
+			}
+		}
+	}
+	// Validate attributes by recursing.
+	if deets, hasDetails := t.(vts.DetailedTarget); hasDetails {
+		for _, attr := range deets.Attributes() {
+			if err := u.checkTarget(attr.Target, opts, checked); err != nil {
+				return err
+			}
+		}
+	}
+	// Validate checkers defined on a class target if applicable.
+	if class, hasClass := t.(vts.ClassedTarget); hasClass {
+		switch n := class.Class().Target.(type) {
+		case *vts.ResourceClass:
+			if err := n.RunCheckers(t.(*vts.Resource), opts); err != nil {
+				return err
+			}
+		case *vts.AttrClass:
+			if err := n.RunCheckers(t.(*vts.Attr), opts); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // NewUniverse constructs an empty universe.

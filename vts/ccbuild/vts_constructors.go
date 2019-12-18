@@ -243,11 +243,12 @@ func makeChecker(s *Script) *starlark.Builtin {
 
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var name, kind string
-		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name?", &name, "kind", &kind); err != nil {
+		var run starlark.Value
+		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name?", &name, "kind", &kind, "run", &run); err != nil {
 			return starlark.None, err
 		}
 
-		checker := &vts.Checker{Path: s.makePath(name), Name: name, Kind: vts.CheckerKind(kind)}
+		checker := &vts.Checker{Path: s.makePath(name), Name: name, Kind: vts.CheckerKind(kind), Runner: run}
 		// If theres no name, it must be an anonymous checker as part of another
 		// target. We don't add it to the targets list.
 		if name == "" {

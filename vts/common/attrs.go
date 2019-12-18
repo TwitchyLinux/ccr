@@ -1,6 +1,9 @@
 package common
 
-import "github.com/twitchylinux/ccr/vts"
+import (
+	"github.com/twitchylinux/ccr/vts"
+	"github.com/twitchylinux/ccr/vts/ccbuild/runners"
+)
 
 var archClass = &vts.AttrClass{
 	Path: "common://attrs:arch",
@@ -11,6 +14,12 @@ var archClass = &vts.AttrClass{
 var PathClass = &vts.AttrClass{
 	Path: "common://attrs:path",
 	Name: "path",
+	Checks: []vts.TargetRef{
+		{Target: &vts.Checker{
+			Kind:   vts.ChkKindEachAttr,
+			Runner: runners.PathCheckValid(),
+		}},
+	},
 }
 
 // archDir contains targets in common://attrs.

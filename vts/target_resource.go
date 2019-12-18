@@ -12,6 +12,7 @@ type Resource struct {
 	Parent  TargetRef
 	Details []TargetRef
 	Deps    []TargetRef
+	Checks  []TargetRef
 }
 
 func (t *Resource) TargetType() TargetType {
@@ -32,6 +33,10 @@ func (t *Resource) TargetName() string {
 
 func (t *Resource) Dependencies() []TargetRef {
 	return t.Deps
+}
+
+func (t *Resource) Checkers() []TargetRef {
+	return t.Checks
 }
 
 func (t *Resource) Attributes() []TargetRef {

@@ -1,0 +1,32 @@
+component(
+  name = "good_json",
+  deps = [
+    ":good_json_r",
+  ],
+)
+
+resource(
+  name   = "good_json_r",
+  parent = ":json_file",
+  path   = "valid_json.json",
+)
+
+component(
+  name = "bad_json",
+  deps = [
+    ":bad_json_r",
+  ],
+)
+
+resource(
+  name   = "bad_json_r",
+  parent = ":json_file",
+  path   = "invalid_json.json",
+)
+
+resource_class(
+  name = "json_file",
+  chks = [
+    "common://checkers/formats:json_valid",
+  ],
+)

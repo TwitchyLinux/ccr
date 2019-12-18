@@ -1,5 +1,7 @@
 package vts
 
+import "fmt"
+
 // AttrClass is a target representing an attribute class.
 type AttrClass struct {
 	Path   string
@@ -24,5 +26,17 @@ func (t *AttrClass) Checkers() []TargetRef {
 }
 
 func (t *AttrClass) Validate() error {
+	return nil
+}
+
+func (t *AttrClass) RunCheckers(attr *Attr, opts *CheckerOpts) error {
+	for i, c := range t.Checks {
+		if c.Target == nil {
+			return fmt.Errorf("check[%d] is not resolved: %q", i, c.Path)
+		}
+		if err := c.Target.(*Checker).RunAttr(attr, opts); err != nil {
+			return err
+		}
+	}
 	return nil
 }

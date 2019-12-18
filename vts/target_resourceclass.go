@@ -1,5 +1,7 @@
 package vts
 
+import "fmt"
+
 // ResourceClass is a target representing a resource class.
 type ResourceClass struct {
 	Path string
@@ -32,6 +34,18 @@ func (t *ResourceClass) Checkers() []TargetRef {
 func (t *ResourceClass) Validate() error {
 	if err := validateDeps(t.Deps); err != nil {
 		return err
+	}
+	return nil
+}
+
+func (t *ResourceClass) RunCheckers(r *Resource, opts *CheckerOpts) error {
+	for i, c := range t.Checks {
+		if c.Target == nil {
+			return fmt.Errorf("check[%d] is not resolved: %q", i, c.Path)
+		}
+		if err := c.Target.(*Checker).RunResource(r, opts); err != nil {
+			return err
+		}
 	}
 	return nil
 }

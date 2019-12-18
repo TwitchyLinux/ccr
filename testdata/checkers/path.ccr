@@ -1,0 +1,11 @@
+resource(
+  name   = "bad_path",
+  parent = "common://resources:file",
+  path   = "::eee",
+)
+
+resource(
+  name   = "good_path",
+  parent = "common://resources:file",
+  path   = "bantz",
+)

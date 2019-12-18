@@ -112,3 +112,60 @@ func TestUniverseBuild(t *testing.T) {
 		}
 	}
 }
+
+func TestUniverseCheck(t *testing.T) {
+	tcs := []struct {
+		name    string
+		base    string
+		targets []vts.TargetRef
+		err     string
+	}{
+		{
+			name:    "resource check json good",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//json:good_json"}},
+		},
+		{
+			name:    "resource check json bad",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//json:bad_json"}},
+			err:     "invalid character 'd' in literal false (expecting 'a')",
+		},
+		{
+			name:    "bad_path",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//path:bad_path"}},
+			err:     "path contains illegal characters",
+		},
+		{
+			name:    "good_path",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//path:good_path"}},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			uv := NewUniverse()
+			dr := NewDirResolver("testdata/checkers")
+			findOpts := FindOptions{
+				FallbackResolvers: []CCRResolver{dr.Resolve},
+				PrefixResolvers: map[string]CCRResolver{
+					"common": common.Resolve,
+				},
+			}
+
+			if err := uv.Build(tc.targets, &findOpts); err != nil {
+				t.Fatalf("universe.Build(%q) failed: %v", tc.targets, err)
+			}
+
+			err := uv.Check(tc.targets, tc.base)
+			switch {
+			case err == nil && tc.err != "":
+				t.Errorf("universe.Check(%q) returned no error, want %q", tc.targets, tc.err)
+			case err != nil && tc.err != err.Error():
+				t.Errorf("universe.Check(%q) returned %v, want %q", tc.targets, err, tc.err)
+			}
+		})
+	}
+}
