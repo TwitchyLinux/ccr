@@ -10,6 +10,9 @@ import (
 )
 
 func toCheckTarget(currentPath string, v starlark.Value) (vts.TargetRef, error) {
+	if a, ok := v.(*vts.Checker); ok {
+		return vts.TargetRef{Target: a}, nil
+	}
 	if s, ok := v.(starlark.String); ok {
 		if strings.HasPrefix(string(s), ":") {
 			return vts.TargetRef{Path: currentPath + string(s)}, nil

@@ -148,6 +148,17 @@ func TestUniverseCheck(t *testing.T) {
 			base:    "testdata/checkers/base",
 			targets: []vts.TargetRef{{Path: "//path:good_path"}},
 		},
+		{
+			name:    "good_enum",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//enum:good_enum"}},
+		},
+		{
+			name:    "bad_enum",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//enum:bad_enum"}},
+			err:     "invalid value: \"swiggity\"",
+		},
 	}
 
 	for _, tc := range tcs {

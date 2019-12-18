@@ -7,6 +7,14 @@ import (
 	"go.starlark.net/starlarkstruct"
 )
 
+var builtinDeriveEnumRunner = starlark.NewBuiltin("valid_enum", func(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, _ []starlark.Tuple) (starlark.Value, error) {
+	vals := make([]string, len(args))
+	for i, a := range args {
+		vals[i], _ = starlark.AsString(a)
+	}
+	return runners.EnumCheckValid(vals), nil
+})
+
 func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 	return starlark.StringDict{
 		"attr_class":     makeAttrClass(s),
@@ -17,7 +25,8 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 		"checker":        makeChecker(s),
 		"const": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
 			"check": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
-				"each_resource": starlark.String(vts.ChkKindEachResource),
+				"each_resource":  starlark.String(vts.ChkKindEachResource),
+				"each_attribute": starlark.String(vts.ChkKindEachAttr),
 			}),
 		}),
 		"builtin": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
@@ -26,6 +35,11 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 			}),
 			"attr": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
 				"path": runners.PathCheckValid(),
+			}),
+		}),
+		"derive": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
+			"check": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
+				"valid_enum": builtinDeriveEnumRunner,
 			}),
 		}),
 	}, nil

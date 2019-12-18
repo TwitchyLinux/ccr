@@ -1,0 +1,28 @@
+resource(
+  name    = "good_enum",
+  parent  = "common://resources:file",
+  details = [
+    attr(parent = ":some_enum", value = "yeet"),
+  ],
+)
+
+resource(
+  name    = "bad_enum",
+  parent  = "common://resources:file",
+  details = [
+    attr(parent = ":some_enum", value = "swiggity"),
+  ],
+)
+
+attr_class(
+  name = "some_enum",
+  chks = [
+    ":check_enum_values",
+  ],
+)
+
+checker(
+  name = "check_enum_values",
+  kind = const.check.each_attribute,
+  run  = derive.check.valid_enum('yeet', 'meat'),
+)
