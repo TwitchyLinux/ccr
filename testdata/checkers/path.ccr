@@ -9,3 +9,11 @@ resource(
   parent = "common://resources:file",
   path   = "bantz",
 )
+
+resource(
+  name    = "empty_path",
+  parent  = "common://resources:file",
+  details = [
+    attr(parent = "common://attrs:path", value = ""),
+  ],
+)

@@ -35,8 +35,11 @@ func (t *pathValidRunner) Hash() (uint32, error) {
 
 func (*pathValidRunner) Run(attr *vts.Attr, opts *vts.CheckerOpts) error {
 	path := attr.Value.String()
+	if s, ok := attr.Value.(starlark.String); ok {
+		path = string(s)
+	}
 	if path == "" {
-		return errors.New("empty path")
+		return errors.New("path was empty")
 	}
 	if strings.ContainsAny(path, "\x00:<>") {
 		return errors.New("path contains illegal characters")

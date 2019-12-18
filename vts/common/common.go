@@ -35,12 +35,13 @@ var JSONResourceChecker = &vts.Checker{
 }
 
 var commonTargets = map[string]vts.Target{
-	"common://attrs:path":                  PathClass,
-	"common://attrs:arch":                  archClass,
-	"common://attrs/arch:x86":              archDir["x86"],
-	"common://attrs/arch:amd64":            archDir["amd64"],
-	"common://attrs/arch:arm":              archDir["arm"],
-	"common://attrs/arch:arm64":            archDir["arm64"],
-	"common://resources:file":              FileResourceClass,
+	"common://attrs:path":       PathClass,
+	"common://attrs:arch":       archClass,
+	"common://attrs/arch:x86":   archDir["x86"],
+	"common://attrs/arch:amd64": archDir["amd64"],
+	"common://attrs/arch:arm":   archDir["arm"],
+	"common://attrs/arch:arm64": archDir["arm64"],
+	"common://resources:file":   FileResourceClass,
+
 	"common://checkers/formats:json_valid": JSONResourceChecker,
 }

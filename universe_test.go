@@ -138,6 +138,12 @@ func TestUniverseCheck(t *testing.T) {
 			err:     "path contains illegal characters",
 		},
 		{
+			name:    "empty_path",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//path:empty_path"}},
+			err:     "path was empty",
+		},
+		{
 			name:    "good_path",
 			base:    "testdata/checkers/base",
 			targets: []vts.TargetRef{{Path: "//path:good_path"}},
