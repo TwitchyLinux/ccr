@@ -10,7 +10,7 @@ type msgCategory string
 
 // Common message categories.
 const (
-	MsgBadFind     msgCategory = "find failed"
+	MsgBadFind     msgCategory = "not found"
 	MsgBadRef      msgCategory = "invalid reference"
 	MsgFailedCheck msgCategory = "check failed"
 )
@@ -30,31 +30,28 @@ type opMsg struct {
 	t        vts.Target
 }
 
-func printCheckFailedErr(target vts.Target, err error) {
-	fmt.Print("\033[1;31mError: \033[0m")
+func printErr(target vts.Target, msg string, err error) {
+	fmt.Printf("\033[1;31mError: \033[0m(%s) ", msg)
 	if target != nil {
-		if gt, ok := target.(vts.GlobalTarget); ok {
-			if pos := target.DefinedAt(); pos != nil {
-				fmt.Printf("\033[1;33m%s %d:%d\033[0m ", gt.GlobalPath(), pos.Frame.Pos.Line, pos.Frame.Pos.Col)
-			} else {
-				fmt.Printf("\033[1;33m%s\033[0m ", gt.GlobalPath())
-			}
+		if gt, ok := target.(vts.GlobalTarget); ok && gt.GlobalPath() != "" {
+			fmt.Printf("\033[1;33m%s\033[0m: ", gt.GlobalPath())
 		}
 	}
-	fmt.Printf("Check failed: %v\n", err)
+	fmt.Printf("%v\n", err)
+
+	if target != nil {
+		if pos := target.DefinedAt(); pos != nil {
+			fmt.Printf("  Failing target at \033[1;33m%s:%d:%d\033[0m\n", pos.Path, pos.Frame.Pos.Line, pos.Frame.Pos.Col)
+		}
+	}
 	fmt.Println()
 }
 
 type consoleOpTrack struct {
-	msgs []opMsg
 }
 
 func (t *consoleOpTrack) Error(target vts.Target, category msgCategory, err error) error {
-	switch category {
-	case MsgFailedCheck:
-		printCheckFailedErr(target, err)
-
-	}
+	printErr(target, string(category), err)
 	return err
 }
 func (t *consoleOpTrack) Warning(target vts.Target, category msgCategory, message string) {

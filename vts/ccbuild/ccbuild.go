@@ -21,6 +21,7 @@ type Script struct {
 	globals starlark.StringDict
 
 	path    string
+	fPath   string
 	targets []vts.Target
 }
 
@@ -85,15 +86,16 @@ func (s *Script) loadScript(script []byte, fname string, loader ScriptLoader) (*
 // NewScript initializes a new .ccr interpreter. The data parameter should
 // contain the contents of the ccr file, and the targetPath parameter should
 // represent the CCR path to the file.
-func NewScript(data []byte, targetPath string, loader ScriptLoader, printer func(string)) (*Script, error) {
-	return makeScript(data, targetPath, loader, nil, printer)
+func NewScript(data []byte, targetPath, fPath string, loader ScriptLoader, printer func(string)) (*Script, error) {
+	return makeScript(data, targetPath, fPath, loader, nil, printer)
 }
 
-func makeScript(data []byte, targetPath string, loader ScriptLoader,
+func makeScript(data []byte, targetPath, fPath string, loader ScriptLoader,
 	testHook func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error),
 	printer func(string)) (*Script, error) {
 	out := &Script{
-		path: targetPath,
+		path:  targetPath,
+		fPath: fPath,
 	}
 
 	var err error

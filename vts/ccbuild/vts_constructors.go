@@ -59,7 +59,7 @@ func makeAttrClass(s *Script) *starlark.Builtin {
 			Path: s.makePath(name),
 			Name: name,
 			Pos: &vts.DefPosition{
-				Path:  s.path,
+				Path:  s.fPath,
 				Frame: thread.CallFrame(1),
 			},
 		}
@@ -102,7 +102,7 @@ func makeAttr(s *Script) *starlark.Builtin {
 			Parent: parentClass,
 			Value:  value,
 			Pos: &vts.DefPosition{
-				Path:  s.path,
+				Path:  s.fPath,
 				Frame: thread.CallFrame(1),
 			},
 		}
@@ -141,7 +141,7 @@ func makeResource(s *Script) *starlark.Builtin {
 			Name:   name,
 			Parent: parentClass,
 			Pos: &vts.DefPosition{
-				Path:  s.path,
+				Path:  s.fPath,
 				Frame: thread.CallFrame(1),
 			},
 		}
@@ -175,6 +175,7 @@ func makeResource(s *Script) *starlark.Builtin {
 			r.Details = append(r.Details, vts.TargetRef{Target: &vts.Attr{
 				Parent: vts.TargetRef{Target: common.PathClass},
 				Value:  starlark.String(path),
+				Pos:    r.Pos,
 			}})
 		}
 
@@ -197,7 +198,7 @@ func makeResourceClass(s *Script) *starlark.Builtin {
 			Path: s.makePath(name),
 			Name: name,
 			Pos: &vts.DefPosition{
-				Path:  s.path,
+				Path:  s.fPath,
 				Frame: thread.CallFrame(1),
 			},
 		}
@@ -245,7 +246,7 @@ func makeComponent(s *Script) *starlark.Builtin {
 			Path: s.makePath(name),
 			Name: name,
 			Pos: &vts.DefPosition{
-				Path:  s.path,
+				Path:  s.fPath,
 				Frame: thread.CallFrame(1),
 			},
 		}
@@ -307,7 +308,7 @@ func makeChecker(s *Script) *starlark.Builtin {
 			Kind:   vts.CheckerKind(kind),
 			Runner: run,
 			Pos: &vts.DefPosition{
-				Path:  s.path,
+				Path:  s.fPath,
 				Frame: thread.CallFrame(1),
 			},
 		}

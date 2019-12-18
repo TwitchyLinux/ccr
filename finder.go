@@ -47,7 +47,8 @@ func (r *DirResolver) Resolve(fqPath string) (vts.Target, error) {
 	}
 
 	p := fqPath[2:cIdx]
-	d, err := ioutil.ReadFile(filepath.Join(r.dir, p+".ccr"))
+	fPath := filepath.Join(r.dir, p+".ccr")
+	d, err := ioutil.ReadFile(fPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, ErrNotExists(fqPath)
@@ -55,7 +56,7 @@ func (r *DirResolver) Resolve(fqPath string) (vts.Target, error) {
 		return nil, err
 	}
 
-	s, err := ccbuild.NewScript(d, fqPath[:cIdx], nil, nil)
+	s, err := ccbuild.NewScript(d, fqPath[:cIdx], fPath, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %v", fqPath, err)
 	}

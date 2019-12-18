@@ -29,7 +29,7 @@ var (
 )
 
 func TestLoad(t *testing.T) {
-	s, err := NewScript(nil, "test", nil, nil)
+	s, err := NewScript(nil, "test", "", nil, nil)
 	if err != nil {
 		t.Errorf("NewScript() failed: %v", err)
 	}
@@ -121,7 +121,7 @@ func TestNewScript(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			s, err := NewScript(d, "//test", nil, func(msg string) {
+			s, err := NewScript(d, "//test", tc.filename, nil, func(msg string) {
 				t.Logf("script msg: %q", msg)
 			})
 			if err != nil {
@@ -149,7 +149,7 @@ func TestMakeTarget(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			s, err := NewScript(d, "//test/"+targetType, nil, func(msg string) {
+			s, err := NewScript(d, "//test/"+targetType, fPath, nil, func(msg string) {
 				t.Logf("script msg: %q", msg)
 			})
 			if err != nil {
