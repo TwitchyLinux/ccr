@@ -39,7 +39,7 @@ func (u *Universe) makeTargetRef(from vts.TargetRef) (vts.TargetRef, error) {
 }
 
 // linkTarget updates references within the target to point to the target
-// rather than the correct path.
+// object rather than reference their path.
 func (u *Universe) linkTarget(t vts.Target) error {
 	var err error
 	switch n := t.(type) {
@@ -51,6 +51,11 @@ func (u *Universe) linkTarget(t vts.Target) error {
 		}
 		for i := range n.Details {
 			if n.Details[i], err = u.makeTargetRef(n.Details[i]); err != nil {
+				return err
+			}
+		}
+		for i := range n.Checks {
+			if n.Checks[i], err = u.makeTargetRef(n.Checks[i]); err != nil {
 				return err
 			}
 		}
@@ -244,6 +249,7 @@ func (u *Universe) checkTarget(t vts.Target, opts *vts.CheckerOpts, checked targ
 			}
 		}
 	}
+
 	// Validate checkers defined on a class target if applicable.
 	if class, hasClass := t.(vts.ClassedTarget); hasClass {
 		switch n := class.Class().Target.(type) {
@@ -254,6 +260,17 @@ func (u *Universe) checkTarget(t vts.Target, opts *vts.CheckerOpts, checked targ
 		case *vts.AttrClass:
 			if err := n.RunCheckers(t.(*vts.Attr), opts); err != nil {
 				return err
+			}
+		}
+	}
+
+	// Finally, validate any checkers on the target itself.
+	if !t.IsClassTarget() {
+		if n, hasChecks := t.(vts.CheckedTarget); hasChecks {
+			for _, c := range n.Checkers() {
+				if err := c.Target.(*vts.Checker).RunCheckedTarget(n, opts); err != nil {
+					return err
+				}
 			}
 		}
 	}

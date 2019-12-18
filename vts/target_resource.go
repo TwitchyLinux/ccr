@@ -15,6 +15,10 @@ type Resource struct {
 	Checks  []TargetRef
 }
 
+func (t *Resource) IsClassTarget() bool {
+	return false
+}
+
 func (t *Resource) TargetType() TargetType {
 	return TargetResource
 }

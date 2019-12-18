@@ -9,6 +9,10 @@ type AttrClass struct {
 	Checks []TargetRef
 }
 
+func (t *AttrClass) IsClassTarget() bool {
+	return true
+}
+
 func (t *AttrClass) TargetType() TargetType {
 	return TargetAttrClass
 }
@@ -29,6 +33,8 @@ func (t *AttrClass) Validate() error {
 	return nil
 }
 
+// RunCheckers runs checkers on an attribute, in the context of
+// this attribute class.
 func (t *AttrClass) RunCheckers(attr *Attr, opts *CheckerOpts) error {
 	for i, c := range t.Checks {
 		if c.Target == nil {

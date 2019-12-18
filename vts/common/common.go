@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/twitchylinux/ccr/vts"
-	"github.com/twitchylinux/ccr/vts/ccbuild/runners"
 )
 
 // Resolve returns the target at the specified path.
@@ -27,11 +26,9 @@ var FileResourceClass = &vts.ResourceClass{
 	Name: "file",
 }
 
-var JSONResourceChecker = &vts.Checker{
-	Path:   "common://checkers/formats:json_valid",
-	Name:   "json_valid",
-	Kind:   vts.ChkKindEachResource,
-	Runner: runners.JSONCheckValid(),
+var BinResourceClass = &vts.ResourceClass{
+	Path: "common://resources:binary",
+	Name: "binary",
 }
 
 var commonTargets = map[string]vts.Target{
@@ -42,6 +39,9 @@ var commonTargets = map[string]vts.Target{
 	"common://attrs/arch:arm":   archDir["arm"],
 	"common://attrs/arch:arm64": archDir["arm64"],
 	"common://resources:file":   FileResourceClass,
+	"common://resources:binary": BinResourceClass,
 
-	"common://checkers/formats:json_valid": JSONResourceChecker,
+	"common://checks:noop":                   NoopComponentChecker,
+	"common://checks/formats:json_valid":     JSONResourceChecker,
+	"common://checks/executable:binutil_bin": BinutilBinComponentChecker,
 }

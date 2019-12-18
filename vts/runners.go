@@ -18,3 +18,8 @@ type eachAttrRunner interface {
 	checkerRunner
 	Run(*Attr, *CheckerOpts) error
 }
+
+type eachComponentRunner interface {
+	checkerRunner
+	Run(*Component, *CheckerOpts) error
+}

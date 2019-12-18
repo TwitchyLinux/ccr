@@ -1,0 +1,15 @@
+component(
+  name = "ls",
+  deps = [
+    ":ls_bin",
+  ],
+  chks = [
+    "common://checks:noop",
+  ],
+)
+
+resource(
+  name   = "ls_bin",
+  parent = "common://resources:binary",
+  path   = "/bin/ls",
+)

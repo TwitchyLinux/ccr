@@ -7,6 +7,11 @@ type Component struct {
 
 	Details []TargetRef
 	Deps    []TargetRef
+	Checks  []TargetRef
+}
+
+func (t *Component) IsClassTarget() bool {
+	return false
 }
 
 func (t *Component) TargetType() TargetType {
@@ -23,6 +28,10 @@ func (t *Component) TargetName() string {
 
 func (t *Component) Dependencies() []TargetRef {
 	return t.Deps
+}
+
+func (t *Component) Checkers() []TargetRef {
+	return t.Checks
 }
 
 func (t *Component) Attributes() []TargetRef {

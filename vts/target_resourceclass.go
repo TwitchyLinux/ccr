@@ -11,6 +11,10 @@ type ResourceClass struct {
 	Checks []TargetRef
 }
 
+func (t *ResourceClass) IsClassTarget() bool {
+	return true
+}
+
 func (t *ResourceClass) TargetType() TargetType {
 	return TargetResourceClass
 }
@@ -38,6 +42,8 @@ func (t *ResourceClass) Validate() error {
 	return nil
 }
 
+// RunCheckers runs checkers on a resource, in the context of this
+// resource class.
 func (t *ResourceClass) RunCheckers(r *Resource, opts *CheckerOpts) error {
 	for i, c := range t.Checks {
 		if c.Target == nil {

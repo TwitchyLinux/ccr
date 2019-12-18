@@ -27,6 +27,6 @@ resource(
 resource_class(
   name = "json_file",
   chks = [
-    "common://checkers/formats:json_valid",
+    "common://checks/formats:json_valid",
   ],
 )

@@ -205,8 +205,8 @@ func makeComponent(s *Script) *starlark.Builtin {
 
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var name string
-		var details, deps *starlark.List
-		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name", &name, "details?", &details, "deps?", &deps); err != nil {
+		var details, deps, checks *starlark.List
+		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name", &name, "details?", &details, "deps?", &deps, "chks?", &checks); err != nil {
 			return starlark.None, err
 		}
 
@@ -233,6 +233,18 @@ func makeComponent(s *Script) *starlark.Builtin {
 					return nil, fmt.Errorf("invalid dep: %v", err)
 				}
 				r.Deps = append(r.Deps, v)
+			}
+		}
+		if checks != nil {
+			i := checks.Iterate()
+			defer i.Done()
+			var x starlark.Value
+			for i.Next(&x) {
+				v, err := toCheckTarget(s.path, x)
+				if err != nil {
+					return nil, fmt.Errorf("invalid check: %v", err)
+				}
+				r.Checks = append(r.Checks, v)
 			}
 		}
 

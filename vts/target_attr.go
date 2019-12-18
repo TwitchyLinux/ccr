@@ -17,6 +17,10 @@ type Attr struct {
 	Value starlark.Value
 }
 
+func (t *Attr) IsClassTarget() bool {
+	return false
+}
+
 func (t *Attr) TargetType() TargetType {
 	return TargetAttr
 }

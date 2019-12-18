@@ -27,6 +27,7 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 			"check": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
 				"each_resource":  starlark.String(vts.ChkKindEachResource),
 				"each_attribute": starlark.String(vts.ChkKindEachAttr),
+				"each_component": starlark.String(vts.ChkKindEachComponent),
 			}),
 		}),
 		"builtin": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
