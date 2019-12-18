@@ -55,7 +55,14 @@ func makeAttrClass(s *Script) *starlark.Builtin {
 			return starlark.None, err
 		}
 
-		ac := &vts.AttrClass{Path: s.makePath(name), Name: name}
+		ac := &vts.AttrClass{
+			Path: s.makePath(name),
+			Name: name,
+			Pos: &vts.DefPosition{
+				Path:  s.path,
+				Frame: thread.CallFrame(1),
+			},
+		}
 		if checks != nil {
 			i := checks.Iterate()
 			defer i.Done()
@@ -89,7 +96,16 @@ func makeAttr(s *Script) *starlark.Builtin {
 			parentClass.Path = s.path + parent
 		}
 
-		attr := &vts.Attr{Path: s.makePath(name), Name: name, Parent: parentClass, Value: value}
+		attr := &vts.Attr{
+			Path:   s.makePath(name),
+			Name:   name,
+			Parent: parentClass,
+			Value:  value,
+			Pos: &vts.DefPosition{
+				Path:  s.path,
+				Frame: thread.CallFrame(1),
+			},
+		}
 		// If theres no name, it must be an anonymous attr as part of another
 		// target. We don't add it to the targets list.
 		if name == "" {
@@ -120,7 +136,15 @@ func makeResource(s *Script) *starlark.Builtin {
 			parentClass.Path = s.path + parent
 		}
 
-		r := &vts.Resource{Path: s.makePath(name), Name: name, Parent: parentClass}
+		r := &vts.Resource{
+			Path:   s.makePath(name),
+			Name:   name,
+			Parent: parentClass,
+			Pos: &vts.DefPosition{
+				Path:  s.path,
+				Frame: thread.CallFrame(1),
+			},
+		}
 		if details != nil {
 			i := details.Iterate()
 			defer i.Done()
@@ -169,7 +193,14 @@ func makeResourceClass(s *Script) *starlark.Builtin {
 			return starlark.None, err
 		}
 
-		r := &vts.ResourceClass{Path: s.makePath(name), Name: name}
+		r := &vts.ResourceClass{
+			Path: s.makePath(name),
+			Name: name,
+			Pos: &vts.DefPosition{
+				Path:  s.path,
+				Frame: thread.CallFrame(1),
+			},
+		}
 		if chks != nil {
 			i := chks.Iterate()
 			defer i.Done()
@@ -210,7 +241,14 @@ func makeComponent(s *Script) *starlark.Builtin {
 			return starlark.None, err
 		}
 
-		r := &vts.Component{Path: s.makePath(name), Name: name}
+		r := &vts.Component{
+			Path: s.makePath(name),
+			Name: name,
+			Pos: &vts.DefPosition{
+				Path:  s.path,
+				Frame: thread.CallFrame(1),
+			},
+		}
 		if details != nil {
 			i := details.Iterate()
 			defer i.Done()
@@ -263,7 +301,16 @@ func makeChecker(s *Script) *starlark.Builtin {
 			return starlark.None, err
 		}
 
-		checker := &vts.Checker{Path: s.makePath(name), Name: name, Kind: vts.CheckerKind(kind), Runner: run}
+		checker := &vts.Checker{
+			Path:   s.makePath(name),
+			Name:   name,
+			Kind:   vts.CheckerKind(kind),
+			Runner: run,
+			Pos: &vts.DefPosition{
+				Path:  s.path,
+				Frame: thread.CallFrame(1),
+			},
+		}
 		// If theres no name, it must be an anonymous checker as part of another
 		// target. We don't add it to the targets list.
 		if name == "" {

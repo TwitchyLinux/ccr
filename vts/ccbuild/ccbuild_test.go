@@ -3,6 +3,7 @@ package ccbuild
 import (
 	"io/ioutil"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 	"testing"
@@ -15,6 +16,16 @@ import (
 
 var (
 	ttre = regexp.MustCompile("testdata/make_(.*)\\.ccr")
+
+	posType   = reflect.TypeOf(&vts.DefPosition{})
+	filterPos = cmp.FilterPath(func(p cmp.Path) bool {
+		for _, p := range p {
+			if p.Type() == posType {
+				return true
+			}
+		}
+		return false
+	}, cmp.Ignore())
 )
 
 func TestLoad(t *testing.T) {
@@ -117,7 +128,7 @@ func TestNewScript(t *testing.T) {
 				t.Fatalf("NewScript() failed: %v", err)
 			}
 
-			if diff := cmp.Diff(tc.want, s.targets); diff != "" {
+			if diff := cmp.Diff(tc.want, s.targets, filterPos); diff != "" {
 				t.Errorf("unexpected targets result (+got, -want): \n%s", diff)
 			}
 		})
@@ -155,6 +166,12 @@ func TestMakeTarget(t *testing.T) {
 			if gt, ok := s.targets[0].(vts.GlobalTarget); ok {
 				if gt.GlobalPath() != "" && gt.GlobalPath() != "//test/"+targetType+":"+gt.TargetName() {
 					t.Errorf("target.path = %v, want %v", gt.GlobalPath(), "//test/"+targetType+":"+gt.TargetName())
+				}
+			}
+
+			for _, tgt := range s.targets {
+				if tgt.DefinedAt() == nil || tgt.DefinedAt().Path == "" {
+					t.Errorf("target.DefinedAt() not specified: %+v", tgt.DefinedAt())
 				}
 			}
 		})

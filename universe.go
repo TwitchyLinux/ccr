@@ -23,6 +23,7 @@ type Universe struct {
 	allTargets []vts.GlobalTarget
 
 	resolved bool
+	logger   opTrack
 }
 
 func (u *Universe) makeTargetRef(from vts.TargetRef) (vts.TargetRef, error) {
@@ -46,17 +47,17 @@ func (u *Universe) linkTarget(t vts.Target) error {
 	case *vts.Component:
 		for i := range n.Deps {
 			if n.Deps[i], err = u.makeTargetRef(n.Deps[i]); err != nil {
-				return err
+				return u.logger.Error(t, MsgBadRef, err)
 			}
 		}
 		for i := range n.Details {
 			if n.Details[i], err = u.makeTargetRef(n.Details[i]); err != nil {
-				return err
+				return u.logger.Error(t, MsgBadRef, err)
 			}
 		}
 		for i := range n.Checks {
 			if n.Checks[i], err = u.makeTargetRef(n.Checks[i]); err != nil {
-				return err
+				return u.logger.Error(t, MsgBadRef, err)
 			}
 		}
 		return nil
@@ -64,42 +65,42 @@ func (u *Universe) linkTarget(t vts.Target) error {
 	case *vts.ResourceClass:
 		for i := range n.Deps {
 			if n.Deps[i], err = u.makeTargetRef(n.Deps[i]); err != nil {
-				return err
+				return u.logger.Error(t, MsgBadRef, err)
 			}
 		}
 		for i := range n.Checks {
 			if n.Checks[i], err = u.makeTargetRef(n.Checks[i]); err != nil {
-				return err
+				return u.logger.Error(t, MsgBadRef, err)
 			}
 		}
 		return nil
 
 	case *vts.Resource:
 		if n.Parent, err = u.makeTargetRef(n.Parent); err != nil {
-			return err
+			return u.logger.Error(t, MsgBadRef, err)
 		}
 		for i := range n.Deps {
 			if n.Deps[i], err = u.makeTargetRef(n.Deps[i]); err != nil {
-				return err
+				return u.logger.Error(t, MsgBadRef, err)
 			}
 		}
 		for i := range n.Details {
 			if n.Details[i], err = u.makeTargetRef(n.Details[i]); err != nil {
-				return err
+				return u.logger.Error(t, MsgBadRef, err)
 			}
 		}
 		return nil
 
 	case *vts.Attr:
 		if n.Parent, err = u.makeTargetRef(n.Parent); err != nil {
-			return err
+			return u.logger.Error(t, MsgBadRef, err)
 		}
 		return nil
 
 	case *vts.AttrClass:
 		for i := range n.Checks {
 			if n.Checks[i], err = u.makeTargetRef(n.Checks[i]); err != nil {
-				return err
+				return u.logger.Error(t, MsgBadRef, err)
 			}
 		}
 		return nil
@@ -174,7 +175,7 @@ func (u *Universe) resolveRef(findOpts *FindOptions, t vts.TargetRef) error {
 	}
 	target, err := findOpts.Find(t.Path)
 	if err != nil {
-		return err
+		return u.logger.Error(target, MsgBadFind, err)
 	}
 	return u.resolveTarget(findOpts, target)
 }
@@ -255,11 +256,11 @@ func (u *Universe) checkTarget(t vts.Target, opts *vts.CheckerOpts, checked targ
 		switch n := class.Class().Target.(type) {
 		case *vts.ResourceClass:
 			if err := n.RunCheckers(t.(*vts.Resource), opts); err != nil {
-				return err
+				return u.logger.Error(t, MsgFailedCheck, err)
 			}
 		case *vts.AttrClass:
 			if err := n.RunCheckers(t.(*vts.Attr), opts); err != nil {
-				return err
+				return u.logger.Error(t, MsgFailedCheck, err)
 			}
 		}
 	}
@@ -269,7 +270,7 @@ func (u *Universe) checkTarget(t vts.Target, opts *vts.CheckerOpts, checked targ
 		if n, hasChecks := t.(vts.CheckedTarget); hasChecks {
 			for _, c := range n.Checkers() {
 				if err := c.Target.(*vts.Checker).RunCheckedTarget(n, opts); err != nil {
-					return err
+					return u.logger.Error(t, MsgFailedCheck, err)
 				}
 			}
 		}
@@ -278,9 +279,13 @@ func (u *Universe) checkTarget(t vts.Target, opts *vts.CheckerOpts, checked targ
 }
 
 // NewUniverse constructs an empty universe.
-func NewUniverse() *Universe {
+func NewUniverse(logger opTrack) *Universe {
+	if logger == nil {
+		logger = &consoleOpTrack{}
+	}
 	return &Universe{
 		allTargets: make([]vts.GlobalTarget, 0, 4096),
 		fqTargets:  make(map[string]vts.GlobalTarget, 4096),
+		logger:     logger,
 	}
 }

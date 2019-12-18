@@ -6,9 +6,14 @@ import "fmt"
 type ResourceClass struct {
 	Path string
 	Name string
+	Pos  *DefPosition
 
 	Deps   []TargetRef
 	Checks []TargetRef
+}
+
+func (t *ResourceClass) DefinedAt() *DefPosition {
+	return t.Pos
 }
 
 func (t *ResourceClass) IsClassTarget() bool {

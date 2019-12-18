@@ -6,7 +6,12 @@ import "fmt"
 type AttrClass struct {
 	Path   string
 	Name   string
+	Pos    *DefPosition
 	Checks []TargetRef
+}
+
+func (t *AttrClass) DefinedAt() *DefPosition {
+	return t.Pos
 }
 
 func (t *AttrClass) IsClassTarget() bool {

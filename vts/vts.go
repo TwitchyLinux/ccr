@@ -1,7 +1,11 @@
 // Package vts contains CCR's virtual target system.
 package vts
 
-import "fmt"
+import (
+	"fmt"
+
+	"go.starlark.net/starlark"
+)
 
 type TargetType uint8
 
@@ -48,6 +52,7 @@ type Target interface {
 	IsClassTarget() bool
 	TargetType() TargetType
 	Validate() error
+	DefinedAt() *DefPosition
 }
 
 // DepTarget describes a node which depends on other nodes.
@@ -106,4 +111,10 @@ func validateDetails(details []TargetRef) error {
 		}
 	}
 	return nil
+}
+
+// DefPosition describes where a target was defined.
+type DefPosition struct {
+	Path  string
+	Frame starlark.CallFrame
 }

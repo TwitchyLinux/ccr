@@ -39,6 +39,7 @@ func testResolver(path string) (vts.Target, error) {
 func TestDirResolver(t *testing.T) {
 	uv := Universe{
 		fqTargets: map[string]vts.GlobalTarget{},
+		logger:    &silentOpTrack{},
 	}
 	dr := DirResolver{
 		dir:     "testdata/basic",
@@ -59,6 +60,7 @@ func TestDirResolver(t *testing.T) {
 func TestUniverseBuild(t *testing.T) {
 	uv := Universe{
 		fqTargets: map[string]vts.GlobalTarget{},
+		logger:    &silentOpTrack{},
 	}
 	findOpts := FindOptions{
 		FallbackResolvers: []CCRResolver{testResolver},
@@ -168,7 +170,7 @@ func TestUniverseCheck(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			uv := NewUniverse()
+			uv := NewUniverse(&silentOpTrack{})
 			dr := NewDirResolver("testdata/checkers")
 			findOpts := FindOptions{
 				FallbackResolvers: []CCRResolver{dr.Resolve},

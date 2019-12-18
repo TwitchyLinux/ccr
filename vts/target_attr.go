@@ -13,8 +13,13 @@ type Attr struct {
 	Path   string
 	Name   string
 	Parent TargetRef
+	Pos    *DefPosition
 
 	Value starlark.Value
+}
+
+func (t *Attr) DefinedAt() *DefPosition {
+	return t.Pos
 }
 
 func (t *Attr) IsClassTarget() bool {

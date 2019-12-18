@@ -4,10 +4,15 @@ package vts
 type Component struct {
 	Path string
 	Name string
+	Pos  *DefPosition
 
 	Details []TargetRef
 	Deps    []TargetRef
 	Checks  []TargetRef
+}
+
+func (t *Component) DefinedAt() *DefPosition {
+	return t.Pos
 }
 
 func (t *Component) IsClassTarget() bool {

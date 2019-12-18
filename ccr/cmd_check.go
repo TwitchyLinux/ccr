@@ -2,14 +2,13 @@ package main
 
 import (
 	"flag"
-	"fmt"
 
 	"github.com/twitchylinux/ccr"
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/common"
 )
 
-func doCoverageCmd() error {
+func doCheckCmd() error {
 	uv := ccr.NewUniverse(nil)
 
 	dr := ccr.NewDirResolver(*dir)
@@ -27,11 +26,8 @@ func doCoverageCmd() error {
 	if err := uv.Build(targets, &findOpts); err != nil {
 		return err
 	}
-
-	for _, p := range uv.EnumeratedTargets() {
-		if p.GlobalPath() != "" {
-			fmt.Println(p.GlobalPath())
-		}
+	if err := uv.Check(targets, *baseDir); err != nil {
+		return err
 	}
 
 	return nil

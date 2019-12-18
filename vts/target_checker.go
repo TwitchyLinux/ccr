@@ -21,8 +21,13 @@ type Checker struct {
 	Path string
 	Name string
 	Kind CheckerKind
+	Pos  *DefPosition
 
 	Runner starlark.Value
+}
+
+func (t *Checker) DefinedAt() *DefPosition {
+	return t.Pos
 }
 
 func (t *Checker) IsClassTarget() bool {

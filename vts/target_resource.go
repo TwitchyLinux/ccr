@@ -7,12 +7,18 @@ import (
 
 // Resource is a target representing a resource.
 type Resource struct {
-	Path    string
-	Name    string
+	Path string
+	Name string
+	Pos  *DefPosition
+
 	Parent  TargetRef
 	Details []TargetRef
 	Deps    []TargetRef
 	Checks  []TargetRef
+}
+
+func (t *Resource) DefinedAt() *DefPosition {
+	return t.Pos
 }
 
 func (t *Resource) IsClassTarget() bool {

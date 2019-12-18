@@ -10,12 +10,18 @@ import (
 )
 
 var (
-	inline = flag.Bool("i", false, "When formatting, update files inline.")
-	dir    = flag.String("contracts-dir", "", "Use the provided directory when reading contracts instead of the working directory.")
+	inline  = flag.Bool("i", false, "When formatting, update files inline.")
+	dir     = flag.String("contracts-dir", "", "Use the provided directory when reading contracts instead of the working directory.")
+	baseDir = flag.String("base-dir", "", "Use the provided directory as the base directory instead of the working directory.")
 )
 
 func main() {
 	flag.Parse()
+
+	if *baseDir == "" {
+		wd, _ := os.Getwd()
+		*baseDir = wd
+	}
 
 	if *inline && flag.Arg(0) != "fmt" {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", "--inline may only be specified with the fmt sub-command.")
@@ -36,6 +42,8 @@ func run() error {
 		return doLintCmd(flag.Args()[1:])
 	case "coverage":
 		return doCoverageCmd()
+	case "check":
+		return doCheckCmd()
 	case "":
 		fmt.Fprintf(os.Stderr, "Error: Expected command \"fmt\", \"lint\", \"check\", or \"generate\".\n")
 		os.Exit(1)
