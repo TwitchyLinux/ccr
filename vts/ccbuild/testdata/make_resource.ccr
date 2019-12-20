@@ -7,4 +7,5 @@ resource(
   details = [
     attr(parent = "common://attrs:arch", value = "yeetos"),
   ],
+  source = generator(),
 )

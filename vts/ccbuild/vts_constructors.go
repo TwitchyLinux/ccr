@@ -45,6 +45,19 @@ func toDetailsTarget(currentPath string, v starlark.Value) (vts.TargetRef, error
 	return vts.TargetRef{}, fmt.Errorf("cannot reference detail with starklark type %T (%s)", v, v.String())
 }
 
+func toGeneratorTarget(currentPath string, v starlark.Value) (vts.TargetRef, error) {
+	if a, ok := v.(*vts.Generator); ok {
+		return vts.TargetRef{Target: a}, nil
+	}
+	if s, ok := v.(starlark.String); ok {
+		if strings.HasPrefix(string(s), ":") {
+			return vts.TargetRef{Path: currentPath + string(s)}, nil
+		}
+		return vts.TargetRef{Path: string(s)}, nil
+	}
+	return vts.TargetRef{}, fmt.Errorf("cannot reference generator with starklark type %T (%s)", v, v.String())
+}
+
 func makeAttrClass(s *Script) *starlark.Builtin {
 	t := vts.TargetAttrClass
 
@@ -120,12 +133,15 @@ func makeResource(s *Script) *starlark.Builtin {
 	t := vts.TargetResource
 
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-		var name, parent string
-		var path string
-		var details, deps *starlark.List
+		var (
+			name, parent, path string
+			details, deps      *starlark.List
+			source             starlark.Value
+		)
 		if err := starlark.UnpackArgs(t.String(), args, kwargs,
 			// Core arguments.
 			"name", &name, "parent", &parent, "details?", &details, "deps?", &deps,
+			"source?", &source,
 			// Helper arguments.
 			"path?", &path); err != nil {
 			return starlark.None, err
@@ -168,6 +184,13 @@ func makeResource(s *Script) *starlark.Builtin {
 				}
 				r.Deps = append(r.Deps, v)
 			}
+		}
+		if source != nil {
+			src, err := toGeneratorTarget(s.path, source)
+			if err != nil {
+				return nil, fmt.Errorf("invalid source: %v", err)
+			}
+			r.Source = &src
 		}
 
 		// Apply any helpers that were present.
@@ -318,6 +341,34 @@ func makeChecker(s *Script) *starlark.Builtin {
 			return checker, nil
 		}
 		s.targets = append(s.targets, checker)
+		return starlark.None, nil
+	})
+}
+
+func makeGenerator(s *Script) *starlark.Builtin {
+	t := vts.TargetGenerator
+
+	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+		var name string
+		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name?", &name); err != nil {
+			return starlark.None, err
+		}
+
+		gen := &vts.Generator{
+			Path: s.makePath(name),
+			Name: name,
+			Pos: &vts.DefPosition{
+				Path:  s.fPath,
+				Frame: thread.CallFrame(1),
+			},
+		}
+
+		// If theres no name, it must be an anonymous generator as part of
+		// anohter target. We don't add it to the targets list.
+		if name == "" {
+			return gen, nil
+		}
+		s.targets = append(s.targets, gen)
 		return starlark.None, nil
 	})
 }

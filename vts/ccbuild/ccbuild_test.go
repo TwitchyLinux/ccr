@@ -73,6 +73,7 @@ var newScriptTestcases = []struct {
 				Deps: []vts.TargetRef{
 					{Path: "common://targets/libc"},
 				},
+				Source: &vts.TargetRef{Target: &vts.Generator{}},
 			},
 		},
 	},

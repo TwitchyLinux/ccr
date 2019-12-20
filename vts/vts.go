@@ -25,6 +25,8 @@ const (
 	TargetAttrClass
 	// TargetChecker represents a checker target.
 	TargetChecker
+	// TargetGenerator represents a generator target.
+	TargetGenerator
 )
 
 func (t TargetType) String() string {
@@ -41,6 +43,8 @@ func (t TargetType) String() string {
 		return "attr_class"
 	case TargetChecker:
 		return "checker"
+	case TargetGenerator:
+		return "generator"
 	default:
 		return fmt.Sprintf("TargetType<%d>", int(t))
 	}

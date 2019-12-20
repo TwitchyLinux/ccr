@@ -11,7 +11,9 @@ type Resource struct {
 	Name string
 	Pos  *DefPosition
 
-	Parent  TargetRef
+	Parent TargetRef
+	Source *TargetRef
+
 	Details []TargetRef
 	Deps    []TargetRef
 	Checks  []TargetRef
