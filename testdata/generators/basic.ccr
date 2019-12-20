@@ -1,0 +1,22 @@
+component(
+  name = "system_accounts",
+  deps = [
+    ":passwd",
+  ],
+)
+
+resource(
+  name   = "passwd",
+  parent = "common://resources:file",
+  path   = "/bin/ls",
+  source = ":passwd_file_generator",
+)
+
+generator(
+  name   = "passwd_file_generator",
+  inputs = [
+    # Consumes all resources of the user & group resource classes.
+    "common://resources/accounts:user",
+    "common://resources/accounts:group",
+  ],
+)
