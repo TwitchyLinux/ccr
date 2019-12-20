@@ -30,3 +30,9 @@ resource_class(
     "common://checks/formats:json_valid",
   ],
 )
+
+resource(
+  name   = "missing_json",
+  parent = "common://resources:json_file",
+  path   = "missing.json",
+)

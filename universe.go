@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/twitchylinux/ccr/vts"
+	"gopkg.in/src-d/go-billy.v4/osfs"
 )
 
 // ErrNotExists is returned if a referenced target could not be found.
@@ -210,6 +211,7 @@ func (u *Universe) Check(targets []vts.TargetRef, basePath string) error {
 		evaluatedTargets = make(targetSet, 4096)
 		opts             = vts.CheckerOpts{
 			Dir: basePath,
+			FS:  osfs.New(basePath),
 		}
 	)
 	for _, t := range targets {

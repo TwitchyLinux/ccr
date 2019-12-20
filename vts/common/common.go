@@ -21,16 +21,6 @@ func Resolve(path string) (vts.Target, error) {
 	return t, nil
 }
 
-var FileResourceClass = &vts.ResourceClass{
-	Path: "common://resources:file",
-	Name: "file",
-}
-
-var BinResourceClass = &vts.ResourceClass{
-	Path: "common://resources:binary",
-	Name: "binary",
-}
-
 var commonTargets = map[string]vts.Target{
 	"common://attrs:path":       PathClass,
 	"common://attrs:arch":       archClass,
@@ -38,8 +28,10 @@ var commonTargets = map[string]vts.Target{
 	"common://attrs/arch:amd64": archDir["amd64"],
 	"common://attrs/arch:arm":   archDir["arm"],
 	"common://attrs/arch:arm64": archDir["arm64"],
-	"common://resources:file":   FileResourceClass,
-	"common://resources:binary": BinResourceClass,
+
+	"common://resources:file":      FileResourceClass,
+	"common://resources:binary":    BinResourceClass,
+	"common://resources:json_file": JSONResourceClass,
 
 	"common://checks:noop":                   NoopComponentChecker,
 	"common://checks/formats:json_valid":     JSONResourceChecker,

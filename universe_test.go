@@ -134,6 +134,12 @@ func TestUniverseCheck(t *testing.T) {
 			err:     "invalid character 'd' in literal false (expecting 'a')",
 		},
 		{
+			name:    "resource check json missing",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//json:missing_json"}},
+			err:     "open testdata/checkers/base/missing.json: no such file or directory",
+		},
+		{
 			name:    "bad_path",
 			base:    "testdata/checkers/base",
 			targets: []vts.TargetRef{{Path: "//path:bad_path"}},

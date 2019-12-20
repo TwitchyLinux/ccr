@@ -1,8 +1,13 @@
 package vts
 
+import (
+	billy "gopkg.in/src-d/go-billy.v4"
+)
+
 // CheckerOpts describes state and configuration information used by checkers.
 type CheckerOpts struct {
 	Dir string
+	FS  billy.Filesystem
 }
 
 type checkerRunner interface {

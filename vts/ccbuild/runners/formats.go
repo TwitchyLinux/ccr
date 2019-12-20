@@ -5,8 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/twitchylinux/ccr/vts"
 	"go.starlark.net/starlark"
@@ -40,7 +38,7 @@ func (*jsonValidRunner) Run(resource *vts.Resource, opts *vts.CheckerOpts) error
 	if err != nil {
 		return err
 	}
-	f, err := os.Open(filepath.Join(opts.Dir, path))
+	f, err := opts.FS.Open(path)
 	if err != nil {
 		return err
 	}
