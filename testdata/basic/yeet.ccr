@@ -12,6 +12,11 @@ component(
 resource(
   name   = "sheep",
   parent = ":animal",
+  source = generator(
+    inputs = [
+      "//swaggins:kek",
+    ],
+  ),
 )
 
 resource_class(

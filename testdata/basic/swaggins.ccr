@@ -1,6 +1,7 @@
 resource(
   name   = "kek",
   parent = ":slang",
+  source = file('yeet.ccr'),
 )
 
 resource_class(

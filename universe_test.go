@@ -112,6 +112,18 @@ func TestUniverseBuild(t *testing.T) {
 				t.Errorf("%s: class.Target = nil, want non-nil", target.GlobalPath())
 			}
 		}
+		if src, hasSrc := target.(vts.SourcedTarget); hasSrc {
+			if src.Src() != nil && src.Src().Target == nil {
+				t.Errorf("%s: src.Target = nil, want non-nil", target.GlobalPath())
+			}
+		}
+		if inputs, hasInputs := target.(vts.InputTarget); hasInputs {
+			for i, inp := range inputs.NeedInputs() {
+				if inp.Target == nil {
+					t.Errorf("%s: inputs[%d].Target = nil, want non-nil", target.GlobalPath(), i)
+				}
+			}
+		}
 	}
 }
 
