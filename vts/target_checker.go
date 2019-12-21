@@ -89,7 +89,7 @@ func (t *Checker) Hash() (uint32, error) {
 
 // RunAttr runs the checker on an attribute. This method should be called
 // through the attribute's class.
-func (t *Checker) RunAttr(attr *Attr, opts *CheckerOpts) error {
+func (t *Checker) RunAttr(attr *Attr, opts *RunnerEnv) error {
 	if t.Kind != ChkKindEachAttr {
 		return fmt.Errorf("checker %v cannot be used to check a attr", t.Kind)
 	}
@@ -102,7 +102,7 @@ func (t *Checker) RunAttr(attr *Attr, opts *CheckerOpts) error {
 
 // RunResource runs the checker on a resource. This method should be called
 // through the resource class.
-func (t *Checker) RunResource(r *Resource, opts *CheckerOpts) error {
+func (t *Checker) RunResource(r *Resource, opts *RunnerEnv) error {
 	if t.Kind != ChkKindEachResource {
 		return fmt.Errorf("checker %v cannot be used to check a resource", t.Kind)
 	}
@@ -115,7 +115,7 @@ func (t *Checker) RunResource(r *Resource, opts *CheckerOpts) error {
 
 // RunCheckedTarget is invoked when running checks directly on the target
 // on which they are defined.
-func (t *Checker) RunCheckedTarget(tgt CheckedTarget, opts *CheckerOpts) error {
+func (t *Checker) RunCheckedTarget(tgt CheckedTarget, opts *RunnerEnv) error {
 	if t.Kind != ChkKindEachComponent {
 		return fmt.Errorf("RunCheckedTarget() called on non-component checker %v", t.Kind)
 	}

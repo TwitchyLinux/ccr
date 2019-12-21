@@ -40,7 +40,7 @@ func (t *AttrClass) Validate() error {
 
 // RunCheckers runs checkers on an attribute, in the context of
 // this attribute class.
-func (t *AttrClass) RunCheckers(attr *Attr, opts *CheckerOpts) error {
+func (t *AttrClass) RunCheckers(attr *Attr, opts *RunnerEnv) error {
 	for i, c := range t.Checks {
 		if c.Target == nil {
 			return fmt.Errorf("check[%d] is not resolved: %q", i, c.Path)

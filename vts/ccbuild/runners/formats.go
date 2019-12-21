@@ -33,7 +33,7 @@ func (t *jsonValidRunner) Hash() (uint32, error) {
 	return uint32(uint32(h[0]) + uint32(h[1])<<8 + uint32(h[2])<<16 + uint32(h[3])<<24), nil
 }
 
-func (*jsonValidRunner) Run(resource *vts.Resource, opts *vts.CheckerOpts) error {
+func (*jsonValidRunner) Run(resource *vts.Resource, opts *vts.RunnerEnv) error {
 	path, err := resourcePath(resource)
 	if err != nil {
 		return err

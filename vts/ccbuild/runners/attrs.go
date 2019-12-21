@@ -33,7 +33,7 @@ func (t *pathValidRunner) Hash() (uint32, error) {
 	return uint32(uint32(h[0]) + uint32(h[1])<<8 + uint32(h[2])<<16 + uint32(h[3])<<24), nil
 }
 
-func (*pathValidRunner) Run(attr *vts.Attr, opts *vts.CheckerOpts) error {
+func (*pathValidRunner) Run(attr *vts.Attr, opts *vts.RunnerEnv) error {
 	path := attr.Value.String()
 	if s, ok := attr.Value.(starlark.String); ok {
 		path = string(s)
@@ -76,7 +76,7 @@ func (t *enumValueRunner) Hash() (uint32, error) {
 	return uint32(uint32(h[0]) + uint32(h[1])<<8 + uint32(h[2])<<16 + uint32(h[3])<<24), nil
 }
 
-func (e *enumValueRunner) Run(attr *vts.Attr, opts *vts.CheckerOpts) error {
+func (e *enumValueRunner) Run(attr *vts.Attr, opts *vts.RunnerEnv) error {
 	v := attr.Value.String()
 	if s, ok := attr.Value.(starlark.String); ok {
 		v = string(s)

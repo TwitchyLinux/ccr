@@ -4,8 +4,8 @@ import (
 	billy "gopkg.in/src-d/go-billy.v4"
 )
 
-// CheckerOpts describes state and configuration information used by checkers.
-type CheckerOpts struct {
+// RunnerEnv describes state and configuration information used by runners.
+type RunnerEnv struct {
 	Dir string
 	FS  billy.Filesystem
 }
@@ -16,15 +16,15 @@ type checkerRunner interface {
 
 type eachResourceRunner interface {
 	checkerRunner
-	Run(*Resource, *CheckerOpts) error
+	Run(*Resource, *RunnerEnv) error
 }
 
 type eachAttrRunner interface {
 	checkerRunner
-	Run(*Attr, *CheckerOpts) error
+	Run(*Attr, *RunnerEnv) error
 }
 
 type eachComponentRunner interface {
 	checkerRunner
-	Run(*Component, *CheckerOpts) error
+	Run(*Component, *RunnerEnv) error
 }

@@ -49,7 +49,7 @@ func (t *ResourceClass) Validate() error {
 
 // RunCheckers runs checkers on a resource, in the context of this
 // resource class.
-func (t *ResourceClass) RunCheckers(r *Resource, opts *CheckerOpts) error {
+func (t *ResourceClass) RunCheckers(r *Resource, opts *RunnerEnv) error {
 	for i, c := range t.Checks {
 		if c.Target == nil {
 			return fmt.Errorf("check[%d] is not resolved: %q", i, c.Path)

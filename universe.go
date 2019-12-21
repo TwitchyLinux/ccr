@@ -80,6 +80,13 @@ func (u *Universe) linkTarget(t vts.Target) error {
 		if n.Parent, err = u.makeTargetRef(n.Parent); err != nil {
 			return u.logger.Error(t, MsgBadRef, err)
 		}
+		if n.Source != nil {
+			tmp, err := u.makeTargetRef(*n.Source)
+			if err != nil {
+				return u.logger.Error(t, MsgBadRef, err)
+			}
+			n.Source = &tmp
+		}
 		for i := range n.Deps {
 			if n.Deps[i], err = u.makeTargetRef(n.Deps[i]); err != nil {
 				return u.logger.Error(t, MsgBadRef, err)
@@ -209,7 +216,7 @@ func (u *Universe) Check(targets []vts.TargetRef, basePath string) error {
 
 	var (
 		evaluatedTargets = make(targetSet, 4096)
-		opts             = vts.CheckerOpts{
+		opts             = vts.RunnerEnv{
 			Dir: basePath,
 			FS:  osfs.New(basePath),
 		}
@@ -230,7 +237,7 @@ func (u *Universe) Check(targets []vts.TargetRef, basePath string) error {
 	return nil
 }
 
-func (u *Universe) checkTarget(t vts.Target, opts *vts.CheckerOpts, checked targetSet) error {
+func (u *Universe) checkTarget(t vts.Target, opts *vts.RunnerEnv, checked targetSet) error {
 	if _, checked := checked[t]; checked {
 		return nil
 	}
