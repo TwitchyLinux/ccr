@@ -55,6 +55,10 @@ func (t *Resource) Attributes() []TargetRef {
 	return t.Details
 }
 
+func (t *Resource) Src() *TargetRef {
+	return t.Source
+}
+
 func (t *Resource) Validate() error {
 	if t.Parent.Target != nil {
 		if _, ok := t.Parent.Target.(*ResourceClass); !ok {

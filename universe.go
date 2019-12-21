@@ -113,6 +113,14 @@ func (u *Universe) linkTarget(t vts.Target) error {
 		}
 		return nil
 
+	case *vts.Generator:
+		for i := range n.Inputs {
+			if n.Inputs[i], err = u.makeTargetRef(n.Inputs[i]); err != nil {
+				return u.logger.Error(t, MsgBadRef, err)
+			}
+		}
+		return nil
+
 	case *vts.Checker:
 		return nil
 	}
@@ -143,6 +151,13 @@ func (u *Universe) resolveTarget(findOpts *FindOptions, t vts.Target) error {
 			return err
 		}
 	}
+	if inputs, hasInputs := gt.(vts.InputTarget); hasInputs {
+		for _, inp := range inputs.NeedInputs() {
+			if err := u.resolveRef(findOpts, inp); err != nil {
+				return err
+			}
+		}
+	}
 	if deps, hasDeps := gt.(vts.DepTarget); hasDeps {
 		for _, dep := range deps.Dependencies() {
 			if err := u.resolveRef(findOpts, dep); err != nil {
@@ -162,6 +177,11 @@ func (u *Universe) resolveTarget(findOpts *FindOptions, t vts.Target) error {
 			if err := u.resolveRef(findOpts, attr); err != nil {
 				return err
 			}
+		}
+	}
+	if st, isSrcdTarget := gt.(vts.SourcedTarget); isSrcdTarget && st.Src() != nil {
+		if err := u.resolveRef(findOpts, *st.Src()); err != nil {
+			return err
 		}
 	}
 	if err := u.linkTarget(t); err != nil {

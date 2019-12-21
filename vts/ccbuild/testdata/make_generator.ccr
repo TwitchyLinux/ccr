@@ -1,3 +1,6 @@
 generator(
-  name = "thingy",
+  name   = "thingy",
+  inputs = [
+    ":meow",
+  ],
 )

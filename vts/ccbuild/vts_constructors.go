@@ -350,7 +350,8 @@ func makeGenerator(s *Script) *starlark.Builtin {
 
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var name string
-		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name?", &name); err != nil {
+		var inputs *starlark.List
+		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name?", &name, "inputs?", &inputs); err != nil {
 			return starlark.None, err
 		}
 
@@ -361,6 +362,19 @@ func makeGenerator(s *Script) *starlark.Builtin {
 				Path:  s.fPath,
 				Frame: thread.CallFrame(1),
 			},
+		}
+
+		if inputs != nil {
+			i := inputs.Iterate()
+			defer i.Done()
+			var x starlark.Value
+			for i.Next(&x) {
+				v, err := toDepTarget(s.path, x)
+				if err != nil {
+					return nil, fmt.Errorf("invalid input: %v", err)
+				}
+				gen.Inputs = append(gen.Inputs, v)
+			}
 		}
 
 		// If theres no name, it must be an anonymous generator as part of

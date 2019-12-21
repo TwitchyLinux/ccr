@@ -65,6 +65,12 @@ type DepTarget interface {
 	Dependencies() []TargetRef
 }
 
+// InputTarget describes a node which needs inputs from other nodes.
+type InputTarget interface {
+	Target
+	NeedInputs() []TargetRef
+}
+
 // CheckedTarget describes a node which has checkers attached.
 type CheckedTarget interface {
 	Target
@@ -88,6 +94,13 @@ type GlobalTarget interface {
 	Target
 	GlobalPath() string
 	TargetName() string
+}
+
+// SourcedTarget describes a node whose implementation may be generated
+// by a generator.
+type SourcedTarget interface {
+	Target
+	Src() *TargetRef
 }
 
 // TargetRef refers to another target either by path or by

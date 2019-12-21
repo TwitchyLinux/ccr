@@ -12,6 +12,8 @@ type Generator struct {
 	Path string
 	Name string
 	Pos  *DefPosition
+
+	Inputs []TargetRef
 }
 
 func (t *Generator) DefinedAt() *DefPosition {
@@ -35,7 +37,19 @@ func (t *Generator) TargetName() string {
 }
 
 func (t *Generator) Validate() error {
+	for i, dep := range t.Inputs {
+		_, component := dep.Target.(*Component)
+		_, resource := dep.Target.(*Resource)
+		_, resourceClass := dep.Target.(*ResourceClass)
+		if !component && !resource && !resourceClass {
+			return fmt.Errorf("deps[%d] is type %T, but must be resource/resource-class/component", i, dep.Target)
+		}
+	}
 	return nil
+}
+
+func (t *Generator) NeedInputs() []TargetRef {
+	return t.Inputs
 }
 
 func (t *Generator) String() string {
