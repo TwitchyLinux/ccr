@@ -73,7 +73,12 @@ var newScriptTestcases = []struct {
 				Deps: []vts.TargetRef{
 					{Path: "common://targets/libc"},
 				},
-				Source: &vts.TargetRef{Target: &vts.Generator{}},
+				Source: &vts.TargetRef{Target: &vts.Puesdo{
+					Kind:         vts.FileRef,
+					Path:         "./boots.txt",
+					ContractPath: "testdata/make_resource.ccr",
+				},
+				},
 			},
 		},
 	},

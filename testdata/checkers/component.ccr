@@ -12,9 +12,5 @@ resource(
   name   = "ls_bin",
   parent = "common://resources:binary",
   path   = "/bin/ls",
-  source = generator(
-    inputs = [
-      "common://resources:file",
-    ],
-  ),
+  source = file('ls'),
 )

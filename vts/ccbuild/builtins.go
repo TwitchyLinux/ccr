@@ -44,5 +44,6 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 				"valid_enum": builtinDeriveEnumRunner,
 			}),
 		}),
+		"file": makePuesdotarget(s, vts.FileRef),
 	}, nil
 }

@@ -121,7 +121,7 @@ func (u *Universe) linkTarget(t vts.Target) error {
 		}
 		return nil
 
-	case *vts.Checker:
+	case *vts.Checker, *vts.Puesdo:
 		return nil
 	}
 

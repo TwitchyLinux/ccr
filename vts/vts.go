@@ -27,6 +27,8 @@ const (
 	TargetChecker
 	// TargetGenerator represents a generator target.
 	TargetGenerator
+	// TargetPuesdo represents a special-case, generated target.
+	TargetPuesdo
 )
 
 func (t TargetType) String() string {
@@ -45,6 +47,8 @@ func (t TargetType) String() string {
 		return "checker"
 	case TargetGenerator:
 		return "generator"
+	case TargetPuesdo:
+		return "puesdo"
 	default:
 		return fmt.Sprintf("TargetType<%d>", int(t))
 	}
