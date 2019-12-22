@@ -160,7 +160,7 @@ func TestUniverseCheck(t *testing.T) {
 		{
 			name:    "empty_path",
 			base:    "testdata/checkers/base",
-			targets: []vts.TargetRef{{Path: "//path:empty_path"}},
+			targets: []vts.TargetRef{{Path: "//file_resource:empty_path"}},
 			err:     "path was empty",
 		},
 		{
@@ -183,6 +183,29 @@ func TestUniverseCheck(t *testing.T) {
 			name:    "component_checker",
 			base:    "testdata/checkers/base",
 			targets: []vts.TargetRef{{Path: "//component:ls"}},
+		},
+		{
+			name:    "file_source_no_path",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//path_attr:no_path"}},
+			err:     "no path specified",
+		},
+		{
+			name:    "file_source_empty_path",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//path_attr:empty_path"}},
+			err:     "path was empty",
+		},
+		{
+			name:    "file_source",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//component:goody"}},
+		},
+		{
+			name:    "file_not_exist",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//file_resource:not_exist"}},
+			err:     "no such file: missing.json",
 		},
 	}
 

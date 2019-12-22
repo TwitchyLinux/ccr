@@ -1,0 +1,14 @@
+
+resource(
+  name    = "empty_path",
+  parent  = "common://resources:file",
+  details = [
+    attr(parent = "common://attrs:path", value = ""),
+  ],
+)
+
+resource(
+  name   = "not_exist",
+  parent = "common://resources:file",
+  path   = "missing.json",
+)

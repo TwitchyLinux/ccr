@@ -14,3 +14,10 @@ resource(
   path   = "/bin/ls",
   source = file('ls'),
 )
+
+resource(
+  name   = "goody",
+  parent = "common://resources:file",
+  path   = "bantz",
+  source = file('ls'),
+)

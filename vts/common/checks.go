@@ -19,6 +19,13 @@ var BinutilBinComponentChecker = &vts.Checker{
 	Runner: runners.BinutilCheckComponent(),
 }
 
+var FilePresentChecker = &vts.Checker{
+	Path:   "common://checks:file_present",
+	Name:   "file_present",
+	Kind:   vts.ChkKindEachResource,
+	Runner: runners.FileCheckPresent(),
+}
+
 var NoopComponentChecker = &vts.Checker{
 	Path:   "common://checks:noop",
 	Name:   "noop",

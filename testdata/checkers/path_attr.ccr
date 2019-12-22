@@ -1,0 +1,14 @@
+resource(
+  name   = "no_path",
+  parent = "common://resources:file",
+  source = file('yeet.ccr'),
+)
+
+resource(
+  name   = "empty_path",
+  parent = "common://resources:file",
+  details = [
+    attr(parent = "common://attrs:path", value = ""),
+  ],
+  source = file('yeet.ccr'),
+)

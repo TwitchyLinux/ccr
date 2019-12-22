@@ -5,6 +5,9 @@ import "github.com/twitchylinux/ccr/vts"
 var FileResourceClass = &vts.ResourceClass{
 	Path: "common://resources:file",
 	Name: "file",
+	Checks: []vts.TargetRef{
+		{Target: FilePresentChecker},
+	},
 }
 
 var BinResourceClass = &vts.ResourceClass{

@@ -1,6 +1,7 @@
 resource(
   name    = "good_enum",
   parent  = "common://resources:file",
+  path    = "somefile",
   details = [
     attr(parent = ":some_enum", value = "yeet"),
   ],

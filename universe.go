@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/twitchylinux/ccr/vts"
+	"go.starlark.net/starlark"
 	"gopkg.in/src-d/go-billy.v4/osfs"
 )
 
@@ -291,6 +292,8 @@ func (u *Universe) checkTarget(t vts.Target, opts *vts.RunnerEnv, checked target
 			if err := n.RunCheckers(t.(*vts.Attr), opts); err != nil {
 				return u.logger.Error(t, MsgFailedCheck, err)
 			}
+		default:
+			return fmt.Errorf("cannot check against class target %T", class.Class().Target)
 		}
 	}
 
@@ -303,8 +306,60 @@ func (u *Universe) checkTarget(t vts.Target, opts *vts.RunnerEnv, checked target
 				}
 			}
 		}
+
+		// Some targets annotate a source, which can have logic for checking.
+		if st, hasSrc := t.(vts.SourcedTarget); hasSrc {
+			if src := st.Src(); src != nil {
+				if err := u.checkAgainstSource(opts, t, src.Target); err != nil {
+					return u.logger.Error(t, MsgFailedCheck, err)
+				}
+			}
+		}
 	}
 	return nil
+}
+
+func (u *Universe) checkAgainstSource(opts *vts.RunnerEnv, t vts.Target, src vts.Target) error {
+	switch source := src.(type) {
+	case *vts.Puesdo:
+		switch source.Kind {
+		case vts.FileRef:
+			// Targets which specify a file source must also specify a path.
+			if _, err := determinePath(t); err != nil {
+				return err
+			}
+
+		default:
+			return fmt.Errorf("puesdo target has unsupported kind %v", source.Kind)
+		}
+	default:
+		return fmt.Errorf("cannot check against source of type %T", src)
+	}
+	return nil
+}
+
+func determinePath(t vts.Target) (string, error) {
+	dt, ok := t.(vts.DetailedTarget)
+	if !ok {
+		return "", fmt.Errorf("no details available on target %T", t)
+	}
+	for _, attr := range dt.Attributes() {
+		if attr.Target == nil {
+			return "", fmt.Errorf("unresolved target reference: %q", attr.Path)
+		}
+		a := attr.Target.(*vts.Attr)
+		if a.Parent.Target == nil {
+			return "", fmt.Errorf("unresolved target reference: %q", a.Parent.Path)
+		}
+		if class := a.Parent.Target.(*vts.AttrClass); class.GlobalPath() == "common://attrs:path" {
+			if s, ok := a.Value.(starlark.String); ok {
+				return string(s), nil
+			}
+			return "", fmt.Errorf("bad type for path: want string, got %T", a.Value)
+		}
+	}
+
+	return "", errors.New("no path specified")
 }
 
 // NewUniverse constructs an empty universe.
