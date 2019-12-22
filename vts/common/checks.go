@@ -19,6 +19,13 @@ var BinutilBinComponentChecker = &vts.Checker{
 	Runner: runners.BinutilCheckComponent(),
 }
 
+var BinaryResourceChecker = &vts.Checker{
+	Path:   "common://checks/executable:binary",
+	Name:   "binary",
+	Kind:   vts.ChkKindEachResource,
+	Runner: runners.BinaryCheckValid(),
+}
+
 var FilePresentChecker = &vts.Checker{
 	Path:   "common://checks:file_present",
 	Name:   "file_present",

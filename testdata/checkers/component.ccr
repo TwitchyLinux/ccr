@@ -11,7 +11,7 @@ component(
 resource(
   name   = "ls_bin",
   parent = "common://resources:binary",
-  path   = "/bin/ls",
+  path   = "chello",
   source = file('ls'),
 )
 

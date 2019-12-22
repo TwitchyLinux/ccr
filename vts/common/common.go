@@ -36,5 +36,6 @@ var commonTargets = map[string]vts.Target{
 	"common://checks:noop":                   NoopComponentChecker,
 	"common://checks:file_present":           FilePresentChecker,
 	"common://checks/formats:json_valid":     JSONResourceChecker,
+	"common://checks/executable:binary":      BinaryResourceChecker,
 	"common://checks/executable:binutil_bin": BinutilBinComponentChecker,
 }

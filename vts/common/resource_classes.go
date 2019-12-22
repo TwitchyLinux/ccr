@@ -13,6 +13,9 @@ var FileResourceClass = &vts.ResourceClass{
 var BinResourceClass = &vts.ResourceClass{
 	Path: "common://resources:binary",
 	Name: "binary",
+	Checks: []vts.TargetRef{
+		{Target: BinaryResourceChecker},
+	},
 }
 
 var JSONResourceClass = &vts.ResourceClass{
