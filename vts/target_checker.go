@@ -97,7 +97,12 @@ func (t *Checker) RunAttr(attr *Attr, opts *RunnerEnv) error {
 	if !ok {
 		return fmt.Errorf("runner %v cannot be used to check a attr", t.Runner)
 	}
-	return ac.Run(attr, opts)
+	err := ac.Run(attr, opts)
+	if err != nil {
+		err = WrapWithTarget(err, attr)
+		err = WrapWithActionTarget(err, t)
+	}
+	return err
 }
 
 // RunResource runs the checker on a resource. This method should be called
@@ -110,7 +115,12 @@ func (t *Checker) RunResource(r *Resource, opts *RunnerEnv) error {
 	if !ok {
 		return fmt.Errorf("runner %v cannot be used to check a resource", t.Runner)
 	}
-	return ac.Run(r, opts)
+	err := ac.Run(r, opts)
+	if err != nil {
+		err = WrapWithTarget(err, r)
+		err = WrapWithActionTarget(err, t)
+	}
+	return err
 }
 
 // RunCheckedTarget is invoked when running checks directly on the target

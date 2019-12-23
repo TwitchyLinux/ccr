@@ -68,12 +68,12 @@ func (*binaryValidRunner) Run(resource *vts.Resource, opts *vts.RunnerEnv) error
 	}
 	f, err := opts.FS.Open(path)
 	if err != nil {
-		return err
+		return vts.WrapWithPath(err, path)
 	}
 	defer f.Close()
 	binData, err := elf.NewFile(f)
 	if err != nil {
-		return err
+		return vts.WrapWithPath(err, path)
 	}
 
 	// Sanity checks.
@@ -108,10 +108,10 @@ func (*binaryValidRunner) Run(resource *vts.Resource, opts *vts.RunnerEnv) error
 
 	s, err := opts.FS.Stat(path)
 	if err != nil {
-		return err
+		return vts.WrapWithPath(err, path)
 	}
 	if s.Mode()&os.ModePerm&0111 == 0 {
-		return fmt.Errorf("binary is not executable: %#o", s.Mode())
+		return vts.WrapWithPath(fmt.Errorf("binary is not executable: %#o", s.Mode()), path)
 	}
 
 	return nil

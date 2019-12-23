@@ -40,10 +40,13 @@ func (*jsonValidRunner) Run(resource *vts.Resource, opts *vts.RunnerEnv) error {
 	}
 	f, err := opts.FS.Open(path)
 	if err != nil {
-		return err
+		return vts.WrapWithPath(err, path)
 	}
 	defer f.Close()
 
 	var o map[string]interface{}
-	return json.NewDecoder(f).Decode(&o)
+	if err = json.NewDecoder(f).Decode(&o); err != nil {
+		err = vts.WrapWithPath(err, path)
+	}
+	return err
 }

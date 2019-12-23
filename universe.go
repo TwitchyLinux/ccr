@@ -51,17 +51,17 @@ func (u *Universe) linkTarget(t vts.Target) error {
 	case *vts.Component:
 		for i := range n.Deps {
 			if n.Deps[i], err = u.makeTargetRef(n.Deps[i]); err != nil {
-				return u.logger.Error(t, MsgBadRef, err)
+				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		for i := range n.Details {
 			if n.Details[i], err = u.makeTargetRef(n.Details[i]); err != nil {
-				return u.logger.Error(t, MsgBadRef, err)
+				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		for i := range n.Checks {
 			if n.Checks[i], err = u.makeTargetRef(n.Checks[i]); err != nil {
-				return u.logger.Error(t, MsgBadRef, err)
+				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		return nil
@@ -69,49 +69,49 @@ func (u *Universe) linkTarget(t vts.Target) error {
 	case *vts.ResourceClass:
 		for i := range n.Deps {
 			if n.Deps[i], err = u.makeTargetRef(n.Deps[i]); err != nil {
-				return u.logger.Error(t, MsgBadRef, err)
+				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		for i := range n.Checks {
 			if n.Checks[i], err = u.makeTargetRef(n.Checks[i]); err != nil {
-				return u.logger.Error(t, MsgBadRef, err)
+				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		return nil
 
 	case *vts.Resource:
 		if n.Parent, err = u.makeTargetRef(n.Parent); err != nil {
-			return u.logger.Error(t, MsgBadRef, err)
+			return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
 		}
 		if n.Source != nil {
 			tmp, err := u.makeTargetRef(*n.Source)
 			if err != nil {
-				return u.logger.Error(t, MsgBadRef, err)
+				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 			n.Source = &tmp
 		}
 		for i := range n.Deps {
 			if n.Deps[i], err = u.makeTargetRef(n.Deps[i]); err != nil {
-				return u.logger.Error(t, MsgBadRef, err)
+				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		for i := range n.Details {
 			if n.Details[i], err = u.makeTargetRef(n.Details[i]); err != nil {
-				return u.logger.Error(t, MsgBadRef, err)
+				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		return nil
 
 	case *vts.Attr:
 		if n.Parent, err = u.makeTargetRef(n.Parent); err != nil {
-			return u.logger.Error(t, MsgBadRef, err)
+			return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
 		}
 		return nil
 
 	case *vts.AttrClass:
 		for i := range n.Checks {
 			if n.Checks[i], err = u.makeTargetRef(n.Checks[i]); err != nil {
-				return u.logger.Error(t, MsgBadRef, err)
+				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		return nil
@@ -119,7 +119,7 @@ func (u *Universe) linkTarget(t vts.Target) error {
 	case *vts.Generator:
 		for i := range n.Inputs {
 			if n.Inputs[i], err = u.makeTargetRef(n.Inputs[i]); err != nil {
-				return u.logger.Error(t, MsgBadRef, err)
+				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		return nil
@@ -214,7 +214,7 @@ func (u *Universe) resolveRef(findOpts *FindOptions, t vts.TargetRef) error {
 	}
 	target, err := findOpts.Find(t.Path)
 	if err != nil {
-		return u.logger.Error(target, MsgBadFind, err)
+		return u.logger.Error(MsgBadFind, vts.WrapWithTarget(err, target))
 	}
 	return u.resolveTarget(findOpts, target)
 }

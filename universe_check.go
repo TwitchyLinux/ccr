@@ -68,11 +68,11 @@ func (u *Universe) checkTarget(t vts.Target, opts *vts.RunnerEnv, checked target
 		switch n := class.Class().Target.(type) {
 		case *vts.ResourceClass:
 			if err := n.RunCheckers(t.(*vts.Resource), opts); err != nil {
-				return u.logger.Error(t, MsgFailedCheck, err)
+				return u.logger.Error(MsgFailedCheck, vts.WrapWithTarget(err, t))
 			}
 		case *vts.AttrClass:
 			if err := n.RunCheckers(t.(*vts.Attr), opts); err != nil {
-				return u.logger.Error(t, MsgFailedCheck, err)
+				return u.logger.Error(MsgFailedCheck, vts.WrapWithTarget(err, t))
 			}
 		default:
 			return fmt.Errorf("cannot check against class target %T", class.Class().Target)
@@ -84,7 +84,7 @@ func (u *Universe) checkTarget(t vts.Target, opts *vts.RunnerEnv, checked target
 		if n, hasChecks := t.(vts.CheckedTarget); hasChecks {
 			for _, c := range n.Checkers() {
 				if err := c.Target.(*vts.Checker).RunCheckedTarget(n, opts); err != nil {
-					return u.logger.Error(t, MsgFailedCheck, err)
+					return u.logger.Error(MsgFailedCheck, vts.WrapWithTarget(err, t))
 				}
 			}
 		}
@@ -93,7 +93,7 @@ func (u *Universe) checkTarget(t vts.Target, opts *vts.RunnerEnv, checked target
 		if st, hasSrc := t.(vts.SourcedTarget); hasSrc {
 			if src := st.Src(); src != nil {
 				if err := u.checkAgainstSource(opts, t, src.Target); err != nil {
-					return u.logger.Error(t, MsgFailedCheck, err)
+					return u.logger.Error(MsgFailedCheck, vts.WrapWithTarget(err, t))
 				}
 			}
 		}
