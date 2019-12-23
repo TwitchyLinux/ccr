@@ -38,6 +38,9 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 			"attr": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
 				"path": runners.PathCheckValid(),
 			}),
+			"debug": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
+				"generator_input": runners.GenerateDebugManifest(),
+			}),
 		}),
 		"derive": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
 			"check": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{

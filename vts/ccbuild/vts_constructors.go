@@ -353,14 +353,16 @@ func makeGenerator(s *Script) *starlark.Builtin {
 
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var name string
+		var run starlark.Value
 		var inputs *starlark.List
-		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name?", &name, "inputs?", &inputs); err != nil {
+		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name?", &name, "inputs?", &inputs, "run?", &run); err != nil {
 			return starlark.None, err
 		}
 
 		gen := &vts.Generator{
-			Path: s.makePath(name),
-			Name: name,
+			Path:   s.makePath(name),
+			Name:   name,
+			Runner: run,
 			Pos: &vts.DefPosition{
 				Path:  s.fPath,
 				Frame: thread.CallFrame(1),

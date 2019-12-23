@@ -3,4 +3,5 @@ generator(
   inputs = [
     ":meow",
   ],
+  run = builtin.debug.generator_input,
 )

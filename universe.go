@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/twitchylinux/ccr/vts"
+	"github.com/twitchylinux/ccr/vts/common"
 	"go.starlark.net/starlark"
 )
 
@@ -22,6 +23,8 @@ type Universe struct {
 	fqTargets map[string]vts.GlobalTarget
 	// allTargets contains a list of all known targets in enumeration order.
 	allTargets []vts.GlobalTarget
+	// classedTargets enumerates the targets which chain to a specific parent.
+	classedTargets map[vts.Target][]vts.GlobalTarget
 
 	resolved bool
 	logger   opTrack
@@ -146,7 +149,8 @@ func (u *Universe) resolveTarget(findOpts *FindOptions, t vts.Target) error {
 		}
 	}
 
-	if class, hasClass := gt.(vts.ClassedTarget); hasClass {
+	class, hasClass := gt.(vts.ClassedTarget)
+	if hasClass {
 		if err := u.resolveRef(findOpts, class.Class()); err != nil {
 			return err
 		}
@@ -187,8 +191,15 @@ func (u *Universe) resolveTarget(findOpts *FindOptions, t vts.Target) error {
 	if err := u.linkTarget(t); err != nil {
 		return err
 	}
+
 	if err := t.Validate(); err != nil {
 		return err // TODO: Plumb file/line numbers here somehow
+	}
+	// After linking, a target which has a parent will reference the parent. We
+	// track all instances of a class to simplify resolving inputs of a class.
+	if hasClass {
+		classTarget := class.Class().Target.(vts.Target)
+		u.classedTargets[classTarget] = append(u.classedTargets[classTarget], gt)
 	}
 	return nil
 }
@@ -208,7 +219,8 @@ func (u *Universe) resolveRef(findOpts *FindOptions, t vts.TargetRef) error {
 	return u.resolveTarget(findOpts, target)
 }
 
-// Build constructs a fully-resolved tree of targets from those given.
+// Build constructs a fully-resolved tree of targets from those given, and
+// applies VTS-level validation against them.
 func (u *Universe) Build(targets []vts.TargetRef, findOpts *FindOptions) error {
 	for _, t := range targets {
 		if err := u.resolveRef(findOpts, t); err != nil {
@@ -238,7 +250,7 @@ func determinePath(t vts.Target) (string, error) {
 		if a.Parent.Target == nil {
 			return "", fmt.Errorf("unresolved target reference: %q", a.Parent.Path)
 		}
-		if class := a.Parent.Target.(*vts.AttrClass); class.GlobalPath() == "common://attrs:path" {
+		if class := a.Parent.Target.(*vts.AttrClass); class.GlobalPath() == common.PathClass.Path {
 			if s, ok := a.Value.(starlark.String); ok {
 				return string(s), nil
 			}
@@ -255,8 +267,9 @@ func NewUniverse(logger opTrack) *Universe {
 		logger = &consoleOpTrack{}
 	}
 	return &Universe{
-		allTargets: make([]vts.GlobalTarget, 0, 4096),
-		fqTargets:  make(map[string]vts.GlobalTarget, 4096),
-		logger:     logger,
+		allTargets:     make([]vts.GlobalTarget, 0, 4096),
+		fqTargets:      make(map[string]vts.GlobalTarget, 4096),
+		classedTargets: make(map[vts.Target][]vts.GlobalTarget, 2048),
+		logger:         logger,
 	}
 }

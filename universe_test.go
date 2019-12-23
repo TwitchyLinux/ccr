@@ -1,9 +1,13 @@
 package ccr
 
 import (
+	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/common"
 )
@@ -38,8 +42,9 @@ func testResolver(path string) (vts.Target, error) {
 
 func TestDirResolver(t *testing.T) {
 	uv := Universe{
-		fqTargets: map[string]vts.GlobalTarget{},
-		logger:    &silentOpTrack{},
+		fqTargets:      map[string]vts.GlobalTarget{},
+		logger:         &silentOpTrack{},
+		classedTargets: map[vts.Target][]vts.GlobalTarget{},
 	}
 	dr := DirResolver{
 		dir:     "testdata/basic",
@@ -59,8 +64,9 @@ func TestDirResolver(t *testing.T) {
 
 func TestUniverseBuild(t *testing.T) {
 	uv := Universe{
-		fqTargets: map[string]vts.GlobalTarget{},
-		logger:    &silentOpTrack{},
+		fqTargets:      map[string]vts.GlobalTarget{},
+		logger:         &silentOpTrack{},
+		classedTargets: map[vts.Target][]vts.GlobalTarget{},
 	}
 	findOpts := FindOptions{
 		FallbackResolvers: []CCRResolver{testResolver},
@@ -230,6 +236,72 @@ func TestUniverseCheck(t *testing.T) {
 				t.Errorf("universe.Check(%q) returned no error, want %q", tc.targets, tc.err)
 			case err != nil && tc.err != err.Error():
 				t.Errorf("universe.Check(%q) returned %v, want %q", tc.targets, err, tc.err)
+			}
+		})
+	}
+}
+
+func TestUniverseGenerate(t *testing.T) {
+	tcs := []struct {
+		name         string
+		target       string
+		config       GenerateConfig
+		testManifest string
+		err          string
+	}{
+		{
+			name:   "basic",
+			target: "//basic:collect_resources",
+			config: GenerateConfig{},
+			testManifest: `Generator: //basic:test_manifest_generator
+Resource: //basic:manifest
+Direct: *vts.Resource @//basic:part_of_it_by_dep
+Class: //basic:whelp
+-//basic:yeet
+-//basic:yolo
+-//basic:swaggins
+
+`,
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			uv := NewUniverse(&silentOpTrack{})
+			dr := NewDirResolver("testdata/generators")
+			findOpts := FindOptions{
+				FallbackResolvers: []CCRResolver{dr.Resolve},
+				PrefixResolvers: map[string]CCRResolver{
+					"common": common.Resolve,
+				},
+			}
+
+			td, err := ioutil.TempDir("", "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer os.RemoveAll(td)
+
+			if err := uv.Build([]vts.TargetRef{{Path: tc.target}}, &findOpts); err != nil {
+				t.Fatalf("universe.Build(%q) failed: %v", tc.target, err)
+			}
+
+			err = uv.Generate(tc.config, vts.TargetRef{Path: tc.target}, td)
+			switch {
+			case err == nil && tc.err != "":
+				t.Errorf("universe.Generate(%q) returned no error, want %q", tc.target, tc.err)
+			case err != nil && tc.err != err.Error():
+				t.Errorf("universe.Generate(%q) returned %v, want %q", tc.target, err, tc.err)
+			}
+
+			if tc.testManifest != "" {
+				man, err := ioutil.ReadFile(filepath.Join(td, "test_manifest.txt"))
+				if err != nil {
+					t.Errorf("Failed to read test manifest: %v", err)
+				}
+				if diff := cmp.Diff(strings.Split(tc.testManifest, "\n"), strings.Split(string(man), "\n")); diff != "" {
+					t.Errorf("Manifests contents do not match test (+got, -want): \n%s", diff)
+				}
 			}
 		})
 	}

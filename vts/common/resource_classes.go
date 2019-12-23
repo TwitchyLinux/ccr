@@ -25,3 +25,8 @@ var JSONResourceClass = &vts.ResourceClass{
 		{Target: JSONResourceChecker},
 	},
 }
+
+var VirtualResourceClass = &vts.ResourceClass{
+	Path: "common://resources:virtual",
+	Name: "virtual",
+}

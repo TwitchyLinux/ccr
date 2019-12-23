@@ -30,8 +30,12 @@ var commonTargets = map[string]vts.Target{
 	"common://attrs/arch:arm64": archDir["arm64"],
 
 	"common://resources:file":      FileResourceClass,
+	"common://resources:virtual":   VirtualResourceClass,
 	"common://resources:binary":    BinResourceClass,
 	"common://resources:json_file": JSONResourceClass,
+
+	"common://resources/accounts:user":  UserResourceClass,
+	"common://resources/accounts:group": GroupResourceClass,
 
 	"common://checks:noop":                   NoopComponentChecker,
 	"common://checks:file_present":           FilePresentChecker,

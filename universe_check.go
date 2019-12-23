@@ -114,6 +114,7 @@ func (u *Universe) checkAgainstSource(opts *vts.RunnerEnv, t vts.Target, src vts
 		default:
 			return fmt.Errorf("puesdo target has unsupported kind %v", source.Kind)
 		}
+	case *vts.Generator:
 	default:
 		return fmt.Errorf("cannot check against source of type %T", src)
 	}

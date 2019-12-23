@@ -1,22 +1,55 @@
 component(
-  name = "system_accounts",
+  name = "collect_resources",
   deps = [
-    ":passwd",
+    ":manifest",
+    ":yeet",
+    ":yolo",
+    ":swaggins",
   ],
+)
+
+resource_class(
+  name = "whelp",
 )
 
 resource(
-  name   = "passwd",
-  parent = "common://resources:file",
-  path   = "/bin/ls",
-  source = ":passwd_file_generator",
+  name   = "yeet",
+  parent = ":whelp",
+)
+
+resource(
+  name   = "yolo",
+  parent = ":whelp",
+)
+
+resource(
+  name   = "swaggins",
+  parent = ":whelp",
+)
+
+resource(
+  name   = "not_part_of_it",
+  parent = ":whelp",
+)
+
+resource(
+  name   = "part_of_it_by_dep",
+  parent = "common://resources:virtual",
+)
+
+resource(
+  name   = "manifest",
+  parent = "common://resources:virtual",
+  path   = "/test_manifest.txt",
+  source = ":test_manifest_generator",
 )
 
 generator(
-  name   = "passwd_file_generator",
+  name   = "test_manifest_generator",
   inputs = [
-    # Consumes all resources of the user & group resource classes.
-    "common://resources/accounts:user",
-    "common://resources/accounts:group",
+    # Consumes all resources of the whelp resource class.
+    ":whelp",
+    ":part_of_it_by_dep",
   ],
+  run    = builtin.debug.generator_input,
 )
