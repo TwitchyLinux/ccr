@@ -74,5 +74,10 @@ func (t *Resource) Validate() error {
 	if err := validateDeps(t.Deps); err != nil {
 		return err
 	}
+	if t.Source != nil {
+		if err := validateSource(*t.Source, t); err != nil {
+			return err
+		}
+	}
 	return nil
 }

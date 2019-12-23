@@ -37,12 +37,12 @@ func (t *Generator) TargetName() string {
 }
 
 func (t *Generator) Validate() error {
-	for i, dep := range t.Inputs {
-		_, component := dep.Target.(*Component)
-		_, resource := dep.Target.(*Resource)
-		_, resourceClass := dep.Target.(*ResourceClass)
+	for i, inp := range t.Inputs {
+		_, component := inp.Target.(*Component)
+		_, resource := inp.Target.(*Resource)
+		_, resourceClass := inp.Target.(*ResourceClass)
 		if !component && !resource && !resourceClass {
-			return fmt.Errorf("deps[%d] is type %T, but must be resource/resource-class/component", i, dep.Target)
+			return fmt.Errorf("inputs[%d] is type %T, but must be resource, resource_class, or component", i, inp.Target)
 		}
 	}
 	return nil

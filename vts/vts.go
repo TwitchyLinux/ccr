@@ -2,6 +2,7 @@
 package vts
 
 import (
+	"errors"
 	"fmt"
 
 	"go.starlark.net/starlark"
@@ -129,6 +130,26 @@ func validateDetails(details []TargetRef) error {
 	for i, deet := range details {
 		if _, ok := deet.Target.(*Attr); !ok {
 			return fmt.Errorf("details[%d] is type %T, but must be attr", i, deet.Target)
+		}
+	}
+	return nil
+}
+
+func validateSource(src TargetRef, parent Target) error {
+	if src.Path == "" && src.Target == nil {
+		return errors.New("source defined but no target or path present in reference")
+	}
+	if src.Target != nil {
+		switch n := src.Target.(type) {
+		case *Generator:
+		case *Puesdo:
+			switch n.Kind {
+			case FileRef:
+			default:
+				return fmt.Errorf("puesdo target %v cannot be used as a source", n.Kind)
+			}
+		default:
+			return fmt.Errorf("target of type %T cannot be used as a source", src.Target)
 		}
 	}
 	return nil
