@@ -41,27 +41,30 @@ func printErr(msg string, err error) {
 	fmt.Printf("%v\n", err)
 
 	if we.Path != "" {
-		fmt.Printf("  Artifact at \033[1;33m%s\033[0m\n", we.Path)
+		fmt.Printf("  Affected path at:   \033[1;33m%s\033[0m\n", we.Path)
 	}
 
 	switch {
 	case we.Pos != nil:
 		pos := we.Pos
-		fmt.Printf("  Failing target at \033[1;33m%s:%d:%d\033[0m\n", pos.Path, pos.Frame.Pos.Line, pos.Frame.Pos.Col)
+		fmt.Printf("  Failing target at:  \033[1;33m%s:%d:%d\033[0m\n", pos.Path, pos.Frame.Pos.Line, pos.Frame.Pos.Col)
 	case we.Target != nil:
 		if pos := we.Target.DefinedAt(); pos != nil {
-			fmt.Printf("  Failing target at \033[1;33m%s:%d:%d\033[0m\n", pos.Path, pos.Frame.Pos.Line, pos.Frame.Pos.Col)
+			fmt.Printf("  Failing target at:  \033[1;33m%s:%d:%d\033[0m\n", pos.Path, pos.Frame.Pos.Line, pos.Frame.Pos.Col)
 		}
 	}
 	if we.ActionTarget != nil {
 		if gt, ok := we.ActionTarget.(vts.GlobalTarget); ok {
-			fmt.Printf("  Failed by %s target: \033[1;33m%s\033[0m\n", gt.TargetType(), gt.GlobalPath())
+			fmt.Printf("  Failed by %s:\n    \033[1;35m%s\033[0m\n", gt.TargetType(), gt.GlobalPath())
 		}
 		if pos := we.ActionTarget.DefinedAt(); pos != nil {
-			fmt.Printf("    Defined at \033[1;33m%s:%d:%d\033[0m\n", pos.Path, pos.Frame.Pos.Line, pos.Frame.Pos.Col)
+			fmt.Printf("    Defined at \033[1;35m%s:%d:%d\033[0m\n", pos.Path, pos.Frame.Pos.Line, pos.Frame.Pos.Col)
 		}
 	}
 
+	if len(we.TargetChain) > 0 {
+		fmt.Println()
+	}
 	for _, target := range we.TargetChain {
 		if pos := target.DefinedAt(); pos != nil {
 			fmt.Printf("  Parent %s target at \033[1;33m%s:%d:%d\033[0m\n", target.TargetType(), pos.Path, pos.Frame.Pos.Line, pos.Frame.Pos.Col)
