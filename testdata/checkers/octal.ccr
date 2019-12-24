@@ -1,0 +1,27 @@
+resource(
+  name    = "good_octal",
+  parent  = "common://resources:virtual",
+  details = [
+    attr(parent = "common://attrs:mode", value = "0771"),
+  ],
+)
+
+resource(
+  name   = "good_octal_with_helper",
+  parent = "common://resources:virtual",
+  mode   = "0771",
+)
+
+resource(
+  name    = "invalid_octal",
+  parent  = "common://resources:virtual",
+  details = [
+    attr(parent = "common://attrs:mode", value = "0871"),
+  ],
+)
+
+resource(
+  name   = "invalid_octal_with_helper",
+  parent = "common://resources:virtual",
+  mode   = "0871",
+)

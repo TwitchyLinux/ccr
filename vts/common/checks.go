@@ -39,3 +39,10 @@ var DebugFailingComponentChecker = &vts.Checker{
 	Kind:   vts.ChkKindEachComponent,
 	Runner: runners.FailingComponentChecker(),
 }
+
+var OctalStringChecker = &vts.Checker{
+	Path:   "common://checks:octal_string",
+	Name:   "octal_string",
+	Kind:   vts.ChkKindEachAttr,
+	Runner: runners.OctalCheckValid(),
+}

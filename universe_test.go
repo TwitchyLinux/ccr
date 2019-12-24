@@ -238,6 +238,28 @@ func TestUniverseCheck(t *testing.T) {
 			targets: []vts.TargetRef{{Path: "//file_resource:not_exist"}},
 			err:     "stat testdata/checkers/base/missing.json: no such file or directory",
 		},
+		{
+			name:    "good_octal",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//octal:good_octal"}},
+		},
+		{
+			name:    "good_octal_with_helper",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//octal:good_octal_with_helper"}},
+		},
+		{
+			name:    "invalid_octal",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//octal:invalid_octal"}},
+			err:     "invalid mode: char '8' is not a valid octal character",
+		},
+		{
+			name:    "invalid_octal_with_helper",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//octal:invalid_octal_with_helper"}},
+			err:     "invalid mode: char '8' is not a valid octal character",
+		},
 	}
 
 	for _, tc := range tcs {

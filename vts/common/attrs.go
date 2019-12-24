@@ -22,6 +22,19 @@ var PathClass = &vts.AttrClass{
 	},
 }
 
+// ModeClass is the class for an octal string representing the mode
+// of a file
+var ModeClass = &vts.AttrClass{
+	Path: "common://attrs:mode",
+	Name: "mode",
+	Checks: []vts.TargetRef{
+		{Target: &vts.Checker{
+			Kind:   vts.ChkKindEachAttr,
+			Runner: runners.OctalCheckValid(),
+		}},
+	},
+}
+
 // archDir contains targets in common://attrs.
 var archDir = map[string]vts.Target{
 	"arch": archClass,

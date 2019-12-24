@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/twitchylinux/ccr/vts"
@@ -83,6 +84,48 @@ func (e *enumValueRunner) Run(attr *vts.Attr, opts *vts.RunnerEnv) error {
 	}
 	if _, ok := e.allowedValues[v]; !ok {
 		return fmt.Errorf("invalid value: %q", v)
+	}
+	return nil
+}
+
+// OctalCheckValid returns a runner that can check attrs
+// are valid octal strings.
+func OctalCheckValid() *modeValidRunner {
+	return &modeValidRunner{}
+}
+
+type modeValidRunner struct{}
+
+func (*modeValidRunner) Kind() vts.CheckerKind { return vts.ChkKindEachAttr }
+
+func (*modeValidRunner) String() string { return "attr.octal_valid" }
+
+func (*modeValidRunner) Freeze() {}
+
+func (*modeValidRunner) Truth() starlark.Bool { return true }
+
+func (*modeValidRunner) Type() string { return "runner" }
+
+func (t *modeValidRunner) Hash() (uint32, error) {
+	h := sha256.Sum256([]byte(fmt.Sprintf("%p", t)))
+	return uint32(uint32(h[0]) + uint32(h[1])<<8 + uint32(h[2])<<16 + uint32(h[3])<<24), nil
+}
+
+func (*modeValidRunner) Run(attr *vts.Attr, opts *vts.RunnerEnv) error {
+	mode := attr.Value.String()
+	if s, ok := attr.Value.(starlark.String); ok {
+		mode = string(s)
+	}
+	if mode == "" {
+		return errors.New("mode was empty")
+	}
+	for i := range mode {
+		if !strings.ContainsAny(string(mode[i]), "01234567") {
+			return fmt.Errorf("invalid mode: char %q is not a valid octal character", mode[i])
+		}
+	}
+	if _, err := strconv.ParseInt(mode, 8, 64); err != nil {
+		return err
 	}
 	return nil
 }
