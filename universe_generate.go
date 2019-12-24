@@ -1,7 +1,6 @@
 package ccr
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/twitchylinux/ccr/vts"
@@ -16,15 +15,13 @@ type GenerateConfig struct{}
 // system based on those rules.
 func (u *Universe) Generate(conf GenerateConfig, t vts.TargetRef, basePath string) error {
 	if !u.resolved {
-		return errors.New("universe must be resolved first")
+		return ErrNotBuilt
 	}
-	var (
-		opts = vts.RunnerEnv{
-			Dir: basePath,
-			FS:  osfs.New(basePath),
-		}
-		target vts.Target
-	)
+	opts := vts.RunnerEnv{
+		Dir: basePath,
+		FS:  osfs.New(basePath),
+	}
+	var target vts.Target
 
 	if t.Target == nil {
 		var ok bool
@@ -77,7 +74,10 @@ func (u *Universe) generateTarget(s generationState, t vts.Target) error {
 	// it hasn't already been seen, which would symbolize a circular dependency.
 	if s.isGeneratingInputs {
 		if _, alreadyDep := s.inputDep[t]; alreadyDep {
-			return fmt.Errorf("circular dependency on %q from %v", t.(vts.GlobalTarget).GlobalPath(), s.rootTarget)
+			if gt, ok := s.rootTarget.(vts.GlobalTarget); ok {
+				return fmt.Errorf("circular dependency at %q from %q", t.(vts.GlobalTarget).GlobalPath(), gt.GlobalPath())
+			}
+			return fmt.Errorf("circular dependency at %q from %v", t.(vts.GlobalTarget).GlobalPath(), s.rootTarget)
 		}
 		s.inputDep[t] = struct{}{}
 	}

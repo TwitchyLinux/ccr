@@ -12,13 +12,6 @@ var JSONResourceChecker = &vts.Checker{
 	Runner: runners.JSONCheckValid(),
 }
 
-var BinutilBinComponentChecker = &vts.Checker{
-	Path:   "common://checks/executable:binutil_bin",
-	Name:   "binutil_bin",
-	Kind:   vts.ChkKindEachComponent,
-	Runner: runners.BinutilCheckComponent(),
-}
-
 var BinaryResourceChecker = &vts.Checker{
 	Path:   "common://checks/executable:binary",
 	Name:   "binary",
@@ -38,4 +31,11 @@ var NoopComponentChecker = &vts.Checker{
 	Name:   "noop",
 	Kind:   vts.ChkKindEachComponent,
 	Runner: runners.NoopCheckComponent(),
+}
+
+var DebugFailingComponentChecker = &vts.Checker{
+	Path:   "common://checks:always_fail",
+	Name:   "always_fail",
+	Kind:   vts.ChkKindEachComponent,
+	Runner: runners.FailingComponentChecker(),
 }

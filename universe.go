@@ -10,6 +10,8 @@ import (
 	"go.starlark.net/starlark"
 )
 
+var ErrNotBuilt = errors.New("universe must be built first")
+
 // ErrNotExists is returned if a referenced target could not be found.
 type ErrNotExists string
 
@@ -240,21 +242,21 @@ func (u *Universe) EnumeratedTargets() []vts.GlobalTarget {
 func determinePath(t vts.Target) (string, error) {
 	dt, ok := t.(vts.DetailedTarget)
 	if !ok {
-		return "", fmt.Errorf("no details available on target %T", t)
+		return "", vts.WrapWithTarget(fmt.Errorf("no details available on target %T", t), t)
 	}
 	for _, attr := range dt.Attributes() {
 		if attr.Target == nil {
-			return "", fmt.Errorf("unresolved target reference: %q", attr.Path)
+			return "", vts.WrapWithTarget(fmt.Errorf("unresolved target reference: %q", attr.Path), t)
 		}
 		a := attr.Target.(*vts.Attr)
 		if a.Parent.Target == nil {
-			return "", fmt.Errorf("unresolved target reference: %q", a.Parent.Path)
+			return "", vts.WrapWithTarget(fmt.Errorf("unresolved target reference: %q", a.Parent.Path), t)
 		}
 		if class := a.Parent.Target.(*vts.AttrClass); class.GlobalPath() == common.PathClass.Path {
 			if s, ok := a.Value.(starlark.String); ok {
 				return string(s), nil
 			}
-			return "", fmt.Errorf("bad type for path: want string, got %T", a.Value)
+			return "", vts.WrapWithTarget(fmt.Errorf("bad type for path: want string, got %T", a.Value), t)
 		}
 	}
 

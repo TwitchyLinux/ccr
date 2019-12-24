@@ -37,9 +37,9 @@ var commonTargets = map[string]vts.Target{
 	"common://resources/accounts:user":  UserResourceClass,
 	"common://resources/accounts:group": GroupResourceClass,
 
-	"common://checks:noop":                   NoopComponentChecker,
-	"common://checks:file_present":           FilePresentChecker,
-	"common://checks/formats:json_valid":     JSONResourceChecker,
-	"common://checks/executable:binary":      BinaryResourceChecker,
-	"common://checks/executable:binutil_bin": BinutilBinComponentChecker,
+	"common://checks:noop":               NoopComponentChecker,
+	"common://checks:file_present":       FilePresentChecker,
+	"common://checks/formats:json_valid": JSONResourceChecker,
+	"common://checks/executable:binary":  BinaryResourceChecker,
+	"common://checks:always_fail":        DebugFailingComponentChecker,
 }

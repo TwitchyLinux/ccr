@@ -62,6 +62,25 @@ func TestDirResolver(t *testing.T) {
 	}
 }
 
+func TestUniverseMustBuildFirst(t *testing.T) {
+	uv := Universe{
+		fqTargets:      map[string]vts.GlobalTarget{},
+		logger:         &silentOpTrack{},
+		classedTargets: map[vts.Target][]vts.GlobalTarget{},
+	}
+
+	t.Run("check", func(t *testing.T) {
+		if err := uv.Check([]vts.TargetRef{{Path: "//root:root_thing"}}, "wut"); err != ErrNotBuilt {
+			t.Errorf("universe.Check(%q) failed: %v", "//root:root_thing", err)
+		}
+	})
+	t.Run("generate", func(t *testing.T) {
+		if err := uv.Generate(GenerateConfig{}, vts.TargetRef{Path: "//root:root_thing"}, "wut"); err != ErrNotBuilt {
+			t.Errorf("universe.Generate(%q) failed: %v", "//root:root_thing", err)
+		}
+	})
+}
+
 func TestUniverseBuild(t *testing.T) {
 	uv := Universe{
 		fqTargets:      map[string]vts.GlobalTarget{},
@@ -191,6 +210,12 @@ func TestUniverseCheck(t *testing.T) {
 			targets: []vts.TargetRef{{Path: "//component:ls"}},
 		},
 		{
+			name:    "component_checker_fail",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//component:should_fail"}},
+			err:     "debug: returning error",
+		},
+		{
 			name:    "file_source_no_path",
 			base:    "testdata/checkers/base",
 			targets: []vts.TargetRef{{Path: "//path_attr:no_path"}},
@@ -262,6 +287,18 @@ Class: //basic:whelp
 -//basic:swaggins
 
 `,
+		},
+		{
+			name:   "circular_component",
+			target: "//circular:circ_component",
+			config: GenerateConfig{},
+			err:    "circular dependency at \"//circular:gen\" from \"//circular:gen\"",
+		},
+		{
+			name:   "circular_resource",
+			target: "//circular:circ_resource",
+			config: GenerateConfig{},
+			err:    "circular dependency at \"//circular:gen2\" from \"//circular:gen2\"",
 		},
 	}
 

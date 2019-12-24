@@ -1,7 +1,6 @@
 package ccr
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/twitchylinux/ccr/vts"
@@ -14,7 +13,7 @@ type targetSet map[vts.Target]struct{}
 // in basePath.
 func (u *Universe) Check(targets []vts.TargetRef, basePath string) error {
 	if !u.resolved {
-		return errors.New("universe must be resolved first")
+		return ErrNotBuilt
 	}
 
 	var (

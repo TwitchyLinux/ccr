@@ -1,0 +1,55 @@
+component(
+  name = "circ_component",
+  deps = [
+    ":c1",
+  ],
+)
+
+resource(
+  name   = "c1",
+  parent = "common://resources:virtual",
+  source = ":gen",
+)
+
+generator(
+  name   = "gen",
+  inputs = [
+    ":circ_component",
+  ],
+)
+
+resource(
+  name   = "circ_resource",
+  parent = "common://resources:virtual",
+  deps   = [
+    ":c2",
+  ],
+)
+
+component(
+  name = "c2",
+  deps = [
+    ":r2",
+  ],
+)
+
+resource(
+  name   = "r2",
+  parent = "common://resources:virtual",
+  deps   = [
+    ":c3",
+  ],
+)
+
+resource(
+  name   = "c3",
+  parent = "common://resources:virtual",
+  source = ":gen2",
+)
+
+generator(
+  name   = "gen2",
+  inputs = [
+    ":r2",
+  ],
+)

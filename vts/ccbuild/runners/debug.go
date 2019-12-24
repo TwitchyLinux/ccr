@@ -2,12 +2,40 @@ package runners
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/twitchylinux/ccr/vts"
 	"go.starlark.net/starlark"
 )
+
+// BinutilCheckComponent returns a runner that runs basic sanity checks over
+// a component representing a cli binary.
+func FailingComponentChecker() *failingCompChecker {
+	return &failingCompChecker{}
+}
+
+type failingCompChecker struct{}
+
+func (*failingCompChecker) Kind() vts.CheckerKind { return vts.ChkKindEachComponent }
+
+func (*failingCompChecker) String() string { return "debug.failing_component_checker" }
+
+func (*failingCompChecker) Freeze() {}
+
+func (*failingCompChecker) Truth() starlark.Bool { return true }
+
+func (*failingCompChecker) Type() string { return "runner" }
+
+func (t *failingCompChecker) Hash() (uint32, error) {
+	h := sha256.Sum256([]byte(fmt.Sprintf("%p", t)))
+	return uint32(uint32(h[0]) + uint32(h[1])<<8 + uint32(h[2])<<16 + uint32(h[3])<<24), nil
+}
+
+func (r *failingCompChecker) Run(c *vts.Component, opts *vts.RunnerEnv) error {
+	return errors.New("debug: returning error")
+}
 
 // GenerateDebugManifest returns a generator runner that writes information
 // about its inputs to a file.

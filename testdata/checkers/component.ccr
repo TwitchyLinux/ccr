@@ -8,6 +8,13 @@ component(
   ],
 )
 
+component(
+  name = "should_fail",
+  chks = [
+    "common://checks:always_fail",
+  ],
+)
+
 resource(
   name   = "ls_bin",
   parent = "common://resources:binary",

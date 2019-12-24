@@ -129,5 +129,26 @@ func (t *Checker) RunCheckedTarget(tgt CheckedTarget, opts *RunnerEnv) error {
 	if t.Kind != ChkKindEachComponent {
 		return fmt.Errorf("RunCheckedTarget() called on non-component checker %v", t.Kind)
 	}
-	return nil
+
+	switch t.Kind {
+	case ChkKindEachComponent:
+		c, ok := tgt.(*Component)
+		if !ok {
+			return WrappedErr{
+				Target:       tgt,
+				ActionTarget: t,
+				Err:          fmt.Errorf("cannot check direct target %T with %v", tgt, t.Kind),
+			}
+		}
+		if err := t.Runner.(eachComponentRunner).Run(c, opts); err != nil {
+			return WrapWithTarget(err, tgt)
+		}
+		return nil
+	}
+
+	return WrappedErr{
+		Target:       tgt,
+		ActionTarget: t,
+		Err:          fmt.Errorf("checking direct target with %v not supported", t.Kind),
+	}
 }
