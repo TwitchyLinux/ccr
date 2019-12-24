@@ -211,7 +211,7 @@ func TestUniverseCheck(t *testing.T) {
 			name:    "file_not_exist",
 			base:    "testdata/checkers/base",
 			targets: []vts.TargetRef{{Path: "//file_resource:not_exist"}},
-			err:     "no such file: missing.json",
+			err:     "stat testdata/checkers/base/missing.json: no such file or directory",
 		},
 	}
 

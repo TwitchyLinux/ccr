@@ -3,7 +3,6 @@ package runners
 import (
 	"crypto/sha256"
 	"fmt"
-	"os"
 
 	"github.com/twitchylinux/ccr/vts"
 	"go.starlark.net/starlark"
@@ -65,13 +64,10 @@ func (*fileCheckPresent) Run(r *vts.Resource, opts *vts.RunnerEnv) error {
 	}
 	stat, err := opts.FS.Stat(path)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return fmt.Errorf("no such file: %s", path)
-		}
-		return err
+		return vts.WrapWithPath(err, path)
 	}
 	if stat.IsDir() {
-		return fmt.Errorf("resource %q is a directory", path)
+		return vts.WrapWithPath(fmt.Errorf("resource %q is a directory", path), path)
 	}
 	return nil
 }

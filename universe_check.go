@@ -50,7 +50,7 @@ func (u *Universe) checkTarget(t vts.Target, opts *vts.RunnerEnv, checked target
 	if deps, hasDeps := t.(vts.DepTarget); hasDeps {
 		for _, dep := range deps.Dependencies() {
 			if err := u.checkTarget(dep.Target, opts, checked); err != nil {
-				return err
+				return vts.WrapWithTarget(err, t)
 			}
 		}
 	}
@@ -58,7 +58,7 @@ func (u *Universe) checkTarget(t vts.Target, opts *vts.RunnerEnv, checked target
 	if deets, hasDetails := t.(vts.DetailedTarget); hasDetails {
 		for _, attr := range deets.Attributes() {
 			if err := u.checkTarget(attr.Target, opts, checked); err != nil {
-				return err
+				return vts.WrapWithTarget(err, t)
 			}
 		}
 	}
@@ -75,7 +75,7 @@ func (u *Universe) checkTarget(t vts.Target, opts *vts.RunnerEnv, checked target
 				return u.logger.Error(MsgFailedCheck, vts.WrapWithTarget(err, t))
 			}
 		default:
-			return fmt.Errorf("cannot check against class target %T", class.Class().Target)
+			return vts.WrapWithTarget(fmt.Errorf("cannot check against class target %T", class.Class().Target), t)
 		}
 	}
 

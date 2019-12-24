@@ -78,22 +78,22 @@ func (*binaryValidRunner) Run(resource *vts.Resource, opts *vts.RunnerEnv) error
 
 	// Sanity checks.
 	if binData.Data != elf.ELFDATA2LSB { // TODO: Parameterize by config.
-		return fmt.Errorf("elf data is not %v, got %v", elf.ELFDATA2LSB, binData.Data)
+		return vts.WrapWithPath(fmt.Errorf("elf data is not %v, got %v", elf.ELFDATA2LSB, binData.Data), path)
 	}
 	if binData.Version != elf.EV_CURRENT {
-		return fmt.Errorf("elf version is not %v, got %v", elf.EV_CURRENT, binData.Version)
+		return vts.WrapWithPath(fmt.Errorf("elf version is not %v, got %v", elf.EV_CURRENT, binData.Version), path)
 	}
 	if binData.Class != elf.ELFCLASS32 && binData.Class != elf.ELFCLASS64 {
-		return fmt.Errorf("elf class is not 32/64, got %v", binData.Class)
+		return vts.WrapWithPath(fmt.Errorf("elf class is not 32/64, got %v", binData.Class), path)
 	}
 	if binData.OSABI != elf.ELFOSABI_NONE && binData.OSABI != elf.ELFOSABI_LINUX {
-		return fmt.Errorf("elf ABI is non-linux %v", binData.OSABI)
+		return vts.WrapWithPath(fmt.Errorf("elf ABI is non-linux %v", binData.OSABI), path)
 	}
 	if binData.Type != elf.ET_EXEC {
-		return fmt.Errorf("elf type is non-exec %v", binData.Type)
+		return vts.WrapWithPath(fmt.Errorf("elf type is non-exec %v", binData.Type), path)
 	}
 	if binData.Machine != elf.EM_X86_64 && binData.Machine != elf.EM_386 { // TODO: Parameterize by config.
-		return fmt.Errorf("elf arch is %v", binData.Machine)
+		return vts.WrapWithPath(fmt.Errorf("elf arch is %v", binData.Machine), path)
 	}
 
 	// for _, section := range binData.Sections {

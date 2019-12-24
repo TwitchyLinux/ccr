@@ -37,7 +37,7 @@ func (*debugManifestGenerator) Run(g *vts.Generator, inputs *vts.InputSet, opts 
 	}
 	f, err := opts.FS.OpenFile(p, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 	if err != nil {
-		return err
+		return vts.WrapWithPath(err, p)
 	}
 	defer f.Close()
 
