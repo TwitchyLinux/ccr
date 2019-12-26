@@ -310,6 +310,7 @@ func TestUniverseGenerate(t *testing.T) {
 		target       string
 		config       GenerateConfig
 		testManifest string
+		hasFiles     map[string]os.FileMode
 		err          string
 	}{
 		{
@@ -337,6 +338,20 @@ Class: //basic:whelp
 			target: "//circular:circ_resource",
 			config: GenerateConfig{},
 			err:    "circular dependency: //circular:r2 -> //circular:c3 -> //circular:gen2",
+		},
+		{
+			name:         "file",
+			target:       "//mk_file:test_file_puesdo",
+			config:       GenerateConfig{},
+			testManifest: "Fake contents!!\n",
+		},
+		{
+			name:   "file_with_mode",
+			target: "//mk_file:fake_file_with_mode",
+			config: GenerateConfig{},
+			hasFiles: map[string]os.FileMode{
+				"dir/dat_file.txt": os.FileMode(0600),
+			},
 		},
 	}
 
@@ -369,13 +384,32 @@ Class: //basic:whelp
 				t.Errorf("universe.Generate(%q) returned %v, want %q", tc.target, err, tc.err)
 			}
 
-			if tc.testManifest != "" {
-				man, err := ioutil.ReadFile(filepath.Join(td, "test_manifest.txt"))
+			if mfPath := filepath.Join(td, "test_manifest.txt"); tc.testManifest != "" {
+				st, err := os.Stat(mfPath)
+				if err != nil {
+					t.Errorf("Failed to stat test manifest: %v", err)
+				}
+				man, err := ioutil.ReadFile(mfPath)
 				if err != nil {
 					t.Errorf("Failed to read test manifest: %v", err)
 				}
 				if diff := cmp.Diff(strings.Split(tc.testManifest, "\n"), strings.Split(string(man), "\n")); diff != "" {
 					t.Errorf("Manifests contents do not match test (+got, -want): \n%s", diff)
+				}
+
+				if got, want := st.Mode()&os.ModePerm, os.FileMode(0644); got != want {
+					t.Errorf("test manifest mode is %#o, want %#o", got, want)
+				}
+			}
+
+			for p, m := range tc.hasFiles {
+				st, err := os.Stat(filepath.Join(td, p))
+				if err != nil {
+					t.Error(err)
+					continue
+				}
+				if st.Mode() != m {
+					t.Errorf("file %q has mode %#o, want %#o", p, st.Mode(), m)
 				}
 			}
 		})

@@ -1,0 +1,21 @@
+component(
+  name = "test_file_puesdo",
+  deps = [
+    ":fake_manifest",
+  ],
+)
+
+resource(
+  name   = "fake_manifest",
+  parent = "common://resources:file",
+  path   = "test_manifest.txt",
+  source = file('fake.txt'),
+)
+
+resource(
+  name   = "fake_file_with_mode",
+  parent = "common://resources:file",
+  path   = "/dir/dat_file.txt",
+  mode   = "0600",
+  source = file('fake.txt'),
+)

@@ -2,6 +2,9 @@ package ccr
 
 import (
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 
 	"github.com/twitchylinux/ccr/vts"
 	"gopkg.in/src-d/go-billy.v4/osfs"
@@ -207,6 +210,12 @@ func (u *Universe) generateResourceUsingSource(s generationState, resource *vts.
 	}
 
 	switch src := source.(type) {
+	case *vts.Puesdo:
+		if src.Kind != vts.FileRef {
+			return fmt.Errorf("cannot generate using puesdo source %v", src.Kind)
+		}
+		return u.generateFileSource(s, resource, src)
+
 	case *vts.Generator:
 		info.ClassedResources = map[*vts.ResourceClass][]*vts.Resource{}
 		for i, inp := range src.Inputs {
@@ -227,4 +236,53 @@ func (u *Universe) generateResourceUsingSource(s generationState, resource *vts.
 	}
 
 	return fmt.Errorf("cannot generate using source %T for resource %v", source, resource)
+}
+
+func fileSrcInfo(resource *vts.Resource, src *vts.Puesdo) (string, string, os.FileMode, error) {
+	outFilePath, err := determinePath(resource)
+	if err != nil {
+		return "", "", 0, err
+	}
+	srcFilePath := filepath.Join(filepath.Dir(src.ContractPath), src.Path)
+	mode, err := determineMode(resource)
+	switch {
+	case err == errNoAttr:
+		st, err := os.Stat(srcFilePath)
+		if err != nil {
+			return "", "", 0, vts.WrapWithPath(err, srcFilePath)
+		}
+		mode = st.Mode() & os.ModePerm
+	case err != nil:
+		return "", "", 0, err
+	}
+	return srcFilePath, outFilePath, mode, nil
+}
+
+func (u *Universe) generateFileSource(s generationState, resource *vts.Resource, src *vts.Puesdo) error {
+	srcPath, outPath, mode, err := fileSrcInfo(resource, src)
+	if err != nil {
+		return err
+	}
+
+	r, err := os.OpenFile(srcPath, os.O_RDONLY, 0644)
+	if err != nil {
+		return vts.WrapWithPath(err, srcPath)
+	}
+	defer r.Close()
+
+	if dir, _ := filepath.Split(outPath); dir != "" && dir != "/" {
+		if err := s.runnerEnv.FS.MkdirAll(dir, 0755); err != nil {
+			return vts.WrapWithPath(err, dir)
+		}
+	}
+
+	w, err := s.runnerEnv.FS.OpenFile(outPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
+	if err != nil {
+		return vts.WrapWithPath(err, outPath)
+	}
+	defer w.Close()
+	if _, err := io.Copy(w, r); err != nil {
+		return vts.WrapWithPath(err, outPath)
+	}
+	return nil
 }
