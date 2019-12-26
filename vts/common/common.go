@@ -24,6 +24,7 @@ func Resolve(path string) (vts.Target, error) {
 var commonTargets = map[string]vts.Target{
 	"common://attrs:path":       PathClass,
 	"common://attrs:mode":       ModeClass,
+	"common://attrs:bool":       BoolClass,
 	"common://attrs:arch":       archClass,
 	"common://attrs/arch:x86":   archDir["x86"],
 	"common://attrs/arch:amd64": archDir["amd64"],
@@ -43,5 +44,6 @@ var commonTargets = map[string]vts.Target{
 	"common://checks/formats:json_valid": JSONResourceChecker,
 	"common://checks/executable:binary":  BinaryResourceChecker,
 	"common://checks:octal_string":       OctalStringChecker,
+	"common://checks:boolean":            BoolChecker,
 	"common://checks:always_fail":        DebugFailingComponentChecker,
 }

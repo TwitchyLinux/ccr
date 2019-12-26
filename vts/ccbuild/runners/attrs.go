@@ -129,3 +129,33 @@ func (*modeValidRunner) Run(attr *vts.Attr, opts *vts.RunnerEnv) error {
 	}
 	return nil
 }
+
+// BooleanCheckValid returns a runner that can check attrs
+// are valid booleans.
+func BooleanCheckValid() *boolCheckValid {
+	return &boolCheckValid{}
+}
+
+type boolCheckValid struct{}
+
+func (*boolCheckValid) Kind() vts.CheckerKind { return vts.ChkKindEachAttr }
+
+func (*boolCheckValid) String() string { return "attr.bool_valid" }
+
+func (*boolCheckValid) Freeze() {}
+
+func (*boolCheckValid) Truth() starlark.Bool { return true }
+
+func (*boolCheckValid) Type() string { return "runner" }
+
+func (t *boolCheckValid) Hash() (uint32, error) {
+	h := sha256.Sum256([]byte(fmt.Sprintf("%p", t)))
+	return uint32(uint32(h[0]) + uint32(h[1])<<8 + uint32(h[2])<<16 + uint32(h[3])<<24), nil
+}
+
+func (*boolCheckValid) Run(attr *vts.Attr, opts *vts.RunnerEnv) error {
+	if _, isBool := attr.Value.(starlark.Bool); !isBool {
+		return fmt.Errorf("attr is not a boolean: got type %T", attr.Value)
+	}
+	return nil
+}

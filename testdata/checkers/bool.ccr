@@ -1,0 +1,23 @@
+resource(
+  name = "false",
+  parent = "common://resources:virtual",
+  details = [
+    attr(parent = "common://attrs:bool", value = False),
+  ],
+)
+
+resource(
+  name = "true",
+  parent = "common://resources:virtual",
+  details = [
+    attr(parent = "common://attrs:bool", value = True),
+  ],
+)
+
+resource(
+  name = "invalid",
+  parent = "common://resources:virtual",
+  details = [
+    attr(parent = "common://attrs:bool", value = "false"),
+  ],
+)

@@ -260,6 +260,22 @@ func TestUniverseCheck(t *testing.T) {
 			targets: []vts.TargetRef{{Path: "//octal:invalid_octal_with_helper"}},
 			err:     "invalid mode: char '8' is not a valid octal character",
 		},
+		{
+			name:    "bool_false",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//bool:false"}},
+		},
+		{
+			name:    "bool_true",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//bool:true"}},
+		},
+		{
+			name:    "bool_invalid",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//bool:invalid"}},
+			err:     "attr is not a boolean: got type starlark.String",
+		},
 	}
 
 	for _, tc := range tcs {

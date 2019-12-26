@@ -46,3 +46,10 @@ var OctalStringChecker = &vts.Checker{
 	Kind:   vts.ChkKindEachAttr,
 	Runner: runners.OctalCheckValid(),
 }
+
+var BoolChecker = &vts.Checker{
+	Path:   "common://checks:boolean",
+	Name:   "boolean",
+	Kind:   vts.ChkKindEachAttr,
+	Runner: runners.BooleanCheckValid(),
+}

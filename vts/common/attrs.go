@@ -35,6 +35,18 @@ var ModeClass = &vts.AttrClass{
 	},
 }
 
+// ModeClass is the class for a boolean.
+var BoolClass = &vts.AttrClass{
+	Path: "common://attrs:bool",
+	Name: "bool",
+	Checks: []vts.TargetRef{
+		{Target: &vts.Checker{
+			Kind:   vts.ChkKindEachAttr,
+			Runner: runners.BooleanCheckValid(),
+		}},
+	},
+}
+
 // archDir contains targets in common://attrs.
 var archDir = map[string]vts.Target{
 	"arch": archClass,
