@@ -7,6 +7,17 @@ import (
 	"gopkg.in/src-d/go-billy.v4/osfs"
 )
 
+// CircularDependencyError is returned if a circular dependency creates
+// a situation where generation is not possible.
+type CircularDependencyError struct {
+	msg  string
+	Deps []vts.Target
+}
+
+func (c CircularDependencyError) Error() string {
+	return c.msg
+}
+
 // GenerateConfig describes parameters to use when generating against
 // a universe.
 type GenerateConfig struct{}
@@ -36,6 +47,7 @@ func (u *Universe) Generate(conf GenerateConfig, t vts.TargetRef, basePath strin
 		conf:          &conf,
 		runnerEnv:     &opts,
 		haveGenerated: make(targetSet, 4096),
+		targetChain:   make([]vts.Target, 0, 64),
 		rootTarget:    target,
 	}, target); err != nil {
 		return err
@@ -63,10 +75,42 @@ type generationState struct {
 	// inputDep exhaustively enumerates targets which are part of a generator
 	// input which is currently being examined.
 	inputDep targetSet
+	// targetChain enumerates targets from the root to the current target.
+	targetChain []vts.Target
 	// rootTarget represents the topmost target for which dependencies and inputs
 	// are currently being resolved. This will be the height target in the tree
 	// which has inputs defined, or the root node.
 	rootTarget vts.Target
+}
+
+func (s generationState) makeCircularDepErr(t vts.Target) error {
+	rootIdx := 0
+	for i := 0; i < len(s.targetChain); i++ {
+		if s.targetChain[i] == s.rootTarget {
+			rootIdx = i
+			break
+		}
+	}
+
+	depChain := s.targetChain[rootIdx:]
+	msg := "circular dependency: "
+	for _, t := range depChain {
+		if gt, ok := t.(vts.GlobalTarget); ok {
+			msg += gt.GlobalPath() + " -> "
+		} else {
+			msg += fmt.Sprintf("anon<%s> -> ", t.TargetType())
+		}
+	}
+	if gt, ok := t.(vts.GlobalTarget); ok {
+		msg += gt.GlobalPath()
+	} else {
+		msg += fmt.Sprintf("anon<%s>", t.TargetType())
+	}
+
+	return CircularDependencyError{
+		msg:  msg,
+		Deps: depChain,
+	}
 }
 
 func (u *Universe) generateTarget(s generationState, t vts.Target) error {
@@ -74,16 +118,18 @@ func (u *Universe) generateTarget(s generationState, t vts.Target) error {
 	// it hasn't already been seen, which would symbolize a circular dependency.
 	if s.isGeneratingInputs {
 		if _, alreadyDep := s.inputDep[t]; alreadyDep {
-			if gt, ok := s.rootTarget.(vts.GlobalTarget); ok {
-				return fmt.Errorf("circular dependency at %q from %q", t.(vts.GlobalTarget).GlobalPath(), gt.GlobalPath())
-			}
-			return fmt.Errorf("circular dependency at %q from %v", t.(vts.GlobalTarget).GlobalPath(), s.rootTarget)
+			return s.makeCircularDepErr(t)
 		}
 		s.inputDep[t] = struct{}{}
 	}
 	if _, alreadyGenerated := s.haveGenerated[t]; alreadyGenerated {
 		return nil
 	}
+	// Update targetChain.
+	s.targetChain = append(s.targetChain, t)
+	defer func() {
+		s.targetChain = s.targetChain[:len(s.targetChain)-1]
+	}()
 
 	// Inputs cannot have circular dependencies, so we evaluate them first and
 	// in a different mode to detect the circular dependencies.

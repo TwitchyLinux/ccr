@@ -314,13 +314,13 @@ Class: //basic:whelp
 			name:   "circular_component",
 			target: "//circular:circ_component",
 			config: GenerateConfig{},
-			err:    "circular dependency at \"//circular:gen\" from \"//circular:gen\"",
+			err:    "circular dependency: //circular:circ_component -> //circular:c1 -> //circular:gen",
 		},
 		{
 			name:   "circular_resource",
 			target: "//circular:circ_resource",
 			config: GenerateConfig{},
-			err:    "circular dependency at \"//circular:gen2\" from \"//circular:gen2\"",
+			err:    "circular dependency: //circular:r2 -> //circular:c3 -> //circular:gen2",
 		},
 	}
 
