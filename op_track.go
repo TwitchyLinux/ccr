@@ -10,9 +10,10 @@ type msgCategory string
 
 // Common message categories.
 const (
-	MsgBadFind     msgCategory = "not found"
-	MsgBadRef      msgCategory = "invalid reference"
-	MsgFailedCheck msgCategory = "check failed"
+	MsgBadFind            msgCategory = "not found"
+	MsgBadRef             msgCategory = "invalid reference"
+	MsgFailedCheck        msgCategory = "check failed"
+	MsgFailedPrecondition msgCategory = "failed precondition"
 )
 
 type opTrack interface {

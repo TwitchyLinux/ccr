@@ -38,6 +38,7 @@ func (u *Universe) Generate(conf GenerateConfig, t vts.TargetRef, basePath strin
 		var ok bool
 		target, ok = u.fqTargets[t.Path]
 		if !ok {
+			u.logger.Error(MsgBadFind, ErrNotExists(t.Path))
 			return ErrNotExists(t.Path)
 		}
 	}
@@ -50,6 +51,7 @@ func (u *Universe) Generate(conf GenerateConfig, t vts.TargetRef, basePath strin
 		targetChain:   make([]vts.Target, 0, 64),
 		rootTarget:    target,
 	}, target); err != nil {
+		u.logger.Error(MsgFailedPrecondition, err)
 		return err
 	}
 
@@ -146,7 +148,7 @@ func (u *Universe) generateTarget(s generationState, t vts.Target) error {
 		subState.inputDep[t] = struct{}{}
 		for _, inp := range inputs.NeedInputs() {
 			if err := u.generateTarget(subState, inp.Target); err != nil {
-				return err
+				return vts.WrapWithTarget(err, inp.Target)
 			}
 		}
 	}
@@ -163,7 +165,7 @@ func (u *Universe) generateTarget(s generationState, t vts.Target) error {
 		// fmt.Println(t, u.classedTargets[t.(vts.Target)])
 		for _, classInstance := range u.classedTargets[t] {
 			if err := u.generateTarget(s, classInstance); err != nil {
-				return err
+				return vts.WrapWithTarget(err, classInstance)
 			}
 		}
 	}
@@ -173,7 +175,7 @@ func (u *Universe) generateTarget(s generationState, t vts.Target) error {
 	if deps, hasDeps := t.(vts.DepTarget); hasDeps {
 		for _, dep := range deps.Dependencies() {
 			if err := u.generateTarget(s, dep.Target); err != nil {
-				return err
+				return vts.WrapWithTarget(err, dep.Target)
 			}
 		}
 	}
@@ -183,10 +185,10 @@ func (u *Universe) generateTarget(s generationState, t vts.Target) error {
 		if src := st.Src(); src != nil {
 			// Recurse to make sure all dependencies are resolved.
 			if err := u.generateTarget(s, src.Target); err != nil {
-				return err
+				return vts.WrapWithTarget(err, src.Target)
 			}
 			if err := u.generateResourceUsingSource(s, st.(*vts.Resource), src.Target); err != nil {
-				return err
+				return vts.WrapWithTarget(err, src.Target)
 			}
 		}
 	}
