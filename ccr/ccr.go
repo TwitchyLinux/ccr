@@ -44,6 +44,8 @@ func run() error {
 		return doCoverageCmd()
 	case "check":
 		return doCheckCmd()
+	case "generate":
+		return doGenerateCmd()
 	case "":
 		fmt.Fprintf(os.Stderr, "Error: Expected command \"fmt\", \"lint\", \"check\", or \"generate\".\n")
 		os.Exit(1)
