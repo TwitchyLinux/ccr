@@ -33,6 +33,7 @@ type Universe struct {
 
 	resolved bool
 	logger   opTrack
+	cache    *Cache
 }
 
 func (u *Universe) makeTargetRef(from vts.TargetRef) (vts.TargetRef, error) {
@@ -289,11 +290,12 @@ func determineMode(t vts.Target) (os.FileMode, error) {
 }
 
 // NewUniverse constructs an empty universe.
-func NewUniverse(logger opTrack) *Universe {
+func NewUniverse(logger opTrack, cache *Cache) *Universe {
 	if logger == nil {
 		logger = &consoleOpTrack{}
 	}
 	return &Universe{
+		cache:          cache,
 		allTargets:     make([]vts.GlobalTarget, 0, 4096),
 		fqTargets:      make(map[string]vts.GlobalTarget, 4096),
 		classedTargets: make(map[vts.Target][]vts.GlobalTarget, 2048),
