@@ -56,7 +56,7 @@ func run() error {
 	case "generate":
 		return doGenerateCmd()
 	case "debgen":
-		return goDebGenCmd(flag.Arg(1))
+		return goDebGenCmd(flag.Arg(1), flag.Arg(2))
 	case "":
 		fmt.Fprintf(os.Stderr, "Error: Expected command \"fmt\", \"lint\", \"check\", or \"generate\".\n")
 		os.Exit(1)

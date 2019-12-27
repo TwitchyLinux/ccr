@@ -11,9 +11,6 @@ import (
 )
 
 func DebPackages(cache *ccr.Cache) (*debdep.PackageInfo, error) {
-	if cache == nil {
-		return debdep.Packages(debdep.DefaultResolverConfig, true)
-	}
 	pkgPath := cache.GetDebPkgsPath()
 
 	// Write it out if it doesn't exist.
