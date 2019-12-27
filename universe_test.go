@@ -280,7 +280,7 @@ func TestUniverseCheck(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			uv := NewUniverse(&silentOpTrack{})
+			uv := NewUniverse(&silentOpTrack{}, nil)
 			dr := NewDirResolver("testdata/checkers")
 			findOpts := FindOptions{
 				FallbackResolvers: []CCRResolver{dr.Resolve},
@@ -342,7 +342,7 @@ Class: //basic:whelp
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			uv := NewUniverse(&silentOpTrack{})
+			uv := NewUniverse(&silentOpTrack{}, nil)
 			dr := NewDirResolver("testdata/generators")
 			findOpts := FindOptions{
 				FallbackResolvers: []CCRResolver{dr.Resolve},

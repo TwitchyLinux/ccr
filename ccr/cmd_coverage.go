@@ -10,7 +10,7 @@ import (
 )
 
 func doCoverageCmd() error {
-	uv := ccr.NewUniverse(nil)
+	uv := ccr.NewUniverse(nil, nil)
 
 	dr := ccr.NewDirResolver(*dir)
 	findOpts := ccr.FindOptions{

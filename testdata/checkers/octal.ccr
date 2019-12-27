@@ -2,7 +2,7 @@ resource(
   name    = "good_octal",
   parent  = "common://resources:virtual",
   details = [
-    attr(parent = "common://attrs:mode", value = "0771"),
+    attr(parent = "common://attrs:mode", value = "771"),
   ],
 )
 

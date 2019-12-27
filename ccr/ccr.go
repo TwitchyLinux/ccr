@@ -7,12 +7,15 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/twitchylinux/ccr"
 )
 
 var (
 	inline  = flag.Bool("i", false, "When formatting, update files inline.")
 	dir     = flag.String("contracts-dir", "", "Use the provided directory when reading contracts instead of the working directory.")
 	baseDir = flag.String("base-dir", "", "Use the provided directory as the base directory instead of the working directory.")
+	cache   *ccr.Cache
 )
 
 func main() {
@@ -21,6 +24,12 @@ func main() {
 	if *baseDir == "" {
 		wd, _ := os.Getwd()
 		*baseDir = wd
+	}
+
+	var err error
+	if cache, err = ccr.NewCache(os.Getenv("CCRCACHE")); err != nil {
+		fmt.Fprintf(os.Stderr, "Error initializing cache: %v\n", err)
+		os.Exit(1)
 	}
 
 	if *inline && flag.Arg(0) != "fmt" {
@@ -46,6 +55,8 @@ func run() error {
 		return doCheckCmd()
 	case "generate":
 		return doGenerateCmd()
+	case "debgen":
+		return goDebGenCmd(flag.Arg(1))
 	case "":
 		fmt.Fprintf(os.Stderr, "Error: Expected command \"fmt\", \"lint\", \"check\", or \"generate\".\n")
 		os.Exit(1)
