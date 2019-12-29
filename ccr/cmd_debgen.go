@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive/tar"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"github.com/twitchylinux/ccr/ccr/deb"
 	"github.com/twitchyliquid64/debdep"
 	d2 "github.com/twitchyliquid64/debdep/deb"
+	"github.com/twitchyliquid64/debdep/dpkg"
 )
 
 // debReader returns a reader to the deb package, downloading it
@@ -76,7 +78,23 @@ func goDebGenCmd(mode, pkg string) error {
 		if err != nil {
 			return err
 		}
-		fmt.Println(dr)
+		defer dr.Close()
+		d, err := dpkg.Open(dr)
+		if err != nil {
+			return err
+		}
+
+		for _, f := range d.Files() {
+			switch f.Hdr.Typeflag {
+			case tar.TypeReg:
+				fmt.Printf("File [%#o]: %s\n", f.Hdr.Mode, f.Hdr.Name)
+			case tar.TypeDir:
+				fmt.Printf("Dir  [%#o]: %s\n", f.Hdr.Mode, f.Hdr.Name)
+			case tar.TypeLink, tar.TypeSymlink:
+				fmt.Printf("Link [%#o]: %s -> %s\n", f.Hdr.Mode, f.Hdr.Name, f.Hdr.Linkname)
+			}
+
+		}
 
 		return nil
 	}
