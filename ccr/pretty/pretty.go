@@ -44,6 +44,7 @@ type fmtOpts struct {
 	Context     string
 	fnNested    bool
 	binNested   bool
+	lastFn      syntax.Expr
 }
 
 func (o fmtOpts) AddIndent(i int) fmtOpts {
@@ -53,6 +54,9 @@ func (o fmtOpts) AddIndent(i int) fmtOpts {
 }
 
 func (o fmtOpts) shouldCondense() bool {
+	if expandedFunction(o.lastFn) {
+		return false
+	}
 	return o.binNested && o.fnNested
 }
 
@@ -65,11 +69,22 @@ func (o fmtOpts) LeadIn(b *bytes.Buffer) {
 	}
 }
 
+func expandedFunction(fn syntax.Expr) bool {
+	if id, ok := fn.(*syntax.Ident); ok {
+		switch id.Name {
+		case "deb":
+			return true
+		}
+	}
+	return false
+}
+
 type annotations struct {
 	identWidths map[*syntax.Ident]int
 }
 
 func maybeAnnotateCall(c *syntax.CallExpr, ann *annotations) {
+
 	var maxWidth int
 	for _, arg := range c.Args {
 		b, isBin := arg.(*syntax.BinaryExpr)
@@ -119,6 +134,7 @@ func annotateAST(ast syntax.Node, ann *annotations) error {
 		}
 
 	case *syntax.CallExpr:
+		maybeAnnotateCall(n, ann)
 		for _, arg := range n.Args {
 			if err := annotateAST(arg, ann); err != nil {
 				return err
@@ -126,12 +142,10 @@ func annotateAST(ast syntax.Node, ann *annotations) error {
 		}
 
 	case *syntax.ExprStmt:
-		if c, isCall := n.X.(*syntax.CallExpr); isCall {
-			maybeAnnotateCall(c, ann)
-		}
 		if err := annotateAST(n.X, ann); err != nil {
 			return err
 		}
+
 	case *syntax.File:
 		for _, stmt := range n.Stmts {
 			if err := annotateAST(stmt, ann); err != nil {
@@ -177,7 +191,7 @@ func fmtAST(ast syntax.Node, b *bytes.Buffer, opts fmtOpts) error {
 
 	case *syntax.Ident:
 		b.WriteString(n.Name)
-		if w := opts.annotations.identWidths[n]; w > 0 {
+		if w := opts.annotations.identWidths[n]; w > 0 && !opts.shouldCondense() {
 			b.WriteString(strings.Repeat(" ", w-len(n.Name)))
 		}
 
@@ -223,13 +237,14 @@ func fmtAST(ast syntax.Node, b *bytes.Buffer, opts fmtOpts) error {
 		for i, arg := range n.Args {
 			argOpt := opts.AddIndent(2)
 			argOpt.Context = "arg"
+			argOpt.lastFn = n.Fn
 			argOpt.fnNested = true
 			if err := fmtAST(arg, b, argOpt); err != nil {
 				return err
 			}
-			if !opts.shouldCondense() || i < len(n.Args)-1 {
+			if expandedFunction(n.Fn) || !opts.shouldCondense() || i < len(n.Args)-1 {
 				b.WriteString(",")
-				if opts.shouldCondense() {
+				if opts.shouldCondense() && !expandedFunction(n.Fn) {
 					b.WriteRune(' ')
 				}
 			}
@@ -242,7 +257,12 @@ func fmtAST(ast syntax.Node, b *bytes.Buffer, opts fmtOpts) error {
 			}
 		}
 		if opts.shouldCondense() {
-			b.WriteString(")")
+			if expandedFunction(n.Fn) && len(n.Args) > 0 {
+				b.WriteString("\n" + strings.Repeat(" ", opts.indentLevel))
+				b.WriteString(")")
+			} else {
+				b.WriteString(")")
+			}
 		} else {
 			b.WriteString("\n)\n")
 		}
