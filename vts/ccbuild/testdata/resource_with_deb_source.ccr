@@ -1,0 +1,8 @@
+resource(
+  name   = "yeet",
+  parent = "common://resources:file",
+  source = deb(
+    url    = 'https://example.com/somedeb.deb',
+    sha256 = '1234',
+  ),
+)

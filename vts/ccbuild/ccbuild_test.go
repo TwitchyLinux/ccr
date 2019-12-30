@@ -118,6 +118,41 @@ var newScriptTestcases = []struct {
 			},
 		},
 	},
+	{
+		name:     "resource with file source",
+		filename: "testdata/resource_with_file_source.ccr",
+		want: []vts.Target{
+			&vts.Resource{
+				Path:   "//test:yeet",
+				Name:   "yeet",
+				Parent: vts.TargetRef{Path: "common://resource/file"},
+				Source: &vts.TargetRef{Target: &vts.Puesdo{
+					Kind:         vts.FileRef,
+					Path:         "./boots.txt",
+					ContractPath: "testdata/resource_with_file_source.ccr",
+				},
+				},
+			},
+		},
+	},
+	{
+		name:     "resource with deb source",
+		filename: "testdata/resource_with_deb_source.ccr",
+		want: []vts.Target{
+			&vts.Resource{
+				Path:   "//test:yeet",
+				Name:   "yeet",
+				Parent: vts.TargetRef{Path: "common://resources:file"},
+				Source: &vts.TargetRef{Target: &vts.Puesdo{
+					Kind:         vts.DebRef,
+					URL:          "https://example.com/somedeb.deb",
+					SHA256:       "1234",
+					ContractPath: "testdata/resource_with_deb_source.ccr",
+				},
+				},
+			},
+		},
+	},
 }
 
 func TestNewScript(t *testing.T) {

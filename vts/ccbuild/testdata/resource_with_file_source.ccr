@@ -1,0 +1,5 @@
+resource(
+  name   = "yeet",
+  parent = "common://resource/file",
+  source = file('./boots.txt'),
+)

@@ -10,6 +10,7 @@ type msgCategory string
 
 // Common message categories.
 const (
+	MsgBadDef             msgCategory = "bad target definition"
 	MsgBadFind            msgCategory = "not found"
 	MsgBadRef             msgCategory = "invalid reference"
 	MsgFailedCheck        msgCategory = "check failed"

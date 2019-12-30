@@ -199,7 +199,7 @@ func (u *Universe) resolveTarget(findOpts *FindOptions, t vts.Target) error {
 	}
 
 	if err := t.Validate(); err != nil {
-		return err // TODO: Plumb file/line numbers here somehow
+		return u.logger.Error(MsgBadDef, vts.WrapWithTarget(err, t))
 	}
 	// After linking, a target which has a parent will reference the parent. We
 	// track all instances of a class to simplify resolving inputs of a class.

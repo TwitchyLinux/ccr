@@ -276,12 +276,6 @@ func TestUniverseCheck(t *testing.T) {
 			targets: []vts.TargetRef{{Path: "//bool:invalid"}},
 			err:     "attr is not a boolean: got type starlark.String",
 		},
-		{
-			name:    "deb_no_hash",
-			base:    "testdata/checkers/base",
-			targets: []vts.TargetRef{{Path: "//deb:deb_no_hash"}},
-			err:     "deb sha256 was not specified",
-		},
 	}
 
 	for _, tc := range tcs {

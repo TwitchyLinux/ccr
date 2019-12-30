@@ -2,6 +2,7 @@ package vts
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 
 	"go.starlark.net/starlark"
@@ -42,7 +43,26 @@ func (t *Puesdo) TargetType() TargetType {
 }
 
 func (t *Puesdo) Validate() error {
-	return nil
+	switch t.Kind {
+	case DebRef:
+		if t.Path == "" {
+			return errors.New("deb source cannot have empty path")
+		}
+		if t.URL == "" {
+			return errors.New("deb source must specify a URL")
+		}
+		if t.SHA256 == "" {
+			return errors.New("deb source must specify a sha256 hash")
+		}
+		return nil
+	case FileRef:
+		if t.Path == "" {
+			return errors.New("file source cannot have empty path")
+		}
+		return nil
+	default:
+		return fmt.Errorf("unrecognized puesdotarget: %v", t.Kind)
+	}
 }
 
 func (t *Puesdo) String() string {

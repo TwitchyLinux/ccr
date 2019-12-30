@@ -1,7 +1,6 @@
 package ccr
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/twitchylinux/ccr/vts"
@@ -105,16 +104,7 @@ func (u *Universe) checkAgainstSource(opts *vts.RunnerEnv, t vts.Target, src vts
 	switch source := src.(type) {
 	case *vts.Puesdo:
 		switch source.Kind {
-		case vts.FileRef:
-			// Targets which specify a file source must also specify a path.
-			if _, err := determinePath(t); err != nil {
-				return err
-			}
-
-		case vts.DebRef:
-			if source.SHA256 == "" {
-				return errors.New("deb sha256 was not specified")
-			}
+		case vts.FileRef, vts.DebRef:
 
 		default:
 			return fmt.Errorf("puesdo target has unsupported kind %v", source.Kind)
