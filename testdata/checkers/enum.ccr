@@ -13,6 +13,7 @@ resource(
   details = [
     attr(parent = ":some_enum", value = "swiggity"),
   ],
+  source = deb(),
 )
 
 attr_class(

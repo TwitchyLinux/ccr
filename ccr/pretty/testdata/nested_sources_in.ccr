@@ -1,0 +1,11 @@
+resource(
+  name   = "yeet",
+  parent = "common://resource/file",
+  deps   = [
+    "common://targets/libc",
+  ],
+  source = deb(
+    url = "aaa",
+    yeet = 123,
+  ),
+)

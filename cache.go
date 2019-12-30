@@ -14,8 +14,16 @@ type Cache struct {
 	dir string
 }
 
-func (c *Cache) GetDebPkgsPath() string {
-	return filepath.Join(c.dir, "debpkgs")
+func (c *Cache) NamePath(name string) string {
+	return filepath.Join(c.dir, name)
+}
+
+func (c *Cache) ByName(name string) (io.ReadCloser, error) {
+	f, err := os.Open(filepath.Join(c.dir, name))
+	if err != nil && os.IsNotExist(err) {
+		return nil, ErrCacheMiss
+	}
+	return f, err
 }
 
 func (c *Cache) SHA256Path(hash string) string {

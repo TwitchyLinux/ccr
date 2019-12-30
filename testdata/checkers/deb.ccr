@@ -1,0 +1,5 @@
+resource(
+  name   = "deb_no_hash",
+  parent = "common://resources:virtual",
+  source = deb(),
+)

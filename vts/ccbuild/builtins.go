@@ -48,5 +48,6 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 			}),
 		}),
 		"file": makePuesdotarget(s, vts.FileRef),
+		"deb":  makePuesdotarget(s, vts.DebRef),
 	}, nil
 }

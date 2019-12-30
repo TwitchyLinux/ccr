@@ -10,8 +10,10 @@ import (
 	"github.com/twitchyliquid64/debdep/deb"
 )
 
+const debInfoName = "deb-pkgs"
+
 func DebPackages(cache *ccr.Cache) (*debdep.PackageInfo, error) {
-	pkgPath := cache.GetDebPkgsPath()
+	pkgPath := cache.NamePath(debInfoName)
 
 	// Write it out if it doesn't exist.
 	if _, err := os.Stat(pkgPath); err != nil {
