@@ -145,6 +145,7 @@ func validateSource(src TargetRef, parent Target) error {
 		case *Puesdo:
 			switch n.Kind {
 			case FileRef:
+			case DebRef:
 			default:
 				return fmt.Errorf("puesdo target %v cannot be used as a source", n.Kind)
 			}

@@ -1,6 +1,7 @@
 package ccr
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/twitchylinux/ccr/vts"
@@ -108,6 +109,11 @@ func (u *Universe) checkAgainstSource(opts *vts.RunnerEnv, t vts.Target, src vts
 			// Targets which specify a file source must also specify a path.
 			if _, err := determinePath(t); err != nil {
 				return err
+			}
+
+		case vts.DebRef:
+			if source.SHA256 == "" {
+				return errors.New("deb sha256 was not specified")
 			}
 
 		default:

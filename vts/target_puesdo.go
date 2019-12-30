@@ -12,6 +12,7 @@ type PuesdoKind string
 // Valid types of puesdo targets.
 const (
 	FileRef PuesdoKind = "file"
+	DebRef  PuesdoKind = "deb"
 )
 
 // Puesdo is a special case target.
@@ -20,8 +21,12 @@ type Puesdo struct {
 	Pos          *DefPosition
 	ContractPath string
 
-	// Applicable to FileRef targets.
+	// Applicable to FileRef & DebRef targets.
 	Path string
+
+	// Applicable to DebRef targets.
+	SHA256 string
+	URL    string
 }
 
 func (t *Puesdo) DefinedAt() *DefPosition {
