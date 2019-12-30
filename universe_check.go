@@ -94,6 +94,9 @@ func (u *Universe) checkTarget(t vts.Target, opts *vts.RunnerEnv, checked target
 				if err := u.checkAgainstSource(opts, t, src.Target); err != nil {
 					return u.logger.Error(MsgFailedCheck, vts.WrapWithTarget(err, t))
 				}
+				if err := u.checkTarget(src.Target, opts, checked); err != nil {
+					return vts.WrapWithTarget(err, src.Target)
+				}
 			}
 		}
 	}

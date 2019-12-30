@@ -20,6 +20,8 @@ const (
 type Puesdo struct {
 	Kind         PuesdoKind
 	Pos          *DefPosition
+	Name         string
+	TargetPath   string
 	ContractPath string
 
 	// Applicable to FileRef & DebRef targets.
@@ -28,6 +30,8 @@ type Puesdo struct {
 	// Applicable to DebRef targets.
 	SHA256 string
 	URL    string
+
+	Details []TargetRef
 }
 
 func (t *Puesdo) DefinedAt() *DefPosition {
@@ -38,8 +42,20 @@ func (t *Puesdo) IsClassTarget() bool {
 	return false
 }
 
+func (t *Puesdo) GlobalPath() string {
+	return t.TargetPath
+}
+
+func (t *Puesdo) TargetName() string {
+	return t.Name
+}
+
 func (t *Puesdo) TargetType() TargetType {
 	return TargetPuesdo
+}
+
+func (t *Puesdo) Attributes() []TargetRef {
+	return t.Details
 }
 
 func (t *Puesdo) Validate() error {

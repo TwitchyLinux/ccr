@@ -53,3 +53,10 @@ var BoolChecker = &vts.Checker{
 	Kind:   vts.ChkKindEachAttr,
 	Runner: runners.BooleanCheckValid(),
 }
+
+var DebInfoChecker = &vts.Checker{
+	Path:   "common://checks:deb_info",
+	Name:   "deb_info",
+	Kind:   vts.ChkKindEachAttr,
+	Runner: runners.DebInfoCheckValid(),
+}

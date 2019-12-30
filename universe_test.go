@@ -276,6 +276,35 @@ func TestUniverseCheck(t *testing.T) {
 			targets: []vts.TargetRef{{Path: "//bool:invalid"}},
 			err:     "attr is not a boolean: got type starlark.String",
 		},
+		{
+			name:    "deb_info_bad_type",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//deb:bad_type"}},
+			err:     "expected list, got starlark.String",
+		},
+		{
+			name:    "deb_info_good",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//deb:good"}},
+		},
+		{
+			name:    "deb_info_unexpected_key",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//deb:unexpected_key"}},
+			err:     "unexpected key: waht",
+		},
+		{
+			name:    "deb_info_dep_unexpected_key",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//deb:deb_info_dep_unexpected_key"}},
+			err:     "depends-on entry has unexpected sub-key \"waht\"",
+		},
+		{
+			name:    "deb_info_bad_deps",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//deb:bad_dep_list"}},
+			err:     "depends-on entry is not a dictionary",
+		},
 	}
 
 	for _, tc := range tcs {

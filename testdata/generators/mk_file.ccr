@@ -9,7 +9,12 @@ resource(
   name   = "fake_manifest",
   parent = "common://resources:file",
   path   = "test_manifest.txt",
-  source = file('fake.txt'),
+  source = ":fake_file",
+)
+
+file(
+  name = 'fake_file',
+  path = 'fake.txt',
 )
 
 resource(

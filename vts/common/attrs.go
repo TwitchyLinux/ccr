@@ -47,6 +47,17 @@ var BoolClass = &vts.AttrClass{
 	},
 }
 
+var DebInfoClass = &vts.AttrClass{
+	Path: "common://attrs:deb_info",
+	Name: "deb_info",
+	Checks: []vts.TargetRef{
+		{Target: &vts.Checker{
+			Kind:   vts.ChkKindEachAttr,
+			Runner: runners.DebInfoCheckValid(),
+		}},
+	},
+}
+
 // archDir contains targets in common://attrs.
 var archDir = map[string]vts.Target{
 	"arch": archClass,
