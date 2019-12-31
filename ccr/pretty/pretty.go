@@ -62,6 +62,8 @@ func (o fmtOpts) shouldCondense() bool {
 
 func (o fmtOpts) LeadIn(b *bytes.Buffer) {
 	switch o.Context {
+	case "list", "dict":
+		b.WriteString("\n" + strings.Repeat(" ", o.indentLevel))
 	case "arg":
 		if !o.shouldCondense() {
 			b.WriteString("\n" + strings.Repeat(" ", o.indentLevel))
@@ -72,7 +74,7 @@ func (o fmtOpts) LeadIn(b *bytes.Buffer) {
 func expandedFunction(fn syntax.Expr) bool {
 	if id, ok := fn.(*syntax.Ident); ok {
 		switch id.Name {
-		case "deb":
+		case "deb", "generator", "checker":
 			return true
 		}
 	}
@@ -116,9 +118,23 @@ func annotateAST(ast syntax.Node, ann *annotations) error {
 			return err
 		}
 
+	case *syntax.DictEntry:
+		if err := annotateAST(n.Key, ann); err != nil {
+			return err
+		}
+		if err := annotateAST(n.Value, ann); err != nil {
+			return err
+		}
+
 	case *syntax.Ident, *syntax.Literal:
 
 	case *syntax.ListExpr:
+		for _, l := range n.List {
+			if err := annotateAST(l, ann); err != nil {
+				return err
+			}
+		}
+	case *syntax.DictExpr:
 		for _, l := range n.List {
 			if err := annotateAST(l, ann); err != nil {
 				return err
@@ -166,13 +182,10 @@ func fmtAST(ast syntax.Node, b *bytes.Buffer, opts fmtOpts) error {
 		for _, c := range c.Before {
 			b.WriteString(fmtComment(c.Text))
 			b.WriteString("\n" + strings.Repeat(" ", opts.indentLevel))
-			if opts.shouldCondense() {
-				b.WriteString("  ")
-			}
 		}
 	}
 
-	if opts.Context == "arg" {
+	if opts.Context == "arg" || opts.Context == "list" || opts.Context == "dict" {
 		opts.Context = ""
 	}
 
@@ -195,18 +208,41 @@ func fmtAST(ast syntax.Node, b *bytes.Buffer, opts fmtOpts) error {
 			b.WriteString(strings.Repeat(" ", w-len(n.Name)))
 		}
 
-	case *syntax.ListExpr:
-		b.WriteString("[")
-		if len(n.List) > 0 {
-			b.WriteString("\n" + strings.Repeat(" ", opts.indentLevel+2))
+	case *syntax.DictEntry:
+		if err := fmtAST(n.Key, b, opts); err != nil {
+			return err
 		}
+		b.WriteString(": ")
+		if err := fmtAST(n.Value, b, opts); err != nil {
+			return err
+		}
+
+	case *syntax.DictExpr:
+		b.WriteString("{")
 		for i, l := range n.List {
-			if err := fmtAST(l, b, opts); err != nil {
+			argOpts := opts.AddIndent(2)
+			argOpts.Context = "dict"
+			if err := fmtAST(l, b, argOpts); err != nil {
 				return err
 			}
-			b.WriteString(",\n" + strings.Repeat(" ", opts.indentLevel))
-			if i < len(n.List)-1 {
-				b.WriteString(strings.Repeat(" ", 2))
+			b.WriteString(",")
+			if i == len(n.List)-1 {
+				b.WriteString("\n" + strings.Repeat(" ", opts.indentLevel))
+			}
+		}
+		b.WriteString("}")
+
+	case *syntax.ListExpr:
+		b.WriteString("[")
+		for i, l := range n.List {
+			argOpts := opts.AddIndent(2)
+			argOpts.Context = "list"
+			if err := fmtAST(l, b, argOpts); err != nil {
+				return err
+			}
+			b.WriteString(",")
+			if i == len(n.List)-1 {
+				b.WriteString("\n" + strings.Repeat(" ", opts.indentLevel))
 			}
 		}
 		b.WriteString("]")
@@ -233,6 +269,7 @@ func fmtAST(ast syntax.Node, b *bytes.Buffer, opts fmtOpts) error {
 				b.WriteString(fmtComment(c.Text))
 			}
 		}
+		condense := opts.shouldCondense() && !expandedFunction(n.Fn)
 
 		for i, arg := range n.Args {
 			argOpt := opts.AddIndent(2)
@@ -242,13 +279,13 @@ func fmtAST(ast syntax.Node, b *bytes.Buffer, opts fmtOpts) error {
 			if err := fmtAST(arg, b, argOpt); err != nil {
 				return err
 			}
-			if expandedFunction(n.Fn) || !opts.shouldCondense() || i < len(n.Args)-1 {
+			if !condense || i < len(n.Args)-1 {
 				b.WriteString(",")
-				if opts.shouldCondense() && !expandedFunction(n.Fn) {
+				if condense {
 					b.WriteRune(' ')
 				}
 			}
-			if bin, ok := arg.(*syntax.BinaryExpr); ok {
+			if bin, ok := arg.(syntax.Node); ok {
 				if c := bin.Comments(); c != nil {
 					for _, comment := range c.Suffix {
 						b.WriteString(" " + fmtComment(comment.Text))
@@ -256,15 +293,11 @@ func fmtAST(ast syntax.Node, b *bytes.Buffer, opts fmtOpts) error {
 				}
 			}
 		}
-		if opts.shouldCondense() {
-			if expandedFunction(n.Fn) && len(n.Args) > 0 {
-				b.WriteString("\n" + strings.Repeat(" ", opts.indentLevel))
-				b.WriteString(")")
-			} else {
-				b.WriteString(")")
-			}
+		if !condense && len(n.Args) > 0 {
+			b.WriteString("\n" + strings.Repeat(" ", opts.indentLevel))
+			b.WriteString(")")
 		} else {
-			b.WriteString("\n)\n")
+			b.WriteString(")")
 		}
 
 	case *syntax.ExprStmt:
@@ -279,6 +312,7 @@ func fmtAST(ast syntax.Node, b *bytes.Buffer, opts fmtOpts) error {
 			if i < len(n.Stmts)-1 {
 				b.WriteString("\n")
 			}
+			b.WriteString("\n")
 		}
 	default:
 		return fmt.Errorf("cannot handle AST node %T (%+v)", ast, n)

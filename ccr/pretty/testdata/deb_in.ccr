@@ -1,0 +1,79 @@
+resource(
+  name   = "bad_type",
+  parent = "common://resources:virtual",
+  details = [
+    attr(parent = "common://attrs:deb_info", value = ""),
+  ],
+)
+
+resource(
+  name   = "bad_dep_list",
+  parent = "common://resources:virtual",
+  details = [
+    attr(parent = "common://attrs:deb_info", value = {
+        'depends-on': ['aaa'],
+    }),
+  ],
+)
+
+resource(
+  name   = "deb_info_dep_unexpected_key",
+  parent = "common://resources:virtual",
+  details = [
+    attr(parent = "common://attrs:deb_info", value = {
+        'depends-on': [{'waht': ';P'}],
+    }),
+  ],
+)
+
+resource(
+  name   = "unexpected_key",
+  parent = "common://resources:virtual",
+  source = ":bad_deb"
+)
+
+deb(
+  name = "bad_deb",
+  path = 'aaa',
+  sha256 = '1234',
+  url = 'http://example.com/good.deb',
+  details = [
+    attr(parent = "common://attrs:deb_info", value = {
+      'version': '7:4.1.4-1~deb10u1',
+      'waht': ':O',
+    }),
+  ],
+)
+
+
+
+resource(
+  name   = "good",
+  parent = "common://resources:virtual",
+  source = ":good_deb",
+)
+
+deb(
+  name = "good_deb",
+  path = 'aaa',
+  sha256 = '1234',
+  url = 'http://example.com/good.deb',
+  details = [
+    attr(parent = "common://attrs:deb_info", value = {
+      'name': 'ffmpeg',
+      'version': '7:4.1.4-1~deb10u1',
+      'maintainer': 'Debian Multimedia Maintainers <debian-multimedia@lists.debian.org>',
+      'description': 'Tools for transcoding, streaming and playing of multimedia files',
+      'section': 'video',
+      'priority': 'optional',
+      'homepage': 'https://ffmpeg.org/',
+      'depends-on': [
+        {
+          'name': 'libavcodec58',
+          'version': '7:4.1.4-1~deb10u1',
+          'version-constraint': 'exact',
+        },
+      ],
+    }),
+  ],
+)
