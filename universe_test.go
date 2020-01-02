@@ -418,11 +418,44 @@ Class: //basic:whelp
 			config: GenerateConfig{},
 			err:    "cannot generate dir when no mode was specified",
 		},
+		{
+			name:   "deb_src",
+			target: "//deb-libwoff1:libwoff1",
+			config: GenerateConfig{},
+			hasFiles: map[string]os.FileMode{
+				"/usr/lib/x86_64-linux-gnu":                         os.FileMode(os.ModeDir | 0755),
+				"/usr/lib/x86_64-linux-gnu/libwoff2common.so.1.0.2": os.FileMode(0644),
+				"/usr/lib/x86_64-linux-gnu/libwoff2dec.so.1.0.2":    os.FileMode(0644),
+				"/usr/lib/x86_64-linux-gnu/libwoff2enc.so.1.0.2":    os.FileMode(0644),
+			},
+		},
+		{
+			name:   "deb_bad_hash",
+			target: "//deb:deb_has_bad_hash",
+			config: GenerateConfig{},
+			err:    "sha256 mismatch: got d2e9dd92dd3f1bdbafd63b4a122415d28fecc5f6152d82fa0f76a9766d95ba17 but expected aabbccddeeffggwahhhhhht",
+		},
+		{
+			name:   "deb_invalid",
+			target: "//deb:deb_invalid",
+			config: GenerateConfig{},
+			err:    "failed decoding deb: unexpected EOF",
+		},
+	}
+
+	cd, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(cd)
+	cache, err := NewCache(cd)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			uv := NewUniverse(&silentOpTrack{}, nil)
+			uv := NewUniverse(&silentOpTrack{}, cache)
 			dr := NewDirResolver("testdata/generators")
 			findOpts := FindOptions{
 				FallbackResolvers: []CCRResolver{dr.Resolve},

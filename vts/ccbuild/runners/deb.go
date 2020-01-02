@@ -123,7 +123,7 @@ func checkDepsList(set *starlark.List, keyName string) error {
 					return fmt.Errorf("%s entry has unexpected sub-key %q value type %T", keyName, string(kStr2), v)
 				}
 				switch string(s2) {
-				case "=", ">=":
+				case "=", ">=", "<=", ">>", "<<":
 				default:
 					return fmt.Errorf("%s entry has unexpected version-constraint value %s", keyName, string(s2))
 				}

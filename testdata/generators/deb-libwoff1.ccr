@@ -1,0 +1,81 @@
+resource(
+  name   = "lib_libwoff2common_1.0.2",
+  parent = "common://resources:sys_library",
+  path   = "/usr/lib/x86_64-linux-gnu/libwoff2common.so.1.0.2",
+  source = ":debsrc_libwoff1",
+)
+
+resource(
+  name   = "lib_libwoff2dec_1.0.2",
+  parent = "common://resources:sys_library",
+  path   = "/usr/lib/x86_64-linux-gnu/libwoff2dec.so.1.0.2",
+  source = ":debsrc_libwoff1",
+)
+
+resource(
+  name   = "lib_libwoff2enc_1.0.2",
+  parent = "common://resources:sys_library",
+  path   = "/usr/lib/x86_64-linux-gnu/libwoff2enc.so.1.0.2",
+  source = ":debsrc_libwoff1",
+)
+
+resource(
+  name   = "basedir",
+  parent = "common://resources:dir",
+  path   = "/usr/lib/x86_64-linux-gnu",
+  mode   = '0755',
+  source = "common://generators:dir",
+)
+
+component(
+  name = "libwoff1",
+  deps = [
+    ":basedir",
+    ":lib_libwoff2common_1.0.2",
+    ":lib_libwoff2dec_1.0.2",
+    ":lib_libwoff2enc_1.0.2",
+  ]
+)
+
+deb(
+  name    = "debsrc_libwoff1",
+  path    = "libwoff1_1.0.2-1_amd64.deb",
+  sha256  = "d2e9dd92dd3f1bdbafd63b4a122415d28fecc5f6152d82fa0f76a9766d95ba17",
+  details = [
+    attr(parent = 'common://attrs:deb_info', value = {
+      'name': "libwoff1",
+      'version': "1.0.2-1",
+      'maintainer': "Debian Fonts Task Force <pkg-fonts-devel@lists.alioth.debian.org>",
+      'description': "library for converting fonts to WOFF 2.0",
+      'homepage': "https://github.com/google/woff2",
+      'section': "libs",
+      'priority': "optional",
+      'depends-on': [
+        {
+          'name': "libbrotli1",
+          'version': "0.6.0",
+          'version-constraint': ">=",
+        },
+        {
+          'name': "libc6",
+          'version': "2.14",
+          'version-constraint': ">=",
+        },
+        {
+          'name': "libgcc1",
+          'version': "1:3.0",
+          'version-constraint': ">=",
+        },
+        {
+          'name': "libstdc++6",
+          'version': "5.2",
+          'version-constraint': ">=",
+        },
+      ],
+      'pre-depends-on': [
+      ],
+      'breaks': [
+      ],
+    }),
+  ],
+)

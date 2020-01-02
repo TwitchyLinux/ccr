@@ -1,12 +1,18 @@
 package ccr
 
 import (
+	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/twitchylinux/ccr/ccr/deb"
 	"github.com/twitchylinux/ccr/vts"
+	"github.com/twitchyliquid64/debdep/dpkg"
 	"gopkg.in/src-d/go-billy.v4/osfs"
 )
 
@@ -211,10 +217,13 @@ func (u *Universe) generateResourceUsingSource(s generationState, resource *vts.
 
 	switch src := source.(type) {
 	case *vts.Puesdo:
-		if src.Kind != vts.FileRef {
-			return fmt.Errorf("cannot generate using puesdo source %v", src.Kind)
+		switch src.Kind {
+		case vts.FileRef:
+			return u.generateFileSource(s, resource, src)
+		case vts.DebRef:
+			return u.generateDebSource(s, resource, src)
 		}
-		return u.generateFileSource(s, resource, src)
+		return fmt.Errorf("cannot generate using puesdo source %v", src.Kind)
 
 	case *vts.Generator:
 		info.ClassedResources = map[*vts.ResourceClass][]*vts.Resource{}
@@ -279,4 +288,72 @@ func (u *Universe) generateFileSource(s generationState, resource *vts.Resource,
 		return vts.WrapWithPath(err, outPath)
 	}
 	return nil
+}
+
+func (u *Universe) unpackedDeb(src *vts.Puesdo) (*dpkg.Deb, error) {
+	var dr deb.ReadSeekCloser
+	var err error
+
+	cv, ok := u.cache.GetObj(src.SHA256)
+	if ok {
+		return cv.(*dpkg.Deb), nil
+	}
+
+	if src.URL != "" {
+		if dr, err = deb.PkgReader(u.cache, src.SHA256, src.URL); err != nil {
+			return nil, err
+		}
+	} else {
+		if dr, err = os.Open(filepath.Join(filepath.Dir(src.ContractPath), src.Path)); err != nil {
+			return nil, err
+		}
+	}
+	defer dr.Close()
+
+	// Verify hash.
+	hasher := sha256.New()
+	if _, err := io.Copy(hasher, dr); err != nil {
+		return nil, err
+	}
+	if got, want := strings.ToLower(hex.EncodeToString(hasher.Sum(nil))), strings.ToLower(src.SHA256); got != want {
+		return nil, fmt.Errorf("sha256 mismatch: got %s but expected %s", got, want)
+	}
+
+	var d *dpkg.Deb
+	dr.Seek(0, os.SEEK_SET)
+	if d, err = dpkg.Open(dr); err != nil {
+		return nil, fmt.Errorf("failed decoding deb: %v", err)
+	}
+	u.cache.PutObj(src.SHA256, d)
+
+	return d, nil
+}
+
+func (u *Universe) generateDebSource(s generationState, resource *vts.Resource, src *vts.Puesdo) error {
+	p, err := determinePath(resource)
+	if err != nil {
+		return vts.WrapWithTarget(err, resource)
+	}
+
+	d, err := u.unpackedDeb(src)
+	if err != nil {
+		return vts.WrapWithTarget(err, src)
+	}
+
+	// TODO: better way to do this?
+	for _, f := range d.Files() {
+		if f.Hdr.Name == "."+p {
+			w, err := s.runnerEnv.FS.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.FileMode(f.Hdr.Mode))
+			if err != nil {
+				return vts.WrapWithTarget(vts.WrapWithPath(err, p), resource)
+			}
+			defer w.Close()
+			if _, err := io.Copy(w, bytes.NewReader(f.Data)); err != nil {
+				return vts.WrapWithTarget(vts.WrapWithPath(err, p), resource)
+			}
+			return nil
+		}
+	}
+
+	return fmt.Errorf("couldnt find %s in deb", p)
 }

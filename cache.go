@@ -5,13 +5,29 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	lru "github.com/hashicorp/golang-lru"
+	"github.com/twitchylinux/ccr/ccr/deb"
 )
+
+// numCachedObjects should be fairly low, as the objects in question are
+// usually massive (few Mb) such as unpacked debs.
+const numCachedObjects = 16
 
 var ErrCacheMiss = errors.New("cache miss")
 
 // Cache manages cached files.
 type Cache struct {
-	dir string
+	dir      string
+	objCache *lru.TwoQueueCache
+}
+
+func (c *Cache) GetObj(sha256 string) (value interface{}, ok bool) {
+	return c.objCache.Get(sha256)
+}
+
+func (c *Cache) PutObj(sha256 string, v interface{}) {
+	c.objCache.Add(sha256, v)
 }
 
 func (c *Cache) NamePath(name string) string {
@@ -30,7 +46,7 @@ func (c *Cache) SHA256Path(hash string) string {
 	return filepath.Join(c.dir, hash[:2], hash[2:])
 }
 
-func (c *Cache) BySHA256(hash string) (io.ReadCloser, error) {
+func (c *Cache) BySHA256(hash string) (deb.ReadSeekCloser, error) {
 	dir := filepath.Join(c.dir, hash[:2])
 	if _, err := os.Stat(dir); err != nil && os.IsNotExist(err) {
 		if err := os.Mkdir(dir, 0755); err != nil {
@@ -60,5 +76,10 @@ func NewCache(dir string) (*Cache, error) {
 		return nil, err
 	}
 
-	return &Cache{dir: dir}, nil
+	c, err := lru.New2Q(numCachedObjects)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Cache{dir: dir, objCache: c}, nil
 }

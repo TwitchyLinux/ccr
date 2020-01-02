@@ -61,8 +61,8 @@ func (t *Puesdo) Attributes() []TargetRef {
 func (t *Puesdo) Validate() error {
 	switch t.Kind {
 	case DebRef:
-		if t.URL == "" {
-			return errors.New("deb source must specify a URL")
+		if t.URL == "" && t.Path == "" {
+			return errors.New("deb source must specify a URL or path")
 		}
 		if t.SHA256 == "" {
 			return errors.New("deb source must specify a sha256 hash")

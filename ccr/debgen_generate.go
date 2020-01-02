@@ -60,7 +60,7 @@ func mkDebResources(p *d2.Paragraph, d *dpkg.Deb, w io.Writer) error {
 	fmt.Fprintf(w, "component(\n  name = %s,\n", strconv.Quote(p.Values["Package"]))
 	fmt.Fprintf(w, "  deps = [\n")
 	for _, name := range names {
-		fmt.Fprintf(w, "    %s,\n", strconv.Quote(name))
+		fmt.Fprintf(w, "    %s,\n", strconv.Quote(":"+name))
 	}
 	fmt.Fprintf(w, "  ]\n)\n\n")
 
