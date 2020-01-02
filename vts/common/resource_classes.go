@@ -10,12 +10,22 @@ var FileResourceClass = &vts.ResourceClass{
 	},
 }
 
+var DirResourceClass = &vts.ResourceClass{
+	Path: "common://resources:dir",
+	Name: "dir",
+}
+
 var BinResourceClass = &vts.ResourceClass{
 	Path: "common://resources:binary",
 	Name: "binary",
 	Checks: []vts.TargetRef{
 		{Target: BinaryResourceChecker},
 	},
+}
+
+var SysLibResourceClass = &vts.ResourceClass{
+	Path: "common://resources:sys_library",
+	Name: "sys_library",
 }
 
 var JSONResourceClass = &vts.ResourceClass{

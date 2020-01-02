@@ -61,7 +61,33 @@ func goDebGenCmd(mode, pkg string) error {
 		return err
 	}
 
+	// TODO: Decompose into own functions.
 	switch mode {
+	case "gen", "generate":
+		p, err := pkgs.FindLatest(pkg)
+		if err != nil {
+			return err
+		}
+
+		dr, err := debReader(p)
+		if err != nil {
+			return err
+		}
+		defer dr.Close()
+		d, err := dpkg.Open(dr)
+		if err != nil {
+			return err
+		}
+		if err := mkDebResources(p, d, os.Stdout); err != nil {
+			return err
+		}
+
+		src, err := mkDebSource(debdep.DefaultResolverConfig.BaseURL, p)
+		if err != nil {
+			return err
+		}
+		fmt.Println(src.String())
+		return nil
 	case "gensrc", "gen-src", "generate-source":
 		p, err := pkgs.FindLatest(pkg)
 		if err != nil {
@@ -102,7 +128,6 @@ func goDebGenCmd(mode, pkg string) error {
 			case tar.TypeLink, tar.TypeSymlink:
 				fmt.Printf("Link [%#o]: %s -> %s\n", f.Hdr.Mode, f.Hdr.Name, f.Hdr.Linkname)
 			}
-
 		}
 
 		return nil
