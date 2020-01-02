@@ -1,0 +1,24 @@
+resource(
+  name   = 'good',
+  parent = 'common://resources:dir',
+  path   = '/some_dir',
+)
+
+resource(
+  name   = 'good_nested',
+  parent = 'common://resources:dir',
+  path   = '/some_dir/nested',
+)
+
+resource(
+  name   = 'bad_perms',
+  parent = 'common://resources:dir',
+  path   = '/some_dir',
+  mode   = '0600',
+)
+
+resource(
+  name   = 'bad_missing_dir',
+  parent = 'common://resources:dir',
+  path   = '/missing_dir',
+)

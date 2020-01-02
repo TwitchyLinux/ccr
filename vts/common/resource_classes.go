@@ -13,6 +13,9 @@ var FileResourceClass = &vts.ResourceClass{
 var DirResourceClass = &vts.ResourceClass{
 	Path: "common://resources:dir",
 	Name: "dir",
+	Checks: []vts.TargetRef{
+		{Target: DirPresentChecker},
+	},
 }
 
 var BinResourceClass = &vts.ResourceClass{

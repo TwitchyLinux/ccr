@@ -305,6 +305,28 @@ func TestUniverseCheck(t *testing.T) {
 			targets: []vts.TargetRef{{Path: "//deb:bad_dep_list"}},
 			err:     "depends-on entry is not a dictionary",
 		},
+		{
+			name:    "dir_good",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//dir:good"}},
+		},
+		{
+			name:    "dir_good_nested",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//dir:good_nested"}},
+		},
+		{
+			name:    "dir_bad_mode",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//dir:bad_perms"}},
+			err:     "permissions mismatch: 0600 was specified but directory is 0755",
+		},
+		{
+			name:    "dir_bad_missing",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//dir:bad_missing_dir"}},
+			err:     "stat testdata/checkers/base/missing_dir: no such file or directory",
+		},
 	}
 
 	for _, tc := range tcs {

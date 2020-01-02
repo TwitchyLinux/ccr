@@ -3,10 +3,14 @@ package runners
 import (
 	"errors"
 	"fmt"
+	"os"
+	"strconv"
 
 	"github.com/twitchylinux/ccr/vts"
 	"go.starlark.net/starlark"
 )
+
+var errNoAttr = errors.New("no relevant attribute")
 
 func resourcePath(r *vts.Resource) (string, error) {
 	for _, attr := range r.Details {
@@ -25,5 +29,26 @@ func resourcePath(r *vts.Resource) (string, error) {
 		}
 	}
 
-	return "", errors.New("no path specified")
+	return "", errNoAttr
+}
+
+func resourceMode(r *vts.Resource) (os.FileMode, error) {
+	for _, attr := range r.Details {
+		if attr.Target == nil {
+			return 0, fmt.Errorf("unresolved target reference: %q", attr.Path)
+		}
+		a := attr.Target.(*vts.Attr)
+		if a.Parent.Target == nil {
+			return 0, fmt.Errorf("unresolved target reference: %q", a.Parent.Path)
+		}
+		if class := a.Parent.Target.(*vts.AttrClass); class.GlobalPath() == "common://attrs:mode" {
+			if s, ok := a.Value.(starlark.String); ok {
+				m, err := strconv.ParseInt(string(s), 8, 64)
+				return os.FileMode(m), err
+			}
+			return 0, fmt.Errorf("bad type for path: want string, got %T", a.Value)
+		}
+	}
+
+	return 0, errNoAttr
 }

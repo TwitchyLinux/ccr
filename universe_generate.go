@@ -270,12 +270,6 @@ func (u *Universe) generateFileSource(s generationState, resource *vts.Resource,
 	}
 	defer r.Close()
 
-	if dir, _ := filepath.Split(outPath); dir != "" && dir != "/" {
-		if err := s.runnerEnv.FS.MkdirAll(dir, 0755); err != nil {
-			return vts.WrapWithPath(err, dir)
-		}
-	}
-
 	w, err := s.runnerEnv.FS.OpenFile(outPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
 	if err != nil {
 		return vts.WrapWithPath(err, outPath)

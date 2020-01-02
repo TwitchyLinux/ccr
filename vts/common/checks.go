@@ -26,6 +26,13 @@ var FilePresentChecker = &vts.Checker{
 	Runner: runners.FileCheckPresent(),
 }
 
+var DirPresentChecker = &vts.Checker{
+	Path:   "common://checks:dir_present",
+	Name:   "dir_present",
+	Kind:   vts.ChkKindEachResource,
+	Runner: runners.DirCheckPresent(),
+}
+
 var NoopComponentChecker = &vts.Checker{
 	Path:   "common://checks:noop",
 	Name:   "noop",
