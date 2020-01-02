@@ -404,6 +404,20 @@ Class: //basic:whelp
 				"dir/dat_file.txt": os.FileMode(0600),
 			},
 		},
+		{
+			name:   "dir_good",
+			target: "//mk_dir:good",
+			config: GenerateConfig{},
+			hasFiles: map[string]os.FileMode{
+				"newdir": os.FileMode(os.ModeDir | 0755),
+			},
+		},
+		{
+			name:   "dir_no_mode",
+			target: "//mk_dir:breaks_no_mode",
+			config: GenerateConfig{},
+			err:    "cannot generate dir when no mode was specified",
+		},
 	}
 
 	for _, tc := range tcs {

@@ -1,0 +1,14 @@
+resource(
+  name   = 'good',
+  parent = 'common://resources:dir',
+  path   = '/newdir',
+  mode   = '0755',
+  source = 'common://generators:dir',
+)
+
+resource(
+  name   = 'breaks_no_mode',
+  parent = 'common://resources:dir',
+  path   = '/notexist',
+  source = 'common://generators:dir',
+)

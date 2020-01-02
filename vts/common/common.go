@@ -51,4 +51,6 @@ var commonTargets = map[string]vts.Target{
 	"common://checks:boolean":            BoolChecker,
 	"common://checks:deb_info":           DebInfoChecker,
 	"common://checks:always_fail":        DebugFailingComponentChecker,
+
+	"common://generators:dir": DirGenerator,
 }

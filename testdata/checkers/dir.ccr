@@ -2,12 +2,14 @@ resource(
   name   = 'good',
   parent = 'common://resources:dir',
   path   = '/some_dir',
+  source = 'common://generators:dir',
 )
 
 resource(
   name   = 'good_nested',
   parent = 'common://resources:dir',
   path   = '/some_dir/nested',
+  source = 'common://generators:dir',
 )
 
 resource(

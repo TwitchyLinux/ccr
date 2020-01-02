@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/twitchylinux/ccr/vts"
 	"go.starlark.net/starlark"
@@ -73,55 +72,6 @@ func (*fileCheckPresent) Run(r *vts.Resource, opts *vts.RunnerEnv) error {
 	}
 	if stat.IsDir() {
 		return vts.WrapWithPath(fmt.Errorf("resource %q is a directory", path), path)
-	}
-	return nil
-}
-
-// DirCheckPresent returns a runner that checks a directory is present
-// at the indicated path.
-func DirCheckPresent() *dirCheckPresent {
-	return &dirCheckPresent{}
-}
-
-type dirCheckPresent struct{}
-
-func (*dirCheckPresent) Kind() vts.CheckerKind { return vts.ChkKindEachResource }
-
-func (*dirCheckPresent) String() string { return "dir.present" }
-
-func (*dirCheckPresent) Freeze() {}
-
-func (*dirCheckPresent) Truth() starlark.Bool { return true }
-
-func (*dirCheckPresent) Type() string { return "runner" }
-
-func (t *dirCheckPresent) Hash() (uint32, error) {
-	h := sha256.Sum256([]byte(fmt.Sprintf("%p", t)))
-	return uint32(uint32(h[0]) + uint32(h[1])<<8 + uint32(h[2])<<16 + uint32(h[3])<<24), nil
-}
-
-func (*dirCheckPresent) Run(r *vts.Resource, opts *vts.RunnerEnv) error {
-	path, err := resourcePath(r)
-	if err != nil {
-		return err
-	}
-	stat, err := opts.FS.Stat(path)
-	if err != nil {
-		return vts.WrapWithPath(err, path)
-	}
-	if !stat.IsDir() {
-		return vts.WrapWithPath(fmt.Errorf("resource %q is not a directory", path), path)
-	}
-
-	m, err := resourceMode(r)
-	if err == errNoAttr {
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-	if stat.Mode()&os.ModePerm != m&os.ModePerm {
-		return fmt.Errorf("permissions mismatch: %#o was specified but directory is %#o", m, stat.Mode()&os.ModePerm)
 	}
 	return nil
 }

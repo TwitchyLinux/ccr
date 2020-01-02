@@ -1,6 +1,8 @@
 package common
 
-import "github.com/twitchylinux/ccr/vts"
+import (
+	"github.com/twitchylinux/ccr/vts"
+)
 
 var FileResourceClass = &vts.ResourceClass{
 	Path: "common://resources:file",
