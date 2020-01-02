@@ -19,11 +19,12 @@ import (
 // if necessary.
 func debReader(p *d2.Paragraph) (io.ReadCloser, error) {
 	f, err := cache.BySHA256(p.Values["SHA256"])
-	if err != nil && err != ccr.ErrCacheMiss {
-		return nil, err
-	}
-	if err == nil {
+	switch err {
+	case ccr.ErrCacheMiss:
+	case nil:
 		return f, nil
+	default:
+		return nil, err
 	}
 
 	// Download.
@@ -61,17 +62,25 @@ func goDebGenCmd(mode, pkg string) error {
 	}
 
 	switch mode {
+	case "gensrc", "gen-src", "generate-source":
+		p, err := pkgs.FindLatest(pkg)
+		if err != nil {
+			return err
+		}
+
+		src, err := mkDebSource(debdep.DefaultResolverConfig.BaseURL, p)
+		if err != nil {
+			return err
+		}
+		fmt.Println(src.String())
+		return nil
+
 	case "", "show":
 		p, err := pkgs.FindLatest(pkg)
 		if err != nil {
 			return err
 		}
 		fmt.Printf("\n -= %s =-\n", strings.ToUpper(p.Values["Package"]))
-		fmt.Printf("Breaks:  %s\n", p.Values["Breaks"])
-		fmt.Printf("Depends: %s\n", p.Values["Depends"])
-		if _, hasPre := p.Values["Pre-Depends"]; hasPre {
-			fmt.Printf("Pre-Depends: %s\n", p.Values["Pre-Depends"])
-		}
 		fmt.Printf("Version: %s\n", p.Values["Version"])
 
 		dr, err := debReader(p)

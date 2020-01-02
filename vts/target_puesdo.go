@@ -61,9 +61,6 @@ func (t *Puesdo) Attributes() []TargetRef {
 func (t *Puesdo) Validate() error {
 	switch t.Kind {
 	case DebRef:
-		if t.Path == "" {
-			return errors.New("deb source cannot have empty path")
-		}
 		if t.URL == "" {
 			return errors.New("deb source must specify a URL")
 		}
