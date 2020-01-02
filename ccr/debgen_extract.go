@@ -5,12 +5,9 @@ import (
 	"bytes"
 	"debug/elf"
 	"fmt"
-	"io"
 	"path/filepath"
 	"strings"
 
-	"github.com/twitchylinux/ccr/vts/common"
-	d2 "github.com/twitchyliquid64/debdep/deb"
 	"github.com/twitchyliquid64/debdep/dpkg"
 )
 
@@ -47,9 +44,7 @@ type debResource interface {
 
 type debDir tar.Header
 
-func (d debDir) ResourceKind() resKind {
-	return ResDir
-}
+func (d debDir) ResourceKind() resKind { return ResDir }
 
 func (d debDir) ResourceName() string {
 	return "dir_" + strings.Replace(filepath.Base(d.Name), " ", "_", -1)
@@ -57,9 +52,7 @@ func (d debDir) ResourceName() string {
 
 type debStdSo dpkg.DataFile
 
-func (d *debStdSo) ResourceKind() resKind {
-	return ResStdSo
-}
+func (d *debStdSo) ResourceKind() resKind { return ResStdSo }
 
 func (d *debStdSo) ResourceName() string {
 	spl := strings.Split(filepath.Base(d.Hdr.Name), ".")
@@ -75,9 +68,7 @@ func (d *debStdSo) ResourceName() string {
 
 type debFile dpkg.DataFile
 
-func (d *debFile) ResourceKind() resKind {
-	return ResFile
-}
+func (d *debFile) ResourceKind() resKind { return ResFile }
 
 func (d *debFile) ResourceName() string {
 	return "f_" + strings.Replace(filepath.Base(d.Hdr.Name), " ", "_", -1)
@@ -133,53 +124,4 @@ func file2Resource(f dpkg.DataFile) (debResource, error) {
 	}
 
 	return nil, nil
-}
-
-func mkDebResources(p *d2.Paragraph, d *dpkg.Deb, w io.Writer) error {
-	var names []string
-	exists := map[string]bool{}
-	for _, f := range d.Files() {
-		r, err := file2Resource(f)
-		if err != nil {
-			return fmt.Errorf("%s: %v", f.Hdr.Name, err)
-		}
-		if r == nil {
-			continue
-		}
-
-		rn := r.ResourceName()
-		for {
-			if !exists[rn] {
-				break
-			}
-			rn = "_" + rn
-		}
-		exists[rn] = true
-		fmt.Fprintf(w, "resource(\n  name = '%s',\n", rn)
-		names = append(names, rn)
-		switch r.ResourceKind() {
-		case ResDir:
-			fmt.Fprintf(w, "  parent = '%s',\n", common.DirResourceClass.Path)
-			fmt.Fprintf(w, "  path   = '%s',\n", r.(debDir).Name[1:])
-		case ResStdSo:
-			fmt.Fprintf(w, "  parent = '%s',\n", common.SysLibResourceClass.Path)
-			fmt.Fprintf(w, "  path   = '%s',\n", r.(*debStdSo).Hdr.Name[1:])
-		case ResFile:
-			fmt.Fprintf(w, "  parent = '%s',\n", common.FileResourceClass.Path)
-			fmt.Fprintf(w, "  path   = '%s',\n", r.(*debFile).Hdr.Name[1:])
-		default:
-			fmt.Println(r)
-		}
-		fmt.Fprintf(w, "  source = '%s_%s',\n", ":debsrc", p.Values["Package"])
-		fmt.Fprintf(w, ")\n\n")
-	}
-
-	fmt.Fprintf(w, "component(\n  name = '%s',\n", p.Values["Package"])
-	fmt.Fprintf(w, "  deps = [\n")
-	for _, name := range names {
-		fmt.Fprintf(w, "    '%s',\n", name)
-	}
-	fmt.Fprintf(w, "  ]\n)\n\n")
-
-	return nil
 }
