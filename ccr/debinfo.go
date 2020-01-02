@@ -38,7 +38,10 @@ func mkDebSource(baseURL string, p *d2.Paragraph) (*bytes.Buffer, error) {
 	if err := debDependsDescription(&out, p, "depends-on"); err != nil {
 		return nil, err
 	}
-	if err := debPreDependsDescription(&out, p, "pre-depends"); err != nil {
+	if err := debPreDependsDescription(&out, p, "pre-depends-on"); err != nil {
+		return nil, err
+	}
+	if err := debBreaksDescription(&out, p, "breaks"); err != nil {
 		return nil, err
 	}
 	fmt.Fprintf(&out, "    }),\n")
@@ -46,6 +49,25 @@ func mkDebSource(baseURL string, p *d2.Paragraph) (*bytes.Buffer, error) {
 	fmt.Fprintf(&out, ")")
 
 	return &out, nil
+}
+
+func debBreaksDescription(final *bytes.Buffer, p *d2.Paragraph, key string) error {
+	dep, err := p.BinaryBreaks()
+	if err != nil {
+		return err
+	}
+	var out bytes.Buffer
+
+	fmt.Fprintf(&out, "      'breaks': [\n")
+	if err := debRelationDescription(&out, dep); err != nil {
+		return err
+	}
+	fmt.Fprintf(&out, "      ],\n")
+
+	if _, err := io.Copy(final, &out); err != nil {
+		return err
+	}
+	return nil
 }
 
 func debPreDependsDescription(final *bytes.Buffer, p *d2.Paragraph, key string) error {
