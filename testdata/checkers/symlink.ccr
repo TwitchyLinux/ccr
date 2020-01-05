@@ -1,0 +1,6 @@
+resource(
+  name   = 'bad_missing',
+  parent = 'common://resources:symlink',
+  path   = '/missing_link',
+  target = '/yolo',
+)

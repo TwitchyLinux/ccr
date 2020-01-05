@@ -327,6 +327,12 @@ func TestUniverseCheck(t *testing.T) {
 			targets: []vts.TargetRef{{Path: "//dir:bad_missing_dir"}},
 			err:     "stat testdata/checkers/base/missing_dir: no such file or directory",
 		},
+		{
+			name:    "symlink_missing",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//symlink:bad_missing"}},
+			err:     "lstat testdata/checkers/base/missing_link: no such file or directory",
+		},
 	}
 
 	for _, tc := range tcs {
@@ -440,6 +446,20 @@ Class: //basic:whelp
 			target: "//deb:deb_invalid",
 			config: GenerateConfig{},
 			err:    "failed decoding deb: unexpected EOF",
+		},
+		{
+			name:   "symlink_no_target",
+			target: "//symlink:bad_missing_target",
+			config: GenerateConfig{},
+			err:    "cannot generate symlink when no target was specified",
+		},
+		{
+			name:   "symlink_good",
+			target: "//symlink:good",
+			config: GenerateConfig{},
+			hasFiles: map[string]os.FileMode{
+				"/good_link": os.FileMode(0644),
+			},
 		},
 	}
 

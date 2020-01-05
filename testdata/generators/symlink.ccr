@@ -1,0 +1,24 @@
+resource(
+  name   = 'bad_missing_target',
+  parent = 'common://resources:symlink',
+  path   = '/missing_link',
+  source = 'common://generators:symlink',
+)
+
+resource(
+  name   = 'good',
+  parent = 'common://resources:symlink',
+  path   = '/good_link',
+  target = '/yeet',
+  deps   = [
+    ":yeetfile",
+  ],
+  source = 'common://generators:symlink',
+)
+
+resource(
+  name   = 'yeetfile',
+  parent = 'common://resources:file',
+  path   = '/yeet',
+  source = file('./fake.txt'),
+)
