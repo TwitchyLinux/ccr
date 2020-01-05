@@ -1,6 +1,8 @@
 resource(
   name    = "yeet",
   parent  = "common://resource/file",
+  mode    = "0755",
+  target  = "/doesnt-make/sense",
   deps    = [
     "common://targets/libc",
   ],

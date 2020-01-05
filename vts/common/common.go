@@ -26,6 +26,7 @@ var commonTargets = map[string]vts.Target{
 	"common://attrs:mode":       ModeClass,
 	"common://attrs:bool":       BoolClass,
 	"common://attrs:deb_info":   DebInfoClass,
+	"common://attrs:target":     TargetClass,
 	"common://attrs:arch":       archClass,
 	"common://attrs/arch:x86":   archDir["x86"],
 	"common://attrs/arch:amd64": archDir["amd64"],
@@ -34,6 +35,7 @@ var commonTargets = map[string]vts.Target{
 
 	"common://resources:dir":         DirResourceClass,
 	"common://resources:file":        FileResourceClass,
+	"common://resources:symlink":     SymlinkResourceClass,
 	"common://resources:virtual":     VirtualResourceClass,
 	"common://resources:binary":      BinResourceClass,
 	"common://resources:sys_library": SysLibResourceClass,
@@ -45,6 +47,7 @@ var commonTargets = map[string]vts.Target{
 	"common://checks:noop":               NoopComponentChecker,
 	"common://checks:file_present":       FilePresentChecker,
 	"common://checks:dir_present":        DirPresentChecker,
+	"common://checks:symlink_present":    SymlinkPresentChecker,
 	"common://checks/formats:json_valid": JSONResourceChecker,
 	"common://checks/executable:binary":  BinaryResourceChecker,
 	"common://checks:octal_string":       OctalStringChecker,
@@ -52,5 +55,6 @@ var commonTargets = map[string]vts.Target{
 	"common://checks:deb_info":           DebInfoChecker,
 	"common://checks:always_fail":        DebugFailingComponentChecker,
 
-	"common://generators:dir": DirGenerator,
+	"common://generators:dir":     DirGenerator,
+	"common://generators:symlink": SymlinkGenerator,
 }

@@ -138,7 +138,7 @@ func makeResource(s *Script) *starlark.Builtin {
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var (
 			name, parent, path string
-			mode               string
+			mode, target       string
 			details, deps      *starlark.List
 			source             starlark.Value
 		)
@@ -147,7 +147,7 @@ func makeResource(s *Script) *starlark.Builtin {
 			"name", &name, "parent", &parent, "details?", &details, "deps?", &deps,
 			"source?", &source,
 			// Helper arguments.
-			"path?", &path, "mode?", &mode); err != nil {
+			"path?", &path, "mode?", &mode, "target?", &target); err != nil {
 			return starlark.None, err
 		}
 
@@ -209,6 +209,13 @@ func makeResource(s *Script) *starlark.Builtin {
 			r.Details = append(r.Details, vts.TargetRef{Target: &vts.Attr{
 				Parent: vts.TargetRef{Target: common.ModeClass},
 				Value:  starlark.String(mode),
+				Pos:    r.Pos,
+			}})
+		}
+		if target != "" {
+			r.Details = append(r.Details, vts.TargetRef{Target: &vts.Attr{
+				Parent: vts.TargetRef{Target: common.TargetClass},
+				Value:  starlark.String(target),
 				Pos:    r.Pos,
 			}})
 		}

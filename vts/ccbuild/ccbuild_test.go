@@ -69,6 +69,18 @@ var newScriptTestcases = []struct {
 							Value:  starlark.String("yeetos"),
 						},
 					},
+					{
+						Target: &vts.Attr{
+							Parent: vts.TargetRef{Target: common.ModeClass},
+							Value:  starlark.String("0755"),
+						},
+					},
+					{
+						Target: &vts.Attr{
+							Parent: vts.TargetRef{Target: common.TargetClass},
+							Value:  starlark.String("/doesnt-make/sense"),
+						},
+					},
 				},
 				Deps: []vts.TargetRef{
 					{Path: "common://targets/libc"},

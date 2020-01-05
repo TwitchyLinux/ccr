@@ -23,7 +23,7 @@ var PathClass = &vts.AttrClass{
 }
 
 // ModeClass is the class for an octal string representing the mode
-// of a file
+// of a file.
 var ModeClass = &vts.AttrClass{
 	Path: "common://attrs:mode",
 	Name: "mode",
@@ -31,6 +31,19 @@ var ModeClass = &vts.AttrClass{
 		{Target: &vts.Checker{
 			Kind:   vts.ChkKindEachAttr,
 			Runner: runners.OctalCheckValid(),
+		}},
+	},
+}
+
+// TargetClass is the class for a path which is the target of a
+// symlink.
+var TargetClass = &vts.AttrClass{
+	Path: "common://attrs:target",
+	Name: "target",
+	Checks: []vts.TargetRef{
+		{Target: &vts.Checker{
+			Kind:   vts.ChkKindEachAttr,
+			Runner: runners.PathCheckValid(),
 		}},
 	},
 }

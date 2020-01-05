@@ -51,6 +51,11 @@ func mkDebResources(p *d2.Paragraph, d *dpkg.Deb, w io.Writer) error {
 			fmt.Fprintf(w, "  parent = %s,\n", strconv.Quote(common.FileResourceClass.Path))
 			fmt.Fprintf(w, "  path   = %s,\n", strconv.Quote(r.(*debFile).Hdr.Name[1:]))
 			fmt.Fprintf(w, "  source = %s,\n", strconv.Quote(":debsrc"+"_"+p.Values["Package"]))
+		case ResLink:
+			fmt.Fprintf(w, "  parent = %s,\n", strconv.Quote(common.SymlinkResourceClass.Path))
+			fmt.Fprintf(w, "  path   = %s,\n", strconv.Quote(r.(debLink).Name[1:]))
+			fmt.Fprintf(w, "  target = %s,\n", strconv.Quote(r.(debLink).Linkname[1:]))
+			fmt.Fprintf(w, "  source = %s,\n", strconv.Quote("common://generators:symlink"))
 		default:
 			fmt.Println(r)
 		}

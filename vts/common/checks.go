@@ -33,6 +33,13 @@ var DirPresentChecker = &vts.Checker{
 	Runner: runners.DirCheckPresent(),
 }
 
+var SymlinkPresentChecker = &vts.Checker{
+	Path:   "common://checks:symlink_present",
+	Name:   "symlink_present",
+	Kind:   vts.ChkKindEachResource,
+	Runner: runners.SymlinkCheckPresent(),
+}
+
 var NoopComponentChecker = &vts.Checker{
 	Path:   "common://checks:noop",
 	Name:   "noop",

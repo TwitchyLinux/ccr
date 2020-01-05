@@ -22,9 +22,15 @@ var (
 	ignoredDirs = map[string]bool{
 		"./":                          true,
 		"./usr/":                      true,
+		"./usr/bin/":                  true,
 		"./usr/lib/":                  true,
 		"./usr/share/":                true,
+		"./usr/share/man/":            true,
+		"./usr/share/man/man1/":       true,
 		"./usr/lib/x86_64-linux-gnu/": true,
+		"./etc/":                      true,
+		"./lib/":                      true,
+		"./lib/x86_64-linux-gnu/":     true,
 	}
 )
 
@@ -35,11 +41,20 @@ const (
 	ResDir resKind = 1 + iota
 	ResStdSo
 	ResFile
+	ResLink
 )
 
 type debResource interface {
 	ResourceKind() resKind
 	ResourceName() string
+}
+
+type debLink tar.Header
+
+func (d debLink) ResourceKind() resKind { return ResLink }
+
+func (d debLink) ResourceName() string {
+	return "link_" + strings.Replace(filepath.Base(d.Name), " ", "_", -1)
 }
 
 type debDir tar.Header
@@ -120,7 +135,7 @@ func file2Resource(f dpkg.DataFile) (debResource, error) {
 		}
 		return debDir(f.Hdr), nil
 	case tar.TypeLink, tar.TypeSymlink:
-		fmt.Printf("Link [%#o]: %s -> %s\n", f.Hdr.Mode, f.Hdr.Name, f.Hdr.Linkname)
+		return debLink(f.Hdr), nil
 	}
 
 	return nil, nil

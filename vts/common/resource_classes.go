@@ -20,6 +20,13 @@ var DirResourceClass = &vts.ResourceClass{
 	},
 }
 
+var SymlinkResourceClass = &vts.ResourceClass{
+	Path: "common://resources:symlink",
+	Name: "symlink",
+	Checks: []vts.TargetRef{
+		{Target: SymlinkPresentChecker},
+	},
+}
 var BinResourceClass = &vts.ResourceClass{
 	Path: "common://resources:binary",
 	Name: "binary",

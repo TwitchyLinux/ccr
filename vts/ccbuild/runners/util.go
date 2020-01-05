@@ -52,3 +52,23 @@ func resourceMode(r *vts.Resource) (os.FileMode, error) {
 
 	return 0, errNoAttr
 }
+
+func resourceTarget(r *vts.Resource) (string, error) {
+	for _, attr := range r.Details {
+		if attr.Target == nil {
+			return "", fmt.Errorf("unresolved target reference: %q", attr.Path)
+		}
+		a := attr.Target.(*vts.Attr)
+		if a.Parent.Target == nil {
+			return "", fmt.Errorf("unresolved target reference: %q", a.Parent.Path)
+		}
+		if class := a.Parent.Target.(*vts.AttrClass); class.GlobalPath() == "common://attrs:target" {
+			if s, ok := a.Value.(starlark.String); ok {
+				return string(s), nil
+			}
+			return "", fmt.Errorf("bad type for target: want string, got %T", a.Value)
+		}
+	}
+
+	return "", errNoAttr
+}

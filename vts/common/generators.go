@@ -10,3 +10,9 @@ var DirGenerator = &vts.Generator{
 	Name:   "dir",
 	Runner: runners.GenerateDir(),
 }
+
+var SymlinkGenerator = &vts.Generator{
+	Path:   "common://generators:symlink",
+	Name:   "symlink",
+	Runner: runners.GenerateSymlink(),
+}
