@@ -22,16 +22,17 @@ func Resolve(path string) (vts.Target, error) {
 }
 
 var commonTargets = map[string]vts.Target{
-	"common://attrs:path":       PathClass,
-	"common://attrs:mode":       ModeClass,
-	"common://attrs:bool":       BoolClass,
-	"common://attrs:deb_info":   DebInfoClass,
-	"common://attrs:target":     TargetClass,
-	"common://attrs:arch":       ArchClass,
-	"common://attrs/arch:x86":   archDir["x86"],
-	"common://attrs/arch:amd64": archDir["amd64"],
-	"common://attrs/arch:arm":   archDir["arm"],
-	"common://attrs/arch:arm64": archDir["arm64"],
+	"common://attrs:path":        PathClass,
+	"common://attrs:mode":        ModeClass,
+	"common://attrs:bool":        BoolClass,
+	"common://attrs:deb_info":    DebInfoClass,
+	"common://attrs:target":      TargetClass,
+	"common://attrs:checker_opt": CheckerOptClass,
+	"common://attrs:arch":        ArchClass,
+	"common://attrs/arch:x86":    archDir["x86"],
+	"common://attrs/arch:amd64":  archDir["amd64"],
+	"common://attrs/arch:arm":    archDir["arm"],
+	"common://attrs/arch:arm64":  archDir["arm64"],
 
 	"common://resources:dir":         DirResourceClass,
 	"common://resources:file":        FileResourceClass,

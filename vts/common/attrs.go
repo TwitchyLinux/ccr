@@ -71,6 +71,19 @@ var DebInfoClass = &vts.AttrClass{
 	},
 }
 
+// CheckerOptClass is the class for a string describing an option
+// set on a checker which accepts options.
+var CheckerOptClass = &vts.AttrClass{
+	Path: "common://attrs:checker_opt",
+	Name: "checker_opt",
+	Checks: []vts.TargetRef{
+		{Target: &vts.Checker{
+			Kind:   vts.ChkKindEachAttr,
+			Runner: runners.CheckerOptCheckValid(),
+		}},
+	},
+}
+
 // archDir contains targets in common://attrs.
 var archDir = map[string]vts.Target{
 	"arch": ArchClass,
