@@ -189,6 +189,17 @@ func TestUniverseCheck(t *testing.T) {
 			err:     "path was empty",
 		},
 		{
+			name:    "filelist_good",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//file_resource:filelist_good"}},
+		},
+		{
+			name:    "filelist_missing_files",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//file_resource:filelist_missing_files"}},
+			err:     "referencing file at line 3: stat testdata/checkers/base/waht: no such file or directory",
+		},
+		{
 			name:    "good_path",
 			base:    "testdata/checkers/base",
 			targets: []vts.TargetRef{{Path: "//path:good_path"}},

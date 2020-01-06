@@ -16,17 +16,17 @@ type checkerRunner interface {
 
 type eachResourceRunner interface {
 	checkerRunner
-	Run(*Resource, *RunnerEnv) error
+	Run(*Resource, *Checker, *RunnerEnv) error
 }
 
 type eachAttrRunner interface {
 	checkerRunner
-	Run(*Attr, *RunnerEnv) error
+	Run(*Attr, *Checker, *RunnerEnv) error
 }
 
 type eachComponentRunner interface {
 	checkerRunner
-	Run(*Component, *RunnerEnv) error
+	Run(*Component, *Checker, *RunnerEnv) error
 }
 
 type generateRunner interface {

@@ -33,7 +33,7 @@ func (t *binaryValidRunner) Hash() (uint32, error) {
 	return uint32(uint32(h[0]) + uint32(h[1])<<8 + uint32(h[2])<<16 + uint32(h[3])<<24), nil
 }
 
-func (*binaryValidRunner) Run(resource *vts.Resource, opts *vts.RunnerEnv) error {
+func (*binaryValidRunner) Run(resource *vts.Resource, chkr *vts.Checker, opts *vts.RunnerEnv) error {
 	path, err := resourcePath(resource)
 	if err != nil {
 		return err

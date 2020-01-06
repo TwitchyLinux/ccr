@@ -34,7 +34,7 @@ func (t *pathValidRunner) Hash() (uint32, error) {
 	return uint32(uint32(h[0]) + uint32(h[1])<<8 + uint32(h[2])<<16 + uint32(h[3])<<24), nil
 }
 
-func (*pathValidRunner) Run(attr *vts.Attr, opts *vts.RunnerEnv) error {
+func (*pathValidRunner) Run(attr *vts.Attr, chkr *vts.Checker, opts *vts.RunnerEnv) error {
 	path := attr.Value.String()
 	if s, ok := attr.Value.(starlark.String); ok {
 		path = string(s)
@@ -77,7 +77,7 @@ func (t *enumValueRunner) Hash() (uint32, error) {
 	return uint32(uint32(h[0]) + uint32(h[1])<<8 + uint32(h[2])<<16 + uint32(h[3])<<24), nil
 }
 
-func (e *enumValueRunner) Run(attr *vts.Attr, opts *vts.RunnerEnv) error {
+func (e *enumValueRunner) Run(attr *vts.Attr, chkr *vts.Checker, opts *vts.RunnerEnv) error {
 	v := attr.Value.String()
 	if s, ok := attr.Value.(starlark.String); ok {
 		v = string(s)
@@ -111,7 +111,7 @@ func (t *modeValidRunner) Hash() (uint32, error) {
 	return uint32(uint32(h[0]) + uint32(h[1])<<8 + uint32(h[2])<<16 + uint32(h[3])<<24), nil
 }
 
-func (*modeValidRunner) Run(attr *vts.Attr, opts *vts.RunnerEnv) error {
+func (*modeValidRunner) Run(attr *vts.Attr, chkr *vts.Checker, opts *vts.RunnerEnv) error {
 	mode := attr.Value.String()
 	if s, ok := attr.Value.(starlark.String); ok {
 		mode = string(s)
@@ -153,7 +153,7 @@ func (t *boolCheckValid) Hash() (uint32, error) {
 	return uint32(uint32(h[0]) + uint32(h[1])<<8 + uint32(h[2])<<16 + uint32(h[3])<<24), nil
 }
 
-func (*boolCheckValid) Run(attr *vts.Attr, opts *vts.RunnerEnv) error {
+func (*boolCheckValid) Run(attr *vts.Attr, chkr *vts.Checker, opts *vts.RunnerEnv) error {
 	if _, isBool := attr.Value.(starlark.Bool); !isBool {
 		return fmt.Errorf("attr is not a boolean: got type %T", attr.Value)
 	}

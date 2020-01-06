@@ -33,7 +33,7 @@ func (t *failingCompChecker) Hash() (uint32, error) {
 	return uint32(uint32(h[0]) + uint32(h[1])<<8 + uint32(h[2])<<16 + uint32(h[3])<<24), nil
 }
 
-func (r *failingCompChecker) Run(c *vts.Component, opts *vts.RunnerEnv) error {
+func (r *failingCompChecker) Run(c *vts.Component, chkr *vts.Checker, opts *vts.RunnerEnv) error {
 	return errors.New("debug: returning error")
 }
 

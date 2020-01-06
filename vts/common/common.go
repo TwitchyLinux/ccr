@@ -55,6 +55,7 @@ var commonTargets = map[string]vts.Target{
 	"common://checks:boolean":            BoolChecker,
 	"common://checks:deb_info":           DebInfoChecker,
 	"common://checks:always_fail":        DebugFailingComponentChecker,
+	"common://checks/filelist:present":   FilelistAllPresentChecker,
 
 	"common://generators:dir":     DirGenerator,
 	"common://generators:symlink": SymlinkGenerator,

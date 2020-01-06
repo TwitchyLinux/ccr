@@ -97,7 +97,7 @@ func (t *Checker) RunAttr(attr *Attr, opts *RunnerEnv) error {
 	if !ok {
 		return fmt.Errorf("runner %v cannot be used to check a attr", t.Runner)
 	}
-	err := ac.Run(attr, opts)
+	err := ac.Run(attr, t, opts)
 	if err != nil {
 		err = WrapWithTarget(err, attr)
 		err = WrapWithActionTarget(err, t)
@@ -115,7 +115,7 @@ func (t *Checker) RunResource(r *Resource, opts *RunnerEnv) error {
 	if !ok {
 		return fmt.Errorf("runner %v cannot be used to check a resource", t.Runner)
 	}
-	err := ac.Run(r, opts)
+	err := ac.Run(r, t, opts)
 	if err != nil {
 		err = WrapWithTarget(err, r)
 		err = WrapWithActionTarget(err, t)
@@ -140,7 +140,7 @@ func (t *Checker) RunCheckedTarget(tgt CheckedTarget, opts *RunnerEnv) error {
 				Err:          fmt.Errorf("cannot check direct target %T with %v", tgt, t.Kind),
 			}
 		}
-		if err := t.Runner.(eachComponentRunner).Run(c, opts); err != nil {
+		if err := t.Runner.(eachComponentRunner).Run(c, t, opts); err != nil {
 			return WrapWithTarget(err, tgt)
 		}
 		return nil

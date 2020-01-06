@@ -33,7 +33,7 @@ func (t *checkerOptValidRunner) Hash() (uint32, error) {
 	return uint32(uint32(h[0]) + uint32(h[1])<<8 + uint32(h[2])<<16 + uint32(h[3])<<24), nil
 }
 
-func (*checkerOptValidRunner) Run(attr *vts.Attr, opts *vts.RunnerEnv) error {
+func (*checkerOptValidRunner) Run(attr *vts.Attr, chkr *vts.Checker, opts *vts.RunnerEnv) error {
 	v, ok := attr.Value.(starlark.String)
 	if !ok {
 		return fmt.Errorf("expected string, got %T", attr.Value)

@@ -31,7 +31,7 @@ func (t *noopCheckRunner) Hash() (uint32, error) {
 	return uint32(uint32(h[0]) + uint32(h[1])<<8 + uint32(h[2])<<16 + uint32(h[3])<<24), nil
 }
 
-func (*noopCheckRunner) Run(c *vts.Component, opts *vts.RunnerEnv) error {
+func (*noopCheckRunner) Run(c *vts.Component, chkr *vts.Checker, opts *vts.RunnerEnv) error {
 	return nil
 }
 
@@ -58,7 +58,7 @@ func (t *fileCheckPresent) Hash() (uint32, error) {
 	return uint32(uint32(h[0]) + uint32(h[1])<<8 + uint32(h[2])<<16 + uint32(h[3])<<24), nil
 }
 
-func (*fileCheckPresent) Run(r *vts.Resource, opts *vts.RunnerEnv) error {
+func (*fileCheckPresent) Run(r *vts.Resource, chkr *vts.Checker, opts *vts.RunnerEnv) error {
 	path, err := resourcePath(r)
 	if err != nil {
 		if err == errNoAttr {

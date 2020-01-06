@@ -74,3 +74,10 @@ var DebInfoChecker = &vts.Checker{
 	Kind:   vts.ChkKindEachAttr,
 	Runner: runners.DebInfoCheckValid(),
 }
+
+var FilelistAllPresentChecker = &vts.Checker{
+	Path:   "common://checks/filelist:present",
+	Name:   "present",
+	Kind:   vts.ChkKindEachResource,
+	Runner: runners.FilelistCheckAllFiles(0, false),
+}

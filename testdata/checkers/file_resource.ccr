@@ -12,3 +12,23 @@ resource(
   parent = "common://resources:file",
   path   = "missing.json",
 )
+
+resource(
+  name   = "filelist_good",
+  parent = ":filelist",
+  path   = "filelist",
+)
+
+resource_class(
+  name = "filelist",
+  chks = [
+    "common://checks/filelist:present",
+  ],
+)
+
+
+resource(
+  name   = "filelist_missing_files",
+  parent = ":filelist",
+  path   = "bad_filelist",
+)
