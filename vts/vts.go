@@ -28,6 +28,8 @@ const (
 	TargetChecker
 	// TargetGenerator represents a generator target.
 	TargetGenerator
+	// TargetToolchain represents a description of a host toolchain.
+	TargetToolchain
 	// TargetPuesdo represents a special-case, generated target.
 	TargetPuesdo
 )
@@ -48,6 +50,8 @@ func (t TargetType) String() string {
 		return "checker"
 	case TargetGenerator:
 		return "generator"
+	case TargetToolchain:
+		return "toolchain"
 	case TargetPuesdo:
 		return "puesdo"
 	default:

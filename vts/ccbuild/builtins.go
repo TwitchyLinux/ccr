@@ -24,6 +24,7 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 		"component":      makeComponent(s),
 		"checker":        makeChecker(s),
 		"generator":      makeGenerator(s),
+		"toolchain":      makeToolchain(s),
 		"const": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
 			"check": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
 				"each_resource":  starlark.String(vts.ChkKindEachResource),

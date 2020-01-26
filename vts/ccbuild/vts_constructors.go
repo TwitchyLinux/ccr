@@ -406,3 +406,39 @@ func makeGenerator(s *Script) *starlark.Builtin {
 		return starlark.None, nil
 	})
 }
+
+func makeToolchain(s *Script) *starlark.Builtin {
+	t := vts.TargetToolchain
+
+	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+		var name string
+		var deps *starlark.List
+		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name", &name, "deps?", &deps); err != nil {
+			return starlark.None, err
+		}
+
+		tc := &vts.Toolchain{
+			Path: s.makePath(name),
+			Name: name,
+			Pos: &vts.DefPosition{
+				Path:  s.fPath,
+				Frame: thread.CallFrame(1),
+			},
+		}
+		if deps != nil {
+			i := deps.Iterate()
+			defer i.Done()
+			var x starlark.Value
+			for i.Next(&x) {
+				v, err := toDepTarget(s.path, x)
+				if err != nil {
+					return nil, fmt.Errorf("invalid dep: %v", err)
+				}
+				tc.Deps = append(tc.Deps, v)
+			}
+		}
+
+		s.targets = append(s.targets, tc)
+		return starlark.None, nil
+	})
+}

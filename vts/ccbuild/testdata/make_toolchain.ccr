@@ -1,0 +1,6 @@
+toolchain(
+  name = "arch",
+  deps = [
+    "//somepath",
+  ],
+)
