@@ -472,6 +472,12 @@ Class: //basic:whelp
 				"/good_link": os.FileMode(0644),
 			},
 		},
+		{
+			name:   "toolchain_check_missing",
+			target: "//toolchain_checkers:missing",
+			err:    "toolchain component missing: whelp",
+			config: GenerateConfig{},
+		},
 	}
 
 	cd, err := ioutil.TempDir("", "")

@@ -53,12 +53,13 @@ func (u *Universe) Generate(conf GenerateConfig, t vts.TargetRef, basePath strin
 	}
 
 	if err := u.generateTarget(generationState{
-		basePath:      basePath,
-		conf:          &conf,
-		runnerEnv:     &opts,
-		haveGenerated: make(targetSet, 4096),
-		targetChain:   make([]vts.Target, 0, 64),
-		rootTarget:    target,
+		basePath:               basePath,
+		conf:                   &conf,
+		runnerEnv:              &opts,
+		haveGenerated:          make(targetSet, 4096),
+		targetChain:            make([]vts.Target, 0, 64),
+		rootTarget:             target,
+		completedToolchainDeps: make(targetSet, 32),
 	}, target); err != nil {
 		u.logger.Error(MsgFailedPrecondition, err)
 		return err
@@ -92,6 +93,9 @@ type generationState struct {
 	// are currently being resolved. This will be the height target in the tree
 	// which has inputs defined, or the root node.
 	rootTarget vts.Target
+	// completedToolchainDeps keeps track of toolchains and their dependencies which
+	// have been checked.
+	completedToolchainDeps targetSet
 }
 
 func (s generationState) makeCircularDepErr(t vts.Target) error {
@@ -146,13 +150,14 @@ func (u *Universe) generateTarget(s generationState, t vts.Target) error {
 	// in a different mode to detect the circular dependencies.
 	if inputs, hasInputs := t.(vts.InputTarget); hasInputs {
 		subState := generationState{
-			isGeneratingInputs: true,
-			haveGenerated:      s.haveGenerated,
-			inputDep:           make(targetSet, 128),
-			basePath:           s.basePath,
-			conf:               s.conf,
-			runnerEnv:          s.runnerEnv,
-			rootTarget:         t,
+			isGeneratingInputs:     true,
+			haveGenerated:          s.haveGenerated,
+			inputDep:               make(targetSet, 128),
+			basePath:               s.basePath,
+			conf:                   s.conf,
+			runnerEnv:              s.runnerEnv,
+			rootTarget:             t,
+			completedToolchainDeps: make(targetSet, 32),
 		}
 		subState.inputDep[t] = struct{}{}
 		for _, inp := range inputs.NeedInputs() {
@@ -165,18 +170,25 @@ func (u *Universe) generateTarget(s generationState, t vts.Target) error {
 	// Specifying a class target as a dependency or input actually means all
 	// instances of that class are a dependency.
 	if t.IsClassTarget() {
-		// for c, i := range u.classedTargets {
-		// 	fmt.Printf("class = %+v\n", c)
-		// 	for _, i := range i {
-		// 		fmt.Printf("  %+v\n", i)
-		// 	}
-		// }
-		// fmt.Println(t, u.classedTargets[t.(vts.Target)])
 		for _, classInstance := range u.classedTargets[t] {
 			if err := u.generateTarget(s, classInstance); err != nil {
 				return vts.WrapWithTarget(err, classInstance)
 			}
 		}
+		s.haveGenerated[t] = struct{}{}
+	}
+
+	// Toolchains are a special case: They represent the state of the host system,
+	// so the checkers for them and their deps should be run against the host.
+	if tc, isToolchain := t.(*vts.Toolchain); isToolchain {
+		if err := u.checkTarget(tc, &vts.RunnerEnv{
+			Dir: "/",
+			FS:  osfs.New("/"),
+		}, s.completedToolchainDeps); err != nil {
+			return vts.WrapWithTarget(err, tc)
+		}
+		s.haveGenerated[t] = struct{}{}
+		return nil
 	}
 
 	// As inputs have already been evaluated, the only remaining source of nested

@@ -413,13 +413,15 @@ func makeToolchain(s *Script) *starlark.Builtin {
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var name string
 		var deps *starlark.List
-		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name", &name, "deps?", &deps); err != nil {
+		var binaries *starlark.Dict
+		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name", &name, "deps?", &deps, "binaries?", &binaries); err != nil {
 			return starlark.None, err
 		}
 
 		tc := &vts.Toolchain{
-			Path: s.makePath(name),
-			Name: name,
+			Path:           s.makePath(name),
+			Name:           name,
+			BinaryMappings: map[string]string{},
 			Pos: &vts.DefPosition{
 				Path:  s.fPath,
 				Frame: thread.CallFrame(1),
@@ -435,6 +437,23 @@ func makeToolchain(s *Script) *starlark.Builtin {
 					return nil, fmt.Errorf("invalid dep: %v", err)
 				}
 				tc.Deps = append(tc.Deps, v)
+			}
+		}
+		if binaries != nil {
+			for _, name := range binaries.Keys() {
+				n, ok := name.(starlark.String)
+				if !ok {
+					return nil, fmt.Errorf("invalid binary key: %v", name)
+				}
+				v, _, err := binaries.Get(name)
+				if err != nil {
+					return starlark.None, nil
+				}
+				v2, ok := v.(starlark.String)
+				if !ok {
+					return nil, fmt.Errorf("invalid binary value: %v", v)
+				}
+				tc.BinaryMappings[string(n)] = string(v2)
 			}
 		}
 

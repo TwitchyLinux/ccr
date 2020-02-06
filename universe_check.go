@@ -100,6 +100,17 @@ func (u *Universe) checkTarget(t vts.Target, opts *vts.RunnerEnv, checked target
 			}
 		}
 	}
+
+	// As a special case, toolchain targets need to check that the binaries they
+	// map exist on the system. opts.FS will point to the host system if
+	// we are checking a host toolchain.
+	if tc, isToolchain := t.(*vts.Toolchain); isToolchain {
+		for n, p := range tc.BinaryMappings {
+			if _, err := opts.FS.Stat(p); err != nil {
+				return vts.WrapWithTarget(vts.WrapWithPath(fmt.Errorf("toolchain component missing: %s", n), p), tc)
+			}
+		}
+	}
 	return nil
 }
 

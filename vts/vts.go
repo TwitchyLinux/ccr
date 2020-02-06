@@ -123,7 +123,8 @@ func validateDeps(deps []TargetRef) error {
 	for i, dep := range deps {
 		_, component := dep.Target.(*Component)
 		_, resource := dep.Target.(*Resource)
-		if !component && !resource {
+		_, toolchain := dep.Target.(*Toolchain)
+		if !component && !resource && !toolchain {
 			return fmt.Errorf("deps[%d] is type %T, but must be resource or component", i, dep.Target)
 		}
 	}

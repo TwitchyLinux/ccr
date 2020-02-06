@@ -1,0 +1,7 @@
+toolchain(
+  name = "missing",
+  binaries = {
+    # Expect to have this on all systems right
+    "whelp": "/bin/whelpfdgdfkgjdfhkldfgjh",
+  },
+)

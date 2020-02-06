@@ -6,7 +6,8 @@ type Toolchain struct {
 	Name string
 	Pos  *DefPosition
 
-	Deps []TargetRef
+	BinaryMappings map[string]string
+	Deps           []TargetRef
 }
 
 func (t *Toolchain) DefinedAt() *DefPosition {

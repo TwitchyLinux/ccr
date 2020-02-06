@@ -1,5 +1,8 @@
 toolchain(
   name = "arch",
+  binaries = {
+    "ls": "/bin/ls",
+  },
   deps = [
     "//somepath",
   ],
