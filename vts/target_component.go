@@ -9,6 +9,8 @@ type Component struct {
 	Details []TargetRef
 	Deps    []TargetRef
 	Checks  []TargetRef
+
+	Info RuntimeInfo
 }
 
 func (t *Component) DefinedAt() *DefPosition {
@@ -41,6 +43,10 @@ func (t *Component) Checkers() []TargetRef {
 
 func (t *Component) Attributes() []TargetRef {
 	return t.Details
+}
+
+func (t *Component) RuntimeInfo() *RuntimeInfo {
+	return &t.Info
 }
 
 func (t *Component) Validate() error {

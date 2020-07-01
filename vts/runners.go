@@ -17,6 +17,7 @@ type checkerRunner interface {
 type eachResourceRunner interface {
 	checkerRunner
 	Run(*Resource, *Checker, *RunnerEnv) error
+	PopulatorsNeeded() []InfoPopulator
 }
 
 type eachAttrRunner interface {
@@ -27,6 +28,7 @@ type eachAttrRunner interface {
 type eachComponentRunner interface {
 	checkerRunner
 	Run(*Component, *Checker, *RunnerEnv) error
+	PopulatorsNeeded() []InfoPopulator
 }
 
 type generateRunner interface {

@@ -17,6 +17,8 @@ type Resource struct {
 	Details []TargetRef
 	Deps    []TargetRef
 	Checks  []TargetRef
+
+	Info RuntimeInfo
 }
 
 func (t *Resource) DefinedAt() *DefPosition {
@@ -57,6 +59,10 @@ func (t *Resource) Attributes() []TargetRef {
 
 func (t *Resource) Src() *TargetRef {
 	return t.Source
+}
+
+func (t *Resource) RuntimeInfo() *RuntimeInfo {
+	return &t.Info
 }
 
 func (t *Resource) Validate() error {

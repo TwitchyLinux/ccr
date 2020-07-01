@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/twitchylinux/ccr/vts"
+	"github.com/twitchylinux/ccr/vts/ccbuild/info"
 	"go.starlark.net/starlark"
 )
 
@@ -34,16 +35,13 @@ func (t *dirCheckPresent) Hash() (uint32, error) {
 }
 
 func (*dirCheckPresent) Run(r *vts.Resource, chkr *vts.Checker, opts *vts.RunnerEnv) error {
-	path, err := resourcePath(r)
+	d, err := r.RuntimeInfo().Get(info.StatPopulator, info.FileStat)
 	if err != nil {
 		return err
 	}
-	stat, err := opts.FS.Stat(path)
-	if err != nil {
-		return vts.WrapWithPath(err, path)
-	}
+	stat := d.(info.FileInfo)
 	if !stat.IsDir() {
-		return vts.WrapWithPath(fmt.Errorf("resource %q is not a directory", path), path)
+		return vts.WrapWithPath(fmt.Errorf("resource %q is not a directory", stat.Path), stat.Path)
 	}
 
 	m, err := resourceMode(r)
@@ -57,6 +55,10 @@ func (*dirCheckPresent) Run(r *vts.Resource, chkr *vts.Checker, opts *vts.Runner
 		return fmt.Errorf("permissions mismatch: %#o was specified but directory is %#o", m, stat.Mode()&os.ModePerm)
 	}
 	return nil
+}
+
+func (*dirCheckPresent) PopulatorsNeeded() []vts.InfoPopulator {
+	return []vts.InfoPopulator{info.StatPopulator}
 }
 
 // GenerateDir returns a generator runner that generates directories.

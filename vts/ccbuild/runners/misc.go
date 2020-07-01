@@ -35,6 +35,10 @@ func (*noopCheckRunner) Run(c *vts.Component, chkr *vts.Checker, opts *vts.Runne
 	return nil
 }
 
+func (*noopCheckRunner) PopulatorsNeeded() []vts.InfoPopulator {
+	return nil
+}
+
 // FileCheckPresent returns a runner that checks a file is present
 // at the indicated path.
 func FileCheckPresent() *fileCheckPresent {
@@ -73,5 +77,9 @@ func (*fileCheckPresent) Run(r *vts.Resource, chkr *vts.Checker, opts *vts.Runne
 	if stat.IsDir() {
 		return vts.WrapWithPath(fmt.Errorf("resource %q is a directory", path), path)
 	}
+	return nil
+}
+
+func (*fileCheckPresent) PopulatorsNeeded() []vts.InfoPopulator {
 	return nil
 }

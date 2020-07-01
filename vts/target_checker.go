@@ -115,6 +115,19 @@ func (t *Checker) RunResource(r *Resource, opts *RunnerEnv) error {
 	if !ok {
 		return fmt.Errorf("runner %v cannot be used to check a resource", t.Runner)
 	}
+
+	for _, pop := range ac.PopulatorsNeeded() {
+		ri := r.RuntimeInfo()
+		if ri.HasRun(pop) {
+			continue
+		}
+		if err := pop.Run(r, opts, ri); err != nil {
+			err = WrapWithTarget(err, r)
+			err = WrapWithActionTarget(err, t)
+			return err
+		}
+	}
+
 	err := ac.Run(r, t, opts)
 	if err != nil {
 		err = WrapWithTarget(err, r)
@@ -140,7 +153,18 @@ func (t *Checker) RunCheckedTarget(tgt CheckedTarget, opts *RunnerEnv) error {
 				Err:          fmt.Errorf("cannot check direct target %T with %v", tgt, t.Kind),
 			}
 		}
-		if err := t.Runner.(eachComponentRunner).Run(c, t, opts); err != nil {
+		r := t.Runner.(eachComponentRunner)
+
+		for _, pop := range r.PopulatorsNeeded() {
+			if c.RuntimeInfo().HasRun(pop) {
+				continue
+			}
+			if err := pop.Run(c, opts, c.RuntimeInfo()); err != nil {
+				err = WrapWithTarget(err, tgt)
+				return err
+			}
+		}
+		if err := r.Run(c, t, opts); err != nil {
 			return WrapWithTarget(err, tgt)
 		}
 		return nil

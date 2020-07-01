@@ -50,3 +50,7 @@ func (*jsonValidRunner) Run(resource *vts.Resource, chkr *vts.Checker, opts *vts
 	}
 	return err
 }
+
+func (*jsonValidRunner) PopulatorsNeeded() []vts.InfoPopulator {
+	return nil
+}

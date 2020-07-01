@@ -71,3 +71,7 @@ func (flc *filelistChecker) Run(r *vts.Resource, chkr *vts.Checker, opts *vts.Ru
 
 	return nil
 }
+
+func (*filelistChecker) PopulatorsNeeded() []vts.InfoPopulator {
+	return nil
+}

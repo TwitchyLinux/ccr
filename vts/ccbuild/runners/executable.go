@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/twitchylinux/ccr/vts"
+	"github.com/twitchylinux/ccr/vts/ccbuild/info"
 	"go.starlark.net/starlark"
 )
 
@@ -34,38 +35,35 @@ func (t *binaryValidRunner) Hash() (uint32, error) {
 }
 
 func (*binaryValidRunner) Run(resource *vts.Resource, chkr *vts.Checker, opts *vts.RunnerEnv) error {
-	path, err := resourcePath(resource)
+	d, err := resource.RuntimeInfo().Get(info.StatPopulator, info.FileStat)
 	if err != nil {
 		return err
 	}
-	f, err := opts.FS.Open(path)
-	if err != nil {
-		return vts.WrapWithPath(err, path)
+	fileInfo := d.(info.FileInfo)
+
+	if d, err = resource.RuntimeInfo().Get(info.ELFPopulator, info.ELFHeader); err != nil {
+		return err
 	}
-	defer f.Close()
-	binData, err := elf.NewFile(f)
-	if err != nil {
-		return vts.WrapWithPath(err, path)
-	}
+	elfHeader := d.(elf.FileHeader)
 
 	// Sanity checks.
-	if binData.Data != elf.ELFDATA2LSB { // TODO: Parameterize by config.
-		return vts.WrapWithPath(fmt.Errorf("elf data is not %v, got %v", elf.ELFDATA2LSB, binData.Data), path)
+	if elfHeader.Data != elf.ELFDATA2LSB { // TODO: Parameterize by config.
+		return vts.WrapWithPath(fmt.Errorf("elf data is not %v, got %v", elf.ELFDATA2LSB, elfHeader.Data), fileInfo.Path)
 	}
-	if binData.Version != elf.EV_CURRENT {
-		return vts.WrapWithPath(fmt.Errorf("elf version is not %v, got %v", elf.EV_CURRENT, binData.Version), path)
+	if elfHeader.Version != elf.EV_CURRENT {
+		return vts.WrapWithPath(fmt.Errorf("elf version is not %v, got %v", elf.EV_CURRENT, elfHeader.Version), fileInfo.Path)
 	}
-	if binData.Class != elf.ELFCLASS32 && binData.Class != elf.ELFCLASS64 {
-		return vts.WrapWithPath(fmt.Errorf("elf class is not 32/64, got %v", binData.Class), path)
+	if elfHeader.Class != elf.ELFCLASS32 && elfHeader.Class != elf.ELFCLASS64 {
+		return vts.WrapWithPath(fmt.Errorf("elf class is not 32/64, got %v", elfHeader.Class), fileInfo.Path)
 	}
-	if binData.OSABI != elf.ELFOSABI_NONE && binData.OSABI != elf.ELFOSABI_LINUX {
-		return vts.WrapWithPath(fmt.Errorf("elf ABI is non-linux %v", binData.OSABI), path)
+	if elfHeader.OSABI != elf.ELFOSABI_NONE && elfHeader.OSABI != elf.ELFOSABI_LINUX {
+		return vts.WrapWithPath(fmt.Errorf("elf ABI is non-linux %v", elfHeader.OSABI), fileInfo.Path)
 	}
-	if binData.Type != elf.ET_EXEC {
-		return vts.WrapWithPath(fmt.Errorf("elf type is non-exec %v", binData.Type), path)
+	if elfHeader.Type != elf.ET_EXEC {
+		return vts.WrapWithPath(fmt.Errorf("elf type is non-exec %v", elfHeader.Type), fileInfo.Path)
 	}
-	if binData.Machine != elf.EM_X86_64 && binData.Machine != elf.EM_386 { // TODO: Parameterize by config.
-		return vts.WrapWithPath(fmt.Errorf("elf arch is %v", binData.Machine), path)
+	if elfHeader.Machine != elf.EM_X86_64 && elfHeader.Machine != elf.EM_386 { // TODO: Parameterize by config.
+		return vts.WrapWithPath(fmt.Errorf("elf arch is %v", elfHeader.Machine), fileInfo.Path)
 	}
 
 	// for _, section := range binData.Sections {
@@ -78,13 +76,13 @@ func (*binaryValidRunner) Run(resource *vts.Resource, chkr *vts.Checker, opts *v
 	// fmt.Printf("dyns: %+v\n", things)
 	// fmt.Printf("libs: %+v\n", libs)
 
-	s, err := opts.FS.Stat(path)
-	if err != nil {
-		return vts.WrapWithPath(err, path)
-	}
-	if s.Mode()&os.ModePerm&0111 == 0 {
-		return vts.WrapWithPath(fmt.Errorf("binary is not executable: %#o", s.Mode()), path)
+	if fileInfo.Mode()&os.ModePerm&0111 == 0 {
+		return vts.WrapWithPath(fmt.Errorf("binary is not executable: %#o", fileInfo.Mode()), fileInfo.Path)
 	}
 
 	return nil
+}
+
+func (*binaryValidRunner) PopulatorsNeeded() []vts.InfoPopulator {
+	return []vts.InfoPopulator{info.StatPopulator, info.ELFPopulator}
 }

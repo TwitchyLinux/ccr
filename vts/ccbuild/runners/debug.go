@@ -37,6 +37,10 @@ func (r *failingCompChecker) Run(c *vts.Component, chkr *vts.Checker, opts *vts.
 	return errors.New("debug: returning error")
 }
 
+func (*failingCompChecker) PopulatorsNeeded() []vts.InfoPopulator {
+	return nil
+}
+
 // GenerateDebugManifest returns a generator runner that writes information
 // about its inputs to a file.
 func GenerateDebugManifest() *debugManifestGenerator {
@@ -45,7 +49,7 @@ func GenerateDebugManifest() *debugManifestGenerator {
 
 type debugManifestGenerator struct{}
 
-func (*debugManifestGenerator) String() string { return "misc.noop" }
+func (*debugManifestGenerator) String() string { return "debug.input_manifest" }
 
 func (*debugManifestGenerator) Freeze() {}
 

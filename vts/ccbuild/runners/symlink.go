@@ -71,6 +71,10 @@ func (*symlinkCheckPresent) Run(r *vts.Resource, chkr *vts.Checker, opts *vts.Ru
 	return nil
 }
 
+func (*symlinkCheckPresent) PopulatorsNeeded() []vts.InfoPopulator {
+	return nil
+}
+
 // GenerateSymlink returns a generator runner that generates symlinks.
 func GenerateSymlink() *symlinkGenerator {
 	return &symlinkGenerator{}
