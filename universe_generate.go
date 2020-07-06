@@ -38,8 +38,9 @@ func (u *Universe) Generate(conf GenerateConfig, t vts.TargetRef, basePath strin
 		return ErrNotBuilt
 	}
 	opts := vts.RunnerEnv{
-		Dir: basePath,
-		FS:  osfs.New(basePath),
+		Dir:      basePath,
+		FS:       osfs.New(basePath),
+		Universe: &runtimeResolver{u},
 	}
 	var target vts.Target
 

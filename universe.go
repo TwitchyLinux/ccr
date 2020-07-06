@@ -30,6 +30,8 @@ type Universe struct {
 	allTargets []vts.GlobalTarget
 	// classedTargets enumerates the targets which chain to a specific parent.
 	classedTargets map[vts.Target][]vts.GlobalTarget
+	// pathTargets enumerates the targets which had a specific path attribute.
+	pathTargets map[string]vts.Target
 
 	resolved bool
 	logger   opTrack
@@ -241,6 +243,22 @@ func (u *Universe) Build(targets []vts.TargetRef, findOpts *FindOptions) error {
 			return err
 		}
 	}
+
+	// Track targets that declared a path.
+	for _, t := range u.allTargets {
+		if deets, hasDetails := t.(vts.DetailedTarget); hasDetails {
+			for _, attr := range deets.Attributes() {
+				if a := attr.Target.(*vts.Attr); a.Parent.Target.(*vts.AttrClass) == common.PathClass && a.Value != nil {
+					path := string(a.Value.(starlark.String))
+					if e, exists := u.pathTargets[path]; exists {
+						return u.logger.Error(MsgBadDef, vts.WrapWithPath(
+							vts.WrapWithTarget(vts.WrapWithTarget(errors.New("multiple targets declared the same path"), e), t), path))
+					}
+					u.pathTargets[path] = t
+				}
+			}
+		}
+	}
 	u.resolved = true
 	return nil
 }
@@ -297,6 +315,19 @@ func determineMode(t vts.Target) (os.FileMode, error) {
 	return 0, vts.WrapWithTarget(fmt.Errorf("bad type for mode: want string, got %T", v), t)
 }
 
+// runtimeResolver implements vts.UniverseResolver.
+type runtimeResolver struct {
+	*Universe
+}
+
+func (u *runtimeResolver) FindByPath(path string) (vts.Target, error) {
+	t, ok := u.pathTargets[path]
+	if !ok {
+		return nil, os.ErrNotExist
+	}
+	return t, nil
+}
+
 // NewUniverse constructs an empty universe.
 func NewUniverse(logger opTrack, cache *Cache) *Universe {
 	if logger == nil {
@@ -307,6 +338,7 @@ func NewUniverse(logger opTrack, cache *Cache) *Universe {
 		allTargets:     make([]vts.GlobalTarget, 0, 4096),
 		fqTargets:      make(map[string]vts.GlobalTarget, 4096),
 		classedTargets: make(map[vts.Target][]vts.GlobalTarget, 2048),
+		pathTargets:    make(map[string]vts.Target, 1024),
 		logger:         logger,
 	}
 }

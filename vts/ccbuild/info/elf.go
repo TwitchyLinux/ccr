@@ -9,8 +9,13 @@ import (
 
 // ELF populator data keys.
 const (
-	ELFHeader = "elf-header"
+	ELFHeader         = "elf-header"
+	ELFDynamicSymbols = "elf-dynamic-symbols"
 )
+
+type ELFSym struct {
+	elf.Symbol
+}
 
 type elfPopulator struct{}
 
@@ -35,5 +40,16 @@ func (i *elfPopulator) Run(t vts.Target, opts *vts.RunnerEnv, info *vts.RuntimeI
 	}
 
 	info.Set(i, ELFHeader, binData.FileHeader)
+
+	s, err := binData.DynamicSymbols()
+	if err != nil {
+		return vts.WrapWithPath(err, path)
+	}
+	outSyms := make([]ELFSym, len(s))
+	for i, s := range s {
+		outSyms[i] = ELFSym{s}
+	}
+	info.Set(i, ELFDynamicSymbols, outSyms)
+
 	return nil
 }

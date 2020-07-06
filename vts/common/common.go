@@ -40,6 +40,7 @@ var commonTargets = map[string]vts.Target{
 	"common://resources:virtual":     VirtualResourceClass,
 	"common://resources:binary":      BinResourceClass,
 	"common://resources:sys_library": SysLibResourceClass,
+	"common://resources:library_dir": LibDirResourceClass,
 	"common://resources:json_file":   JSONResourceClass,
 
 	"common://resources/accounts:user":  UserResourceClass,

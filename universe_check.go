@@ -19,8 +19,9 @@ func (u *Universe) Check(targets []vts.TargetRef, basePath string) error {
 	var (
 		evaluatedTargets = make(targetSet, 4096)
 		opts             = vts.RunnerEnv{
-			Dir: basePath,
-			FS:  osfs.New(basePath),
+			Dir:      basePath,
+			FS:       osfs.New(basePath),
+			Universe: &runtimeResolver{u},
 		}
 	)
 	for _, t := range targets {

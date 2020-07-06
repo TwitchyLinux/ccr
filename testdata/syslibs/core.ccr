@@ -1,0 +1,53 @@
+resource(
+  name   = 'usr_dir',
+  parent = 'common://resources:dir',
+  path   = '/usr',
+  mode   = '0755',
+  source = 'common://generators:dir',
+)
+
+resource(
+  name   = 'usr_lib',
+  parent = 'common://resources:library_dir',
+  path   = '/lib2',
+  source = 'common://generators:dir',
+  deps   = [
+    ":usr_dir",
+  ],
+)
+
+resource(
+  name   = 'lib_something',
+  parent = 'common://resources:sys_library',
+  path   = '/usr/lib/libsomething.so',
+  source = file('libsomething.so'),
+  deps   = [
+    ":usr_lib",
+  ],
+)
+
+resource(
+  name   = 'test_bin',
+  parent = 'common://resources:binary',
+  path   = '/usr/bin',
+  source = file('bin'),
+  deps   = [
+    ":usr_dir",
+    ":lib_something",
+  ],
+)
+
+component(
+  name = "core",
+  deps = [
+    ":test_bin",
+    ":shared_libraries",
+  ],
+)
+
+component(
+  name = "shared_libraries",
+  deps = [
+    ":lib_something",
+  ],
+)

@@ -1,0 +1,19 @@
+component(
+  name = "fail",
+  deps = [
+    ":thing1",
+    ":thing2",
+  ],
+)
+
+resource(
+  name   = "thing1",
+  parent = "common://resources:file",
+  path   = "/some/path",
+)
+
+resource(
+  name   = "thing2",
+  parent = "common://resources:file",
+  path   = "/some/path",
+)

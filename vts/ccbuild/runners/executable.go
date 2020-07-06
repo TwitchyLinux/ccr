@@ -59,7 +59,7 @@ func (*binaryValidRunner) Run(resource *vts.Resource, chkr *vts.Checker, opts *v
 	if elfHeader.OSABI != elf.ELFOSABI_NONE && elfHeader.OSABI != elf.ELFOSABI_LINUX {
 		return vts.WrapWithPath(fmt.Errorf("elf ABI is non-linux %v", elfHeader.OSABI), fileInfo.Path)
 	}
-	if elfHeader.Type != elf.ET_EXEC {
+	if elfHeader.Type != elf.ET_EXEC && elfHeader.Type != elf.ET_DYN {
 		return vts.WrapWithPath(fmt.Errorf("elf type is non-exec %v", elfHeader.Type), fileInfo.Path)
 	}
 	if elfHeader.Machine != elf.EM_X86_64 && elfHeader.Machine != elf.EM_386 { // TODO: Parameterize by config.

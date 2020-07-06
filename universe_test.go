@@ -1,6 +1,7 @@
 package ccr
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -8,8 +9,11 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/common"
+	"go.starlark.net/starlark"
+	"go.starlark.net/syntax"
 )
 
 func testResolver(path string) (vts.Target, error) {
@@ -29,6 +33,10 @@ func testResolver(path string) (vts.Target, error) {
 			Name:   "other_thing",
 			Details: []vts.TargetRef{
 				{Path: "common://attrs/arch:amd64"},
+				{Target: &vts.Attr{
+					Parent: vts.TargetRef{Path: "common://attrs:path"},
+					Value:  starlark.String("/other_thing"),
+				}},
 			},
 		}, nil
 	case "//distant/yolo:reee":
@@ -86,6 +94,7 @@ func TestUniverseBuild(t *testing.T) {
 		fqTargets:      map[string]vts.GlobalTarget{},
 		logger:         &silentOpTrack{},
 		classedTargets: map[vts.Target][]vts.GlobalTarget{},
+		pathTargets:    map[string]vts.Target{},
 	}
 	findOpts := FindOptions{
 		FallbackResolvers: []CCRResolver{testResolver},
@@ -102,6 +111,13 @@ func TestUniverseBuild(t *testing.T) {
 	for _, path := range []string{"//root:root_thing", "common://attrs/arch:amd64", "common://attrs:arch", "//distant/yolo:reee", "//root:other_thing"} {
 		if _, exists := uv.fqTargets[path]; !exists {
 			t.Errorf("target %q not present", path)
+		}
+	}
+
+	// Confirm a few targets with paths were inserted into runtimeFinder.PathTargets.
+	for _, path := range []string{"/other_thing"} {
+		if _, ok := uv.pathTargets[path]; !ok {
+			t.Errorf("target with path attribute was not tracked in PathTargets[%q]", path)
 		}
 	}
 
@@ -288,7 +304,7 @@ func TestUniverseCheck(t *testing.T) {
 			err:     "attr is not a boolean: got type starlark.String",
 		},
 		{
-			name:    "deb_info_bad_type",
+			name:    "deb_info_bad_tyruntimeFinderpe",
 			base:    "testdata/checkers/base",
 			targets: []vts.TargetRef{{Path: "//deb:bad_type"}},
 			err:     "expected list, got starlark.String",
@@ -548,5 +564,102 @@ Class: //basic:whelp
 				}
 			}
 		})
+	}
+}
+
+func TestSystemLibraryStuff(t *testing.T) {
+	cd, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(cd)
+	cache, err := NewCache(cd)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	uv := NewUniverse(&silentOpTrack{}, cache)
+	dr := NewDirResolver("testdata/syslibs")
+	findOpts := FindOptions{
+		FallbackResolvers: []CCRResolver{dr.Resolve},
+		PrefixResolvers: map[string]CCRResolver{
+			"common": common.Resolve,
+		},
+	}
+
+	td, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+
+	if err := uv.Build([]vts.TargetRef{{Path: "//core:core"}}, &findOpts); err != nil {
+		t.Fatalf("universe.Build(%q) failed: %v", "//core:core", err)
+	}
+
+	err = uv.Generate(GenerateConfig{}, vts.TargetRef{Path: "//core:core"}, td)
+	if err != nil {
+		t.Errorf("universe.Generate(\"//core:core\") returned %v, want nil", err)
+	}
+}
+
+func TestBuildFailsDuplicatePaths(t *testing.T) {
+	cd, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(cd)
+	cache, err := NewCache(cd)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	uv := NewUniverse(&silentOpTrack{}, cache)
+	dr := NewDirResolver("testdata/basic")
+	findOpts := FindOptions{
+		FallbackResolvers: []CCRResolver{dr.Resolve},
+		PrefixResolvers: map[string]CCRResolver{
+			"common": common.Resolve,
+		},
+	}
+
+	td, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(td)
+
+	f := "//dupe_paths"
+	out := uv.Build([]vts.TargetRef{{Path: "//dupe_paths:fail"}}, &findOpts).(vts.WrappedErr)
+	var want = vts.WrappedErr{
+		Path: "/some/path",
+		Err:  errors.New("multiple targets declared the same path"),
+		Target: &vts.Resource{
+			Path: "//dupe_paths:thing1",
+			Name: "thing1",
+			Pos: &vts.DefPosition{
+				Path:  "testdata/basic/dupe_paths.ccr",
+				Frame: starlark.CallFrame{Name: "<toplevel>", Pos: syntax.MakePosition(&f, 9, 9)},
+			},
+		},
+		TargetChain: []vts.Target{
+			&vts.Resource{
+				Path: "//dupe_paths:thing2",
+				Name: "thing2",
+				Pos: &vts.DefPosition{
+					Path:  "testdata/basic/dupe_paths.ccr",
+					Frame: starlark.CallFrame{Name: "<toplevel>", Pos: syntax.MakePosition(&f, 15, 9)},
+				},
+			},
+		},
+	}
+	if out.Err.Error() != want.Err.Error() {
+		t.Errorf("Incorrect error string: got %q, want %q", out.Err.Error(), want.Err.Error())
+	}
+
+	if diff := cmp.Diff(out, want, cmpopts.IgnoreTypes(vts.TargetRef{}),
+		cmpopts.IgnoreFields(vts.Resource{}, "Pos", "Details"),
+		cmpopts.IgnoreFields(vts.WrappedErr{}, "Err")); diff != "" {
+		t.Fatalf("universe.Build(%q) failed: \n%s", "//dupe_paths:fail", diff)
 	}
 }

@@ -50,6 +50,11 @@ func resourceMode(r *vts.Resource) (os.FileMode, error) {
 		}
 	}
 
+	// Special case: system library directories may omit the mode parameter.
+	if r.Parent.Target.(*vts.ResourceClass).GlobalPath() == "common://resources:library_dir" {
+		return 0755, nil
+	}
+
 	return 0, errNoAttr
 }
 

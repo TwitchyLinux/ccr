@@ -19,6 +19,13 @@ var DirResourceClass = &vts.ResourceClass{
 		{Target: DirPresentChecker},
 	},
 }
+var LibDirResourceClass = &vts.ResourceClass{
+	Path: "common://resources:library_dir",
+	Name: "dir",
+	Checks: []vts.TargetRef{
+		{Target: DirPresentChecker},
+	},
+}
 
 var SymlinkResourceClass = &vts.ResourceClass{
 	Path: "common://resources:symlink",

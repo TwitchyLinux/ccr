@@ -6,8 +6,14 @@ import (
 
 // RunnerEnv describes state and configuration information used by runners.
 type RunnerEnv struct {
-	Dir string
-	FS  billy.Filesystem
+	Dir      string
+	FS       billy.Filesystem
+	Universe UniverseResolver
+}
+
+// UniverseResolver allows resolution of targets within the universe.
+type UniverseResolver interface {
+	FindByPath(path string) (Target, error)
 }
 
 type checkerRunner interface {
