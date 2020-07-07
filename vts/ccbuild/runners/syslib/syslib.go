@@ -3,10 +3,12 @@ package syslib
 
 import (
 	"crypto/sha256"
+	"debug/elf"
 	"errors"
 	"fmt"
 
 	"github.com/twitchylinux/ccr/vts"
+	"github.com/twitchylinux/ccr/vts/ccbuild/info"
 	"go.starlark.net/starlark"
 )
 
@@ -33,7 +35,7 @@ func (t *globalChecker) Hash() (uint32, error) {
 	return uint32(uint32(h[0]) + uint32(h[1])<<8 + uint32(h[2])<<16 + uint32(h[3])<<24), nil
 }
 
-func (*globalChecker) Run(chkr *vts.Checker, opts *vts.RunnerEnv) error {
+func (c *globalChecker) Run(chkr *vts.Checker, opts *vts.RunnerEnv) error {
 	dirs, err := getLibraryDirs(opts)
 	if err != nil {
 		return fmt.Errorf("enumerating system library dirs: %v", err)
@@ -49,6 +51,43 @@ func (*globalChecker) Run(chkr *vts.Checker, opts *vts.RunnerEnv) error {
 	if len(bins) == 0 {
 		return errors.New("no binaries declared in universe")
 	}
+	for path, bin := range bins {
+		if err := c.checkBinary(bin, opts); err != nil {
+			return vts.WrapWithPath(vts.WrapWithTarget(err, bin), path)
+		}
+	}
 
 	return nil
+}
+
+func (*globalChecker) binaryInfo(r *vts.Resource, opts *vts.RunnerEnv) (elf.FileHeader, []info.ELFSym, string, error) {
+	if !r.RuntimeInfo().HasRun(info.ELFPopulator) {
+		if err := info.ELFPopulator.Run(r, opts, r.RuntimeInfo()); err != nil {
+			return elf.FileHeader{}, nil, "", err
+		}
+	}
+	d, err := r.RuntimeInfo().Get(info.ELFPopulator, info.ELFHeader)
+	if err != nil {
+		return elf.FileHeader{}, nil, "", err
+	}
+	elfHeader := d.(elf.FileHeader)
+	if d, err = r.RuntimeInfo().Get(info.ELFPopulator, info.ELFDynamicSymbols); err != nil {
+		return elf.FileHeader{}, nil, "", err
+	}
+	syms := d.([]info.ELFSym)
+	if d, err = r.RuntimeInfo().Get(info.ELFPopulator, info.ELFInterpreter); err != nil {
+		return elf.FileHeader{}, nil, "", err
+	}
+	interp := d.(string)
+	return elfHeader, syms, interp, nil
+}
+
+func (c *globalChecker) checkBinary(r *vts.Resource, opts *vts.RunnerEnv) error {
+	_, syms, interp, err := c.binaryInfo(r, opts)
+	if _, err := opts.Universe.FindByPath(interp); err != nil {
+		return fmt.Errorf("couldnt read resource representing declared dynamic linker (%q): %v", interp, err)
+	}
+
+	fmt.Printf("info: %+v\n", syms)
+	return err
 }

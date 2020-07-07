@@ -37,6 +37,23 @@ resource(
   ],
 )
 
+resource(
+  name   = 'lib64',
+  parent = 'common://resources:library_dir',
+  path   = '/lib64',
+  source = 'common://generators:dir',
+)
+
+resource(
+  name   = 'ldd',
+  parent = 'common://resources:sys_library',
+  path   = '/lib64/ld-linux-x86-64.so.2',
+  source = file('ld.so.2'),
+  deps   = [
+    ":lib64",
+  ],
+)
+
 component(
   name = "core",
   deps = [
@@ -51,6 +68,7 @@ component(
 component(
   name = "shared_libraries",
   deps = [
+    ":ldd",
     ":lib_something",
   ],
 )
