@@ -59,6 +59,10 @@ func (t *Puesdo) Attributes() []TargetRef {
 }
 
 func (t *Puesdo) Validate() error {
+	if err := validateDetails(t.Details); err != nil {
+		return err
+	}
+
 	switch t.Kind {
 	case DebRef:
 		if t.URL == "" && t.Path == "" {

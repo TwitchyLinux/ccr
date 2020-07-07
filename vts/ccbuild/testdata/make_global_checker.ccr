@@ -1,0 +1,5 @@
+checker(
+  name = "link_checker",
+  kind = const.check.universe,
+  run  = builtin.syslib.link_checker,
+)

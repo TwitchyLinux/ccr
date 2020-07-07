@@ -195,7 +195,8 @@ func TestMakeTarget(t *testing.T) {
 	}
 
 	for _, fPath := range scripts {
-		targetType := ttre.FindAllStringSubmatch(fPath, 1)[0][1]
+		spl := strings.Split(ttre.FindAllStringSubmatch(fPath, 1)[0][1], "_")
+		targetType := spl[len(spl)-1]
 
 		t.Run(targetType, func(t *testing.T) {
 			d, err := ioutil.ReadFile(fPath)

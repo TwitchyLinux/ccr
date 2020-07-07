@@ -3,6 +3,7 @@ package ccbuild
 import (
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/ccbuild/runners"
+	"github.com/twitchylinux/ccr/vts/ccbuild/runners/syslib"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 )
@@ -30,6 +31,7 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 				"each_resource":  starlark.String(vts.ChkKindEachResource),
 				"each_attribute": starlark.String(vts.ChkKindEachAttr),
 				"each_component": starlark.String(vts.ChkKindEachComponent),
+				"universe":       starlark.String(vts.ChkKindGlobal),
 			}),
 		}),
 		"builtin": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
@@ -41,6 +43,9 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 			}),
 			"debug": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
 				"generator_input": runners.GenerateDebugManifest(),
+			}),
+			"syslib": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
+				"link_checker": syslib.RuntimeLinkChecker(),
 			}),
 		}),
 		"derive": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{

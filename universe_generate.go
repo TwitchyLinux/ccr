@@ -40,7 +40,7 @@ func (u *Universe) Generate(conf GenerateConfig, t vts.TargetRef, basePath strin
 	opts := vts.RunnerEnv{
 		Dir:      basePath,
 		FS:       osfs.New(basePath),
-		Universe: &runtimeResolver{u},
+		Universe: &runtimeResolver{u, map[string]interface{}{}},
 	}
 	var target vts.Target
 
@@ -67,7 +67,15 @@ func (u *Universe) Generate(conf GenerateConfig, t vts.TargetRef, basePath strin
 	}
 
 	checked := make(targetSet, 4096)
-	return u.checkTarget(target, &opts, checked)
+	if err := u.checkTarget(target, &opts, checked); err != nil {
+		return err
+	}
+	for _, chkr := range u.globalCheckers {
+		if err := chkr.RunCheckedTarget(nil, &opts); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type generationState struct {

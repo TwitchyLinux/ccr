@@ -21,7 +21,7 @@ func (u *Universe) Check(targets []vts.TargetRef, basePath string) error {
 		opts             = vts.RunnerEnv{
 			Dir:      basePath,
 			FS:       osfs.New(basePath),
-			Universe: &runtimeResolver{u},
+			Universe: &runtimeResolver{u, map[string]interface{}{}},
 		}
 	)
 	for _, t := range targets {
@@ -34,6 +34,12 @@ func (u *Universe) Check(targets []vts.TargetRef, basePath string) error {
 			}
 		}
 		if err := u.checkTarget(target, &opts, evaluatedTargets); err != nil {
+			return err
+		}
+	}
+
+	for _, chkr := range u.globalCheckers {
+		if err := chkr.RunCheckedTarget(nil, &opts); err != nil {
 			return err
 		}
 	}
@@ -83,8 +89,12 @@ func (u *Universe) checkTarget(t vts.Target, opts *vts.RunnerEnv, checked target
 	if !t.IsClassTarget() {
 		if n, hasChecks := t.(vts.CheckedTarget); hasChecks {
 			for _, c := range n.Checkers() {
-				if err := c.Target.(*vts.Checker).RunCheckedTarget(n, opts); err != nil {
-					return u.logger.Error(MsgFailedCheck, vts.WrapWithTarget(err, t))
+				ct := c.Target.(*vts.Checker)
+				// Do not run global checks: they run at the end.
+				if ct.Kind != vts.ChkKindGlobal {
+					if err := ct.RunCheckedTarget(n, opts); err != nil {
+						return u.logger.Error(MsgFailedCheck, vts.WrapWithTarget(err, t))
+					}
 				}
 			}
 		}

@@ -14,6 +14,9 @@ type RunnerEnv struct {
 // UniverseResolver allows resolution of targets within the universe.
 type UniverseResolver interface {
 	FindByPath(path string) (Target, error)
+	AllTargets() []GlobalTarget
+	GetData(key string) (interface{}, bool)
+	SetData(key string, data interface{})
 }
 
 type checkerRunner interface {
@@ -35,6 +38,11 @@ type eachComponentRunner interface {
 	checkerRunner
 	Run(*Component, *Checker, *RunnerEnv) error
 	PopulatorsNeeded() []InfoPopulator
+}
+
+type globalRunner interface {
+	checkerRunner
+	Run(*Checker, *RunnerEnv) error
 }
 
 type generateRunner interface {

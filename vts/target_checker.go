@@ -14,6 +14,7 @@ const (
 	ChkKindEachResource  CheckerKind = "each_resource"
 	ChkKindEachAttr      CheckerKind = "each_attr"
 	ChkKindEachComponent CheckerKind = "each_component"
+	ChkKindGlobal        CheckerKind = "global"
 )
 
 // Checker is a target describing a check on a target or the system.
@@ -58,6 +59,10 @@ func (t *Checker) Validate() error {
 		}
 	case ChkKindEachComponent:
 		if _, ok := t.Runner.(eachComponentRunner); !ok {
+			return fmt.Errorf("runner %v incompatible with kind = %q", t.Runner, t.Kind)
+		}
+	case ChkKindGlobal:
+		if _, ok := t.Runner.(globalRunner); !ok {
 			return fmt.Errorf("runner %v incompatible with kind = %q", t.Runner, t.Kind)
 		}
 	default:
@@ -139,11 +144,14 @@ func (t *Checker) RunResource(r *Resource, opts *RunnerEnv) error {
 // RunCheckedTarget is invoked when running checks directly on the target
 // on which they are defined.
 func (t *Checker) RunCheckedTarget(tgt CheckedTarget, opts *RunnerEnv) error {
-	if t.Kind != ChkKindEachComponent {
-		return fmt.Errorf("RunCheckedTarget() called on non-component checker %v", t.Kind)
-	}
-
 	switch t.Kind {
+	case ChkKindGlobal:
+		r := t.Runner.(globalRunner)
+		if err := r.Run(t, opts); err != nil {
+			return err
+		}
+		return nil
+
 	case ChkKindEachComponent:
 		c, ok := tgt.(*Component)
 		if !ok {

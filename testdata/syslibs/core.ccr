@@ -43,6 +43,9 @@ component(
     ":test_bin",
     ":shared_libraries",
   ],
+  chks = [
+    "common://checks/universe:syslib_linking",
+  ],
 )
 
 component(

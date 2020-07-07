@@ -3,6 +3,7 @@ package common
 import (
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/ccbuild/runners"
+	"github.com/twitchylinux/ccr/vts/ccbuild/runners/syslib"
 )
 
 var JSONResourceChecker = &vts.Checker{
@@ -80,4 +81,11 @@ var FilelistAllPresentChecker = &vts.Checker{
 	Name:   "present",
 	Kind:   vts.ChkKindEachResource,
 	Runner: runners.FilelistCheckAllFiles(0, false),
+}
+
+var SystemLinkChecker = &vts.Checker{
+	Path:   "common://checks/universe:syslib_linking",
+	Name:   "syslib_linking",
+	Kind:   vts.ChkKindGlobal,
+	Runner: syslib.RuntimeLinkChecker(),
 }

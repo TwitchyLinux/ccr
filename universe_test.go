@@ -642,14 +642,12 @@ func TestBuildFailsDuplicatePaths(t *testing.T) {
 				Frame: starlark.CallFrame{Name: "<toplevel>", Pos: syntax.MakePosition(&f, 9, 9)},
 			},
 		},
-		TargetChain: []vts.Target{
-			&vts.Resource{
-				Path: "//dupe_paths:thing2",
-				Name: "thing2",
-				Pos: &vts.DefPosition{
-					Path:  "testdata/basic/dupe_paths.ccr",
-					Frame: starlark.CallFrame{Name: "<toplevel>", Pos: syntax.MakePosition(&f, 15, 9)},
-				},
+		ActionTarget: &vts.Resource{
+			Path: "//dupe_paths:thing2",
+			Name: "thing2",
+			Pos: &vts.DefPosition{
+				Path:  "testdata/basic/dupe_paths.ccr",
+				Frame: starlark.CallFrame{Name: "<toplevel>", Pos: syntax.MakePosition(&f, 15, 9)},
 			},
 		},
 	}
