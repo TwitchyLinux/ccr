@@ -14,10 +14,29 @@ const (
 	ELFHeader         = "elf-header"
 	ELFDynamicSymbols = "elf-dynamic-symbols"
 	ELFInterpreter    = "elf-interp"
+	ELFDeps           = "elf-deps"
+
+	dtFlags1         = 0x6ffffffb
+	df1Now           = 0x00000001
+	df1NoDefaultLibs = 0x00000800
 )
 
 type ELFSym struct {
 	elf.ImportedSymbol
+}
+
+type ELFLinkDeps struct {
+	RPath   []string // DT_RPATH
+	RunPath []string // DT_RUNPATH
+	Libs    []string
+	Flags   ELFLinkFlags
+}
+
+type ELFLinkFlags struct {
+	Symbolic      bool
+	TextRel       bool
+	BindNow       bool
+	NoDefaultLibs bool
 }
 
 type elfPopulator struct{}
@@ -41,6 +60,63 @@ func (i *elfPopulator) interp(progs []*elf.Prog) (string, error) {
 	}
 
 	return "", errors.New("no .interp section present in binary")
+}
+
+func (i *elfPopulator) readFlags(f *elf.File) (ELFLinkFlags, error) {
+	var out ELFLinkFlags
+
+	ds := f.SectionByType(elf.SHT_DYNAMIC)
+	if ds == nil {
+		return out, nil
+	}
+	d, err := ds.Data()
+	if err != nil {
+		return out, err
+	}
+
+	for len(d) > 0 {
+		var t elf.DynTag
+		var v uint64
+		switch f.Class {
+		case elf.ELFCLASS32:
+			t = elf.DynTag(f.ByteOrder.Uint32(d[0:4]))
+			v = uint64(f.ByteOrder.Uint32(d[4:8]))
+			d = d[8:]
+		case elf.ELFCLASS64:
+			t = elf.DynTag(f.ByteOrder.Uint64(d[0:8]))
+			v = f.ByteOrder.Uint64(d[8:16])
+			d = d[16:]
+		}
+
+		switch t {
+		case elf.DT_SYMBOLIC:
+			out.Symbolic = v != 0
+		case elf.DT_TEXTREL:
+			out.TextRel = v != 0
+		case elf.DT_BIND_NOW:
+			out.BindNow = v != 0
+
+		case elf.DT_FLAGS:
+			if v&uint64(elf.DT_SYMBOLIC) != 0 {
+				out.Symbolic = true
+			}
+			if v&uint64(elf.DT_TEXTREL) != 0 {
+				out.TextRel = true
+			}
+			if v&uint64(elf.DT_BIND_NOW) != 0 {
+				out.BindNow = true
+			}
+
+		case dtFlags1:
+			if v&uint64(df1Now) != 0 {
+				out.BindNow = true
+			}
+			if v&uint64(df1NoDefaultLibs) != 0 {
+				out.NoDefaultLibs = true
+			}
+		}
+	}
+	return out, nil
 }
 
 func (i *elfPopulator) Run(t vts.Target, opts *vts.RunnerEnv, info *vts.RuntimeInfo) error {
@@ -77,23 +153,29 @@ func (i *elfPopulator) Run(t vts.Target, opts *vts.RunnerEnv, info *vts.RuntimeI
 	}
 	info.Set(i, ELFInterpreter, interp)
 
-	// if path == "/usr/bin" {
-	// 	fmt.Println(binData.ImportedSymbols())
-	// 	fmt.Println(binData.DynamicSymbols())
-	// 	fmt.Println(binData)
-	// 	for _, s := range binData.Sections {
-	// 		fmt.Printf("Section: %+v\n", s)
-	// 	}
-	// 	for _, p := range binData.Progs {
-	// 		if p.Type == elf.PT_INTERP {
-	// 			d, err := ioutil.ReadAll(p.Open())
-	// 			if err != nil {
-	// 				return fmt.Errorf("reading .interp: %v", err)
-	// 			}
-	// 			fmt.Printf("Prog: %+v - %s\n", p, string(d))
-	// 		}
-	// 	}
-	// }
+	var linkDeps ELFLinkDeps
+	libDeps, err := binData.DynString(elf.DT_NEEDED)
+	if err != nil {
+		return vts.WrapWithPath(err, path)
+	}
+	linkDeps.Libs = libDeps // Colons are literal - not separators.
+	rPath, err := binData.DynString(elf.DT_RPATH)
+	if err != nil {
+		return vts.WrapWithPath(err, path)
+	}
+	runPath, err := binData.DynString(elf.DT_RUNPATH)
+	if err != nil {
+		return vts.WrapWithPath(err, path)
+	}
+	if linkDeps.Flags, err = i.readFlags(binData); err != nil {
+		return vts.WrapWithPath(err, path)
+	}
+	if runPath != nil {
+		linkDeps.RunPath = runPath
+	} else {
+		linkDeps.RPath = rPath // DT_RPATH ignored if DT_RUNPATH is specified.
+	}
+	info.Set(i, ELFDeps, linkDeps)
 
 	return nil
 }

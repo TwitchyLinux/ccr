@@ -1,3 +1,15 @@
+component(
+  name = "core",
+  deps = [
+    ":test_bin",
+    ":bin_with_rpath",
+    ":ldd",
+  ],
+  chks = [
+    "common://checks/universe:syslib_linking",
+  ],
+)
+
 resource(
   name   = 'usr_dir',
   parent = 'common://resources:dir',
@@ -9,7 +21,7 @@ resource(
 resource(
   name   = 'usr_lib',
   parent = 'common://resources:library_dir',
-  path   = '/lib2',
+  path   = '/usr/lib',
   source = 'common://generators:dir',
   deps   = [
     ":usr_dir",
@@ -54,21 +66,32 @@ resource(
   ],
 )
 
-component(
-  name = "core",
-  deps = [
-    ":test_bin",
-    ":shared_libraries",
-  ],
-  chks = [
-    "common://checks/universe:syslib_linking",
+# Same binary but with RPATH set, so we have a subdir for the library dependency.
+resource(
+  name   = 'bin_with_rpath',
+  parent = 'common://resources:binary',
+  path   = '/usr/bin2',
+  source = file('bin2'),
+  deps   = [
+    ":usr_dir",
+    ":lib_soho",
   ],
 )
 
-component(
-  name = "shared_libraries",
-  deps = [
-    ":ldd",
-    ":lib_something",
+resource(
+  name   = 'lib_soho',
+  parent = 'common://resources:sys_library',
+  path   = '/usr/lib2/libsoho.so',
+  source = file('libsomething.so'),
+  deps   = [
+    ":rpath_lib_dir",
   ],
+)
+
+resource(
+  name   = 'rpath_lib_dir',
+  parent = 'common://resources:dir',
+  path   = '/usr/lib2',
+  mode   = '0755',
+  source = 'common://generators:dir',
 )
