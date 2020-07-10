@@ -40,6 +40,7 @@ func (u *Universe) Check(targets []vts.TargetRef, basePath string) error {
 
 	for _, chkr := range u.globalCheckers {
 		if err := chkr.RunCheckedTarget(nil, &opts); err != nil {
+			u.logger.Error(MsgFailedCheck, err)
 			return err
 		}
 	}

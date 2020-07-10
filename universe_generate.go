@@ -72,6 +72,7 @@ func (u *Universe) Generate(conf GenerateConfig, t vts.TargetRef, basePath strin
 	}
 	for _, chkr := range u.globalCheckers {
 		if err := chkr.RunCheckedTarget(nil, &opts); err != nil {
+			u.logger.Error(MsgFailedCheck, err)
 			return err
 		}
 	}

@@ -26,10 +26,15 @@ func FormatCCR(fPath string) (bool, *bytes.Buffer, error) {
 	b.Grow(1024)
 
 	ann := annotations{
-		identWidths: map[*syntax.Ident]int{},
+		identWidths:    map[*syntax.Ident]int{},
+		pendingComment: map[syntax.Node]commentRelocation{},
+		commentReloc:   map[syntax.Node]commentRelocation{},
 	}
 	if err := annotateAST(ast, &ann); err != nil {
 		return false, nil, fmt.Errorf("failed annotation: %v", err)
+	}
+	if err := relocateComments(ast, &ann); err != nil {
+		return false, nil, err
 	}
 	if err := fmtAST(ast, &b, fmtOpts{annotations: &ann}); err != nil {
 		return false, nil, err
@@ -81,8 +86,33 @@ func expandedFunction(fn syntax.Expr) bool {
 	return false
 }
 
+type commentRelocation struct {
+	From   syntax.Node
+	Before []syntax.Comment
+}
+
 type annotations struct {
-	identWidths map[*syntax.Ident]int
+	identWidths    map[*syntax.Ident]int
+	pendingComment map[syntax.Node]commentRelocation
+	commentReloc   map[syntax.Node]commentRelocation
+}
+
+func relocateComments(ast syntax.Node, ann *annotations) error {
+	var lastCall *syntax.CallExpr
+	syntax.Walk(ast, func(n syntax.Node) bool {
+		if reloc, hasReloc := ann.pendingComment[n]; hasReloc {
+			if lastCall != nil {
+				ann.commentReloc[lastCall] = reloc
+				delete(ann.pendingComment, n)
+				n.Comments().Before = nil
+			}
+		}
+		if c, ok := n.(*syntax.CallExpr); ok {
+			lastCall = c
+		}
+		return true
+	})
+	return nil
 }
 
 func maybeAnnotateCall(c *syntax.CallExpr, ann *annotations) {
@@ -161,6 +191,12 @@ func annotateAST(ast syntax.Node, ann *annotations) error {
 		if err := annotateAST(n.X, ann); err != nil {
 			return err
 		}
+		// Comments within the parenthesis of a call, but after all arguments are
+		// incorrectly associated with the next ExprStmt. If we detect this, mark
+		// the node as such, to be moved by relocateComments().
+		if c := n.Comments(); !preceedingCommentInCall(n, c) {
+			ann.pendingComment[n] = commentRelocation{Before: c.Before, From: n}
+		}
 
 	case *syntax.File:
 		for _, stmt := range n.Stmts {
@@ -175,8 +211,21 @@ func annotateAST(ast syntax.Node, ann *annotations) error {
 	return nil
 }
 
+func preceedingCommentInCall(e syntax.Node, c *syntax.Comments) bool {
+	if c != nil && len(c.Before) > 0 {
+		if es, _ := e.Span(); es.Line > c.Before[0].Start.Line {
+			return false
+		}
+	}
+	return true
+}
+
 func fmtAST(ast syntax.Node, b *bytes.Buffer, opts fmtOpts) error {
 	opts.LeadIn(b)
+	// fmt.Printf("++%T: %+v\n", ast, ast)
+	// defer func() {
+	// 	fmt.Printf("--leaving: %T\n", ast)
+	// }()
 
 	if c := ast.Comments(); c != nil {
 		for _, c := range c.Before {
@@ -293,6 +342,14 @@ func fmtAST(ast syntax.Node, b *bytes.Buffer, opts fmtOpts) error {
 				}
 			}
 		}
+
+		if reloc, hasCommentReloc := opts.annotations.commentReloc[n]; hasCommentReloc {
+			for _, comment := range reloc.Before {
+				b.WriteString("\n" + strings.Repeat(" ", opts.indentLevel+1))
+				b.WriteString(" " + fmtComment(comment.Text))
+			}
+		}
+
 		if !condense && len(n.Args) > 0 {
 			b.WriteString("\n" + strings.Repeat(" ", opts.indentLevel))
 			b.WriteString(")")

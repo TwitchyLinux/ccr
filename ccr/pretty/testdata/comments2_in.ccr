@@ -1,0 +1,22 @@
+component(
+  name = "core",
+  deps = [
+    "//dirs:usr",
+    "//dirs:usr_lib",
+    ":ldd",
+  ],
+  # chks = [
+  #   "common://checks/universe:syslib_linking",
+  # ],
+)
+
+
+resource(
+  name   = 'ldd',
+  parent = 'common://resources:sys_library',
+  path   = '/lib64/ld-linux-x86-64.so.2',
+  source = file('ld.so.2'),
+  deps   = [
+    "//dirs:lib64",
+  ],
+)

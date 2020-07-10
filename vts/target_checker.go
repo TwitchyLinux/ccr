@@ -148,7 +148,7 @@ func (t *Checker) RunCheckedTarget(tgt CheckedTarget, opts *RunnerEnv) error {
 	case ChkKindGlobal:
 		r := t.Runner.(globalRunner)
 		if err := r.Run(t, opts); err != nil {
-			return err
+			return WrapWithTarget(err, t)
 		}
 		return nil
 
