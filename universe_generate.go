@@ -275,6 +275,10 @@ func fileSrcInfo(resource *vts.Resource, src *vts.Puesdo) (string, string, os.Fi
 		return "", "", 0, err
 	}
 	srcFilePath := filepath.Join(filepath.Dir(src.ContractPath), src.Path)
+	if src.Host {
+		srcFilePath = src.Path
+	}
+
 	mode, err := determineMode(resource)
 	switch {
 	case err == errNoAttr:

@@ -31,6 +31,9 @@ type Puesdo struct {
 	SHA256 string
 	URL    string
 
+	// Applicable to FileRef targets.
+	Host bool
+
 	Details []TargetRef
 }
 
@@ -70,6 +73,9 @@ func (t *Puesdo) Validate() error {
 		}
 		if t.SHA256 == "" {
 			return errors.New("deb source must specify a sha256 hash")
+		}
+		if t.Host {
+			return errors.New("host can only be set on file sources")
 		}
 		return nil
 	case FileRef:

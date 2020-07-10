@@ -4,6 +4,7 @@ component(
     ":test_bin",
     ":bin_with_rpath",
     ":ldd",
+    ":libc",
   ],
   chks = [
     "common://checks/universe:syslib_linking",
@@ -63,6 +64,17 @@ resource(
   source = file('ld.so.2'),
   deps   = [
     ":lib64",
+  ],
+)
+
+
+resource(
+  name   = 'libc',
+  parent = 'common://resources:sys_library',
+  path   = '/usr/lib/libc.so.6',
+  source = file('libc.so.6'),
+  deps   = [
+    ":usr_lib",
   ],
 )
 

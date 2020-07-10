@@ -9,5 +9,5 @@ resource(
   details = [
     attr(parent = "common://attrs:arch", value = "yeetos"),
   ],
-  source  = file('./boots.txt'),
+  source  = file('/usr/share/boots.txt', host = True),
 )

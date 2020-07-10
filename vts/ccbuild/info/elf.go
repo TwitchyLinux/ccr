@@ -2,7 +2,6 @@ package info
 
 import (
 	"debug/elf"
-	"errors"
 	"fmt"
 	"io/ioutil"
 
@@ -59,7 +58,7 @@ func (i *elfPopulator) interp(progs []*elf.Prog) (string, error) {
 		}
 	}
 
-	return "", errors.New("no .interp section present in binary")
+	return "", nil
 }
 
 func (i *elfPopulator) readFlags(f *elf.File) (ELFLinkFlags, error) {
@@ -125,6 +124,9 @@ func (i *elfPopulator) Run(t vts.Target, opts *vts.RunnerEnv, info *vts.RuntimeI
 		return fmt.Errorf("info.elfPopulator can only operate on resource targets, got %T", t)
 	}
 	path, err := resourcePath(r)
+	if err != nil {
+		return vts.WrapWithTarget(err, t)
+	}
 	f, err := opts.FS.Open(path)
 	if err != nil {
 		return vts.WrapWithPath(err, path)

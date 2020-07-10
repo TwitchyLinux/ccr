@@ -87,8 +87,9 @@ var newScriptTestcases = []struct {
 				},
 				Source: &vts.TargetRef{Target: &vts.Puesdo{
 					Kind:         vts.FileRef,
-					Path:         "./boots.txt",
+					Path:         "/usr/share/boots.txt",
 					ContractPath: "testdata/make_resource.ccr",
+					Host:         true,
 				},
 				},
 			},

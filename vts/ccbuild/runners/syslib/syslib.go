@@ -170,6 +170,9 @@ func (c *globalChecker) computeLibrarySearchOrder(elfPath string, depInfo info.E
 
 func (c *globalChecker) checkELFFile(elfPath string, r *vts.Resource, opts *vts.RunnerEnv) error {
 	_, deps, _, interp, err := c.elfInfo(r, opts)
+	if err != nil {
+		return err
+	}
 	if err := c.checkInterp(interp, opts); err != nil {
 		return err
 	}

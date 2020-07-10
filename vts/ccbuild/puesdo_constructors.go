@@ -13,9 +13,10 @@ func makePuesdotarget(s *Script, kind vts.PuesdoKind) *starlark.Builtin {
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var path, sha256, url string
 		var name string
+		var host bool
 		var details *starlark.List
 		if err := starlark.UnpackArgs(t.String(), args, kwargs, "path?", &path,
-			"name?", &name, "details?", &details,
+			"name?", &name, "details?", &details, "host?", &host,
 			"sha256?", &sha256, "url?", &url); err != nil {
 			return starlark.None, err
 		}
@@ -24,6 +25,7 @@ func makePuesdotarget(s *Script, kind vts.PuesdoKind) *starlark.Builtin {
 			Kind:         kind,
 			TargetPath:   s.makePath(name),
 			Name:         name,
+			Host:         host,
 			ContractPath: s.fPath,
 			Pos: &vts.DefPosition{
 				Path:  s.fPath,
