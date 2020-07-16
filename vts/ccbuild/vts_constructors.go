@@ -461,3 +461,21 @@ func makeToolchain(s *Script) *starlark.Builtin {
 		return starlark.None, nil
 	})
 }
+
+func makeComputedValue(s *Script) *starlark.Builtin {
+	return starlark.NewBuiltin("compute", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+		var fname, fun string
+		if err := starlark.UnpackArgs("compute", args, kwargs, "filename?", &fname, "function?", &fun); err != nil {
+			return starlark.None, err
+		}
+
+		return &vts.ComputedValue{
+			Filename: fname,
+			Func:     fun,
+			Pos: &vts.DefPosition{
+				Path:  s.fPath,
+				Frame: thread.CallFrame(1),
+			},
+		}, nil
+	})
+}

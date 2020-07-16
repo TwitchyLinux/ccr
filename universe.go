@@ -252,6 +252,8 @@ func (u *Universe) Build(targets []vts.TargetRef, findOpts *FindOptions) error {
 		if deets, hasDetails := t.(vts.DetailedTarget); hasDetails {
 			for _, attr := range deets.Attributes() {
 				if a := attr.Target.(*vts.Attr); a.Parent.Target.(*vts.AttrClass) == common.PathClass && a.Value != nil {
+					// TODO: Support computed attribute values here.
+					// TODO: Use determineAttrValue().
 					path := string(a.Value.(starlark.String))
 					if e, exists := u.pathTargets[path]; exists {
 						return u.logger.Error(MsgBadDef, vts.WrapWithPath(
@@ -292,7 +294,7 @@ func determineAttrValue(t vts.Target, cls *vts.AttrClass) (starlark.Value, error
 			return nil, vts.WrapWithTarget(fmt.Errorf("unresolved target reference: %q", a.Parent.Path), t)
 		}
 		if class := a.Parent.Target.(*vts.AttrClass); class.GlobalPath() == cls.Path {
-			return a.Value, nil
+			return a.OutputValue()
 		}
 	}
 

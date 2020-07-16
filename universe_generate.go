@@ -192,8 +192,9 @@ func (u *Universe) generateTarget(s generationState, t vts.Target) error {
 	// so the checkers for them and their deps should be run against the host.
 	if tc, isToolchain := t.(*vts.Toolchain); isToolchain {
 		if err := u.checkTarget(tc, &vts.RunnerEnv{
-			Dir: "/",
-			FS:  osfs.New("/"),
+			Dir:      "/",
+			FS:       osfs.New("/"),
+			Universe: s.runnerEnv.Universe,
 		}, s.completedToolchainDeps); err != nil {
 			return vts.WrapWithTarget(err, tc)
 		}

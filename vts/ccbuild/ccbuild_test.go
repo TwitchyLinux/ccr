@@ -166,6 +166,21 @@ var newScriptTestcases = []struct {
 			},
 		},
 	},
+	{
+		name:     "attr with computed value",
+		filename: "testdata/attr_with_computed_value.ccr",
+		want: []vts.Target{
+			&vts.Attr{
+				Name:   "amd64",
+				Path:   "//test:amd64",
+				Parent: vts.TargetRef{Path: "//test/arch"},
+				Value: &vts.ComputedValue{
+					Filename: "a.py",
+					Func:     "some_func",
+				},
+			},
+		},
+	},
 }
 
 func TestNewScript(t *testing.T) {

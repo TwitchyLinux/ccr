@@ -1,0 +1,5 @@
+attr(
+  name   = "amd64",
+  parent = "//test/arch",
+  value  = compute('a.py', 'some_func'),
+)
