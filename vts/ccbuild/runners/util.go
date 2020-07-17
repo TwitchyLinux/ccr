@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/twitchylinux/ccr/proc"
 	"github.com/twitchylinux/ccr/vts"
 	"go.starlark.net/starlark"
 )
@@ -22,7 +23,7 @@ func resourcePath(r *vts.Resource, env *vts.RunnerEnv) (string, error) {
 			return "", fmt.Errorf("unresolved target reference: %q", a.Parent.Path)
 		}
 		if class := a.Parent.Target.(*vts.AttrClass); class.GlobalPath() == "common://attrs:path" {
-			v, err := a.Value(env)
+			v, err := a.Value(r, env, proc.EvalComputedAttribute)
 			if err != nil {
 				return "", err
 			}
@@ -46,7 +47,7 @@ func resourceMode(r *vts.Resource, env *vts.RunnerEnv) (os.FileMode, error) {
 			return 0, fmt.Errorf("unresolved target reference: %q", a.Parent.Path)
 		}
 		if class := a.Parent.Target.(*vts.AttrClass); class.GlobalPath() == "common://attrs:mode" {
-			v, err := a.Value(env)
+			v, err := a.Value(r, env, proc.EvalComputedAttribute)
 			if err != nil {
 				return 0, err
 			}
@@ -77,7 +78,7 @@ func resourceTarget(r *vts.Resource, env *vts.RunnerEnv) (string, error) {
 			return "", fmt.Errorf("unresolved target reference: %q", a.Parent.Path)
 		}
 		if class := a.Parent.Target.(*vts.AttrClass); class.GlobalPath() == "common://attrs:target" {
-			v, err := a.Value(env)
+			v, err := a.Value(r, env, proc.EvalComputedAttribute)
 			if err != nil {
 				return "", err
 			}

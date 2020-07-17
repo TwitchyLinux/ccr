@@ -175,7 +175,7 @@ var newScriptTestcases = []struct {
 				Path:   "//test:amd64",
 				Parent: vts.TargetRef{Path: "//test/arch"},
 				Val: &vts.ComputedValue{
-					Filename: "a.py",
+					Filename: "testdata/a.py",
 					Func:     "some_func",
 				},
 			},

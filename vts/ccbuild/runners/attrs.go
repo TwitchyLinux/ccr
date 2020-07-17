@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/twitchylinux/ccr/proc"
 	"github.com/twitchylinux/ccr/vts"
 	"go.starlark.net/starlark"
 )
@@ -35,7 +36,7 @@ func (t *pathValidRunner) Hash() (uint32, error) {
 }
 
 func (*pathValidRunner) Run(attr *vts.Attr, chkr *vts.Checker, opts *vts.RunnerEnv) error {
-	v, err := attr.Value(opts)
+	v, err := attr.Value(chkr, opts, proc.EvalComputedAttribute)
 	if err != nil {
 		return err
 	}
@@ -82,7 +83,7 @@ func (t *enumValueRunner) Hash() (uint32, error) {
 }
 
 func (e *enumValueRunner) Run(attr *vts.Attr, chkr *vts.Checker, opts *vts.RunnerEnv) error {
-	v, err := attr.Value(opts)
+	v, err := attr.Value(chkr, opts, proc.EvalComputedAttribute)
 	if err != nil {
 		return err
 	}
@@ -120,7 +121,7 @@ func (t *modeValidRunner) Hash() (uint32, error) {
 }
 
 func (*modeValidRunner) Run(attr *vts.Attr, chkr *vts.Checker, opts *vts.RunnerEnv) error {
-	v, err := attr.Value(opts)
+	v, err := attr.Value(chkr, opts, proc.EvalComputedAttribute)
 	if err != nil {
 		return err
 	}
@@ -166,7 +167,7 @@ func (t *boolCheckValid) Hash() (uint32, error) {
 }
 
 func (*boolCheckValid) Run(attr *vts.Attr, chkr *vts.Checker, opts *vts.RunnerEnv) error {
-	v, err := attr.Value(opts)
+	v, err := attr.Value(chkr, opts, proc.EvalComputedAttribute)
 	if err != nil {
 		return err
 	}

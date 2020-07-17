@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/twitchylinux/ccr/proc"
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/common"
 	"go.starlark.net/starlark"
@@ -303,7 +304,7 @@ func determineAttrValue(t vts.Target, cls *vts.AttrClass, env *vts.RunnerEnv) (s
 			return nil, vts.WrapWithTarget(fmt.Errorf("unresolved target reference: %q", a.Parent.Path), t)
 		}
 		if class := a.Parent.Target.(*vts.AttrClass); class.GlobalPath() == cls.Path {
-			return a.Value(env)
+			return a.Value(t, env, proc.EvalComputedAttribute)
 		}
 	}
 

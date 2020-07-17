@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	version "github.com/knqyf263/go-deb-version"
+	"github.com/twitchylinux/ccr/proc"
 	"github.com/twitchylinux/ccr/vts"
 	"go.starlark.net/starlark"
 )
@@ -34,7 +35,7 @@ func (t *debInfoValidRunner) Hash() (uint32, error) {
 }
 
 func (*debInfoValidRunner) Run(attr *vts.Attr, chkr *vts.Checker, opts *vts.RunnerEnv) error {
-	v, err := attr.Value(opts)
+	v, err := attr.Value(chkr, opts, proc.EvalComputedAttribute)
 	if err != nil {
 		return err
 	}

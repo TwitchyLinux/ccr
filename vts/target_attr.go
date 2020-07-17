@@ -90,11 +90,13 @@ func (t *Attr) Hash() (uint32, error) {
 	return uint32(uint32(h[0]) + uint32(h[1])<<8 + uint32(h[2])<<16 + uint32(h[3])<<24), nil
 }
 
+type computeEval func(attr *Attr, target Target, runInfo *ComputedValue, env *RunnerEnv) (starlark.Value, error)
+
 // Value returns the value of the attribute, invoking any computation
 // if necessary.
-func (t *Attr) Value(env *RunnerEnv) (starlark.Value, error) {
+func (t *Attr) Value(parent Target, env *RunnerEnv, eval computeEval) (starlark.Value, error) {
 	if cv, isComputed := t.Val.(*ComputedValue); isComputed {
-		return starlark.None, fmt.Errorf("computed values not yet supported (%v)", cv)
+		return eval(t, parent, cv, env)
 	}
 	return t.Val, nil
 }

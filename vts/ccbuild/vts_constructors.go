@@ -2,6 +2,7 @@ package ccbuild
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/twitchylinux/ccr/vts"
@@ -470,7 +471,7 @@ func makeComputedValue(s *Script) *starlark.Builtin {
 		}
 
 		return &vts.ComputedValue{
-			Filename: fname,
+			Filename: filepath.Join(filepath.Dir(s.fPath), fname),
 			Func:     fun,
 			Pos: &vts.DefPosition{
 				Path:  s.fPath,

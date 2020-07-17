@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/twitchylinux/ccr/proc"
 	"github.com/twitchylinux/ccr/vts"
 	"go.starlark.net/starlark"
 )
@@ -20,7 +21,7 @@ func resourcePath(r *vts.Resource, env *vts.RunnerEnv) (string, error) {
 			return "", fmt.Errorf("unresolved target reference: %q", a.Parent.Path)
 		}
 		if class := a.Parent.Target.(*vts.AttrClass); class.GlobalPath() == "common://attrs:path" {
-			v, err := a.Value(env)
+			v, err := a.Value(r, env, proc.EvalComputedAttribute)
 			if err != nil {
 				return "", err
 			}
