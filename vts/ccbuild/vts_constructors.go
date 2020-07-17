@@ -116,7 +116,7 @@ func makeAttr(s *Script) *starlark.Builtin {
 			Path:   s.makePath(name),
 			Name:   name,
 			Parent: parentClass,
-			Value:  value,
+			Val:    value,
 			Pos: &vts.DefPosition{
 				Path:  s.fPath,
 				Frame: thread.CallFrame(1),
@@ -201,21 +201,21 @@ func makeResource(s *Script) *starlark.Builtin {
 		if path != "" {
 			r.Details = append(r.Details, vts.TargetRef{Target: &vts.Attr{
 				Parent: vts.TargetRef{Target: common.PathClass},
-				Value:  starlark.String(path),
+				Val:    starlark.String(path),
 				Pos:    r.Pos,
 			}})
 		}
 		if mode != "" {
 			r.Details = append(r.Details, vts.TargetRef{Target: &vts.Attr{
 				Parent: vts.TargetRef{Target: common.ModeClass},
-				Value:  starlark.String(mode),
+				Val:    starlark.String(mode),
 				Pos:    r.Pos,
 			}})
 		}
 		if target != "" {
 			r.Details = append(r.Details, vts.TargetRef{Target: &vts.Attr{
 				Parent: vts.TargetRef{Target: common.TargetClass},
-				Value:  starlark.String(target),
+				Val:    starlark.String(target),
 				Pos:    r.Pos,
 			}})
 		}

@@ -23,7 +23,7 @@ func doCheckCmd() error {
 	for _, arg := range flag.Args()[1:] {
 		targets = append(targets, vts.TargetRef{Path: arg})
 	}
-	if err := uv.Build(targets, &findOpts); err != nil {
+	if err := uv.Build(targets, &findOpts, *baseDir); err != nil {
 		return err
 	}
 	if err := uv.Check(targets, *baseDir); err != nil {

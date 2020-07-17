@@ -35,7 +35,7 @@ func (t *symlinkCheckPresent) Hash() (uint32, error) {
 }
 
 func (*symlinkCheckPresent) Run(r *vts.Resource, chkr *vts.Checker, opts *vts.RunnerEnv) error {
-	path, err := resourcePath(r)
+	path, err := resourcePath(r, opts)
 	if err != nil {
 		if err == errNoAttr {
 			return errors.New("no path specified")
@@ -53,7 +53,7 @@ func (*symlinkCheckPresent) Run(r *vts.Resource, chkr *vts.Checker, opts *vts.Ru
 		return vts.WrapWithPath(fmt.Errorf("resource %q is not a symlink", path), path)
 	}
 
-	target, err := resourceTarget(r)
+	target, err := resourceTarget(r, opts)
 	if err != nil {
 		if err == errNoAttr {
 			return nil
@@ -96,11 +96,11 @@ func (t *symlinkGenerator) Hash() (uint32, error) {
 }
 
 func (*symlinkGenerator) Run(g *vts.Generator, inputs *vts.InputSet, opts *vts.RunnerEnv) error {
-	p, err := resourcePath(inputs.Resource)
+	p, err := resourcePath(inputs.Resource, opts)
 	if err != nil {
 		return err
 	}
-	target, err := resourceTarget(inputs.Resource)
+	target, err := resourceTarget(inputs.Resource, opts)
 	if err != nil {
 		if err == errNoAttr {
 			return errors.New("cannot generate symlink when no target was specified")

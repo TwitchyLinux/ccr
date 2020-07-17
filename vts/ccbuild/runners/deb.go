@@ -34,9 +34,13 @@ func (t *debInfoValidRunner) Hash() (uint32, error) {
 }
 
 func (*debInfoValidRunner) Run(attr *vts.Attr, chkr *vts.Checker, opts *vts.RunnerEnv) error {
-	info, ok := attr.Value.(*starlark.Dict)
+	v, err := attr.Value(opts)
+	if err != nil {
+		return err
+	}
+	info, ok := v.(*starlark.Dict)
 	if !ok {
-		return fmt.Errorf("expected list, got %T", attr.Value)
+		return fmt.Errorf("expected list, got %T", v)
 	}
 
 	for _, k := range info.Keys() {
@@ -77,7 +81,7 @@ func (*debInfoValidRunner) Run(attr *vts.Attr, chkr *vts.Checker, opts *vts.Runn
 		case "pre-depends-on", "depends-on", "breaks", "replaces":
 			set, ok := v.(*starlark.List)
 			if !ok {
-				return fmt.Errorf("expected list for key %s, got %T", string(kStr), attr.Value)
+				return fmt.Errorf("expected list for key %s, got %T", string(kStr), v)
 			}
 			if err := checkDepsList(set, string(kStr)); err != nil {
 				return err

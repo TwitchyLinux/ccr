@@ -200,7 +200,7 @@ func (c *globalChecker) libsInDir(dir string, opts *vts.RunnerEnv) (map[string]*
 	for _, target := range opts.Universe.AllTargets() {
 		if r, isResource := target.(*vts.Resource); isResource {
 			if parent := r.Parent.Target.(*vts.ResourceClass); parent.GlobalPath() == "common://resources:sys_library" {
-				path, err := resourcePath(r)
+				path, err := resourcePath(r, opts)
 				if err != nil {
 					return nil, vts.WrapWithTarget(err, r)
 				}

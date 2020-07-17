@@ -35,7 +35,7 @@ func testResolver(path string) (vts.Target, error) {
 				{Path: "common://attrs/arch:amd64"},
 				{Target: &vts.Attr{
 					Parent: vts.TargetRef{Path: "common://attrs:path"},
-					Value:  starlark.String("/other_thing"),
+					Val:    starlark.String("/other_thing"),
 				}},
 			},
 		}, nil
@@ -65,7 +65,7 @@ func TestDirResolver(t *testing.T) {
 		},
 	}
 
-	if err := uv.Build([]vts.TargetRef{{Path: "//yeet:floop"}}, &findOpts); err != nil {
+	if err := uv.Build([]vts.TargetRef{{Path: "//yeet:floop"}}, &findOpts, ""); err != nil {
 		t.Errorf("universe.Build(%q) failed: %v", "//yeet:floop", err)
 	}
 }
@@ -103,7 +103,7 @@ func TestUniverseBuild(t *testing.T) {
 		},
 	}
 
-	if err := uv.Build([]vts.TargetRef{{Path: "//root:root_thing"}}, &findOpts); err != nil {
+	if err := uv.Build([]vts.TargetRef{{Path: "//root:root_thing"}}, &findOpts, ""); err != nil {
 		t.Errorf("universe.Build(%q) failed: %v", "//root:root_thing", err)
 	}
 
@@ -373,7 +373,7 @@ func TestUniverseCheck(t *testing.T) {
 				},
 			}
 
-			if err := uv.Build(tc.targets, &findOpts); err != nil {
+			if err := uv.Build(tc.targets, &findOpts, tc.base); err != nil {
 				t.Fatalf("universe.Build(%q) failed: %v", tc.targets, err)
 			}
 
@@ -382,7 +382,7 @@ func TestUniverseCheck(t *testing.T) {
 			case err == nil && tc.err != "":
 				t.Errorf("universe.Check(%q) returned no error, want %q", tc.targets, tc.err)
 			case err != nil && tc.err != err.Error():
-				t.Errorf("universe.Check(%q) returned %v, want %q", tc.targets, err, tc.err)
+				t.Errorf("universe.Check(%q) returned %q, want %q", tc.targets, err, tc.err)
 			}
 		})
 	}
@@ -523,7 +523,7 @@ Class: //basic:whelp
 			}
 			defer os.RemoveAll(td)
 
-			if err := uv.Build([]vts.TargetRef{{Path: tc.target}}, &findOpts); err != nil {
+			if err := uv.Build([]vts.TargetRef{{Path: tc.target}}, &findOpts, td); err != nil {
 				t.Fatalf("universe.Build(%q) failed: %v", tc.target, err)
 			}
 
@@ -593,7 +593,7 @@ func TestSystemLibraryStuff(t *testing.T) {
 	}
 	defer os.RemoveAll(td)
 
-	if err := uv.Build([]vts.TargetRef{{Path: "//core:core"}}, &findOpts); err != nil {
+	if err := uv.Build([]vts.TargetRef{{Path: "//core:core"}}, &findOpts, td); err != nil {
 		t.Fatalf("universe.Build(%q) failed: %v", "//core:core", err)
 	}
 
@@ -630,7 +630,7 @@ func TestBuildFailsDuplicatePaths(t *testing.T) {
 	defer os.RemoveAll(td)
 
 	f := "//dupe_paths"
-	out := uv.Build([]vts.TargetRef{{Path: "//dupe_paths:fail"}}, &findOpts).(vts.WrappedErr)
+	out := uv.Build([]vts.TargetRef{{Path: "//dupe_paths:fail"}}, &findOpts, td).(vts.WrappedErr)
 	var want = vts.WrappedErr{
 		Path: "/some/path",
 		Err:  errors.New("multiple targets declared the same path"),

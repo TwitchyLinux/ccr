@@ -44,7 +44,7 @@ func (*dirCheckPresent) Run(r *vts.Resource, chkr *vts.Checker, opts *vts.Runner
 		return vts.WrapWithPath(fmt.Errorf("resource %q is not a directory", stat.Path), stat.Path)
 	}
 
-	m, err := resourceMode(r)
+	m, err := resourceMode(r, opts)
 	if err == errNoAttr {
 		return nil
 	}
@@ -82,11 +82,11 @@ func (t *dirGenerator) Hash() (uint32, error) {
 }
 
 func (*dirGenerator) Run(g *vts.Generator, inputs *vts.InputSet, opts *vts.RunnerEnv) error {
-	p, err := resourcePath(inputs.Resource)
+	p, err := resourcePath(inputs.Resource, opts)
 	if err != nil {
 		return err
 	}
-	m, err := resourceMode(inputs.Resource)
+	m, err := resourceMode(inputs.Resource, opts)
 	if err != nil {
 		if err == errNoAttr {
 			return errors.New("cannot generate dir when no mode was specified")

@@ -63,7 +63,7 @@ func (t *debugManifestGenerator) Hash() (uint32, error) {
 }
 
 func (*debugManifestGenerator) Run(g *vts.Generator, inputs *vts.InputSet, opts *vts.RunnerEnv) error {
-	p, err := resourcePath(inputs.Resource)
+	p, err := resourcePath(inputs.Resource, opts)
 	if err != nil {
 		return err
 	}

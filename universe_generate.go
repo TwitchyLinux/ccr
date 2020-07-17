@@ -270,8 +270,8 @@ func (u *Universe) generateResourceUsingSource(s generationState, resource *vts.
 	return fmt.Errorf("cannot generate using source %T for resource %v", source, resource)
 }
 
-func fileSrcInfo(resource *vts.Resource, src *vts.Puesdo) (string, string, os.FileMode, error) {
-	outFilePath, err := determinePath(resource)
+func fileSrcInfo(resource *vts.Resource, src *vts.Puesdo, env *vts.RunnerEnv) (string, string, os.FileMode, error) {
+	outFilePath, err := determinePath(resource, env)
 	if err != nil {
 		return "", "", 0, err
 	}
@@ -280,7 +280,7 @@ func fileSrcInfo(resource *vts.Resource, src *vts.Puesdo) (string, string, os.Fi
 		srcFilePath = src.Path
 	}
 
-	mode, err := determineMode(resource)
+	mode, err := determineMode(resource, env)
 	switch {
 	case err == errNoAttr:
 		st, err := os.Stat(srcFilePath)
@@ -295,7 +295,7 @@ func fileSrcInfo(resource *vts.Resource, src *vts.Puesdo) (string, string, os.Fi
 }
 
 func (u *Universe) generateFileSource(s generationState, resource *vts.Resource, src *vts.Puesdo) error {
-	srcPath, outPath, mode, err := fileSrcInfo(resource, src)
+	srcPath, outPath, mode, err := fileSrcInfo(resource, src, s.runnerEnv)
 	if err != nil {
 		return err
 	}
@@ -357,7 +357,7 @@ func (u *Universe) unpackedDeb(src *vts.Puesdo) (*dpkg.Deb, error) {
 }
 
 func (u *Universe) generateDebSource(s generationState, resource *vts.Resource, src *vts.Puesdo) error {
-	p, err := determinePath(resource)
+	p, err := determinePath(resource, s.runnerEnv)
 	if err != nil {
 		return vts.WrapWithTarget(err, resource)
 	}

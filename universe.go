@@ -11,6 +11,7 @@ import (
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/common"
 	"go.starlark.net/starlark"
+	"gopkg.in/src-d/go-billy.v4/osfs"
 )
 
 var ErrNotBuilt = errors.New("universe must be built first")
@@ -239,7 +240,7 @@ func (u *Universe) resolveRef(findOpts *FindOptions, t vts.TargetRef) error {
 
 // Build constructs a fully-resolved tree of targets from those given, and
 // applies VTS-level validation against them.
-func (u *Universe) Build(targets []vts.TargetRef, findOpts *FindOptions) error {
+func (u *Universe) Build(targets []vts.TargetRef, findOpts *FindOptions, basePath string) error {
 	for _, t := range targets {
 		if err := u.resolveRef(findOpts, t); err != nil {
 			return err
@@ -247,22 +248,30 @@ func (u *Universe) Build(targets []vts.TargetRef, findOpts *FindOptions) error {
 	}
 
 	// Track special targets separately.
+	env := &vts.RunnerEnv{
+		Dir:      basePath,
+		FS:       osfs.New(basePath),
+		Universe: &runtimeResolver{u, map[string]interface{}{}},
+	}
 	for _, t := range u.allTargets {
-		// Track targets that declare a path.
-		if deets, hasDetails := t.(vts.DetailedTarget); hasDetails {
-			for _, attr := range deets.Attributes() {
-				if a := attr.Target.(*vts.Attr); a.Parent.Target.(*vts.AttrClass) == common.PathClass && a.Value != nil {
-					// TODO: Support computed attribute values here.
-					// TODO: Use determineAttrValue().
-					path := string(a.Value.(starlark.String))
-					if e, exists := u.pathTargets[path]; exists {
-						return u.logger.Error(MsgBadDef, vts.WrapWithPath(
-							vts.WrapWithActionTarget(vts.WrapWithTarget(errors.New("multiple targets declared the same path"), e), t), path))
-					}
-					u.pathTargets[path] = t
-				}
-			}
+		if _, isDetailed := t.(vts.DetailedTarget); !isDetailed {
+			continue
 		}
+		// Track targets that declare a path.
+		path, err := determinePath(t, env)
+		if err == errNoAttr {
+			continue
+		}
+		if err != nil {
+			return u.logger.Error(MsgBadDef, vts.WrapWithTarget(err, t))
+		}
+
+		if e, exists := u.pathTargets[path]; exists {
+			return u.logger.Error(MsgBadDef, vts.WrapWithPath(
+				vts.WrapWithActionTarget(vts.WrapWithTarget(errors.New("multiple targets declared the same path"), e), t), path))
+		}
+		u.pathTargets[path] = t
+
 		// Track all global checkers.
 		if chkr, isChecker := t.(*vts.Checker); isChecker && chkr.Kind == vts.ChkKindGlobal {
 			u.globalCheckers = append(u.globalCheckers, chkr)
@@ -280,7 +289,7 @@ func (u *Universe) EnumeratedTargets() []vts.GlobalTarget {
 
 var errNoAttr = errors.New("attr not specified")
 
-func determineAttrValue(t vts.Target, cls *vts.AttrClass) (starlark.Value, error) {
+func determineAttrValue(t vts.Target, cls *vts.AttrClass, env *vts.RunnerEnv) (starlark.Value, error) {
 	dt, ok := t.(vts.DetailedTarget)
 	if !ok {
 		return nil, vts.WrapWithTarget(fmt.Errorf("no details available on target %T", t), t)
@@ -294,15 +303,15 @@ func determineAttrValue(t vts.Target, cls *vts.AttrClass) (starlark.Value, error
 			return nil, vts.WrapWithTarget(fmt.Errorf("unresolved target reference: %q", a.Parent.Path), t)
 		}
 		if class := a.Parent.Target.(*vts.AttrClass); class.GlobalPath() == cls.Path {
-			return a.OutputValue()
+			return a.Value(env)
 		}
 	}
 
 	return nil, errNoAttr
 }
 
-func determinePath(t vts.Target) (string, error) {
-	v, err := determineAttrValue(t, common.PathClass)
+func determinePath(t vts.Target, env *vts.RunnerEnv) (string, error) {
+	v, err := determineAttrValue(t, common.PathClass, env)
 	if err != nil {
 		return "", err
 	}
@@ -312,8 +321,8 @@ func determinePath(t vts.Target) (string, error) {
 	return "", vts.WrapWithTarget(fmt.Errorf("bad type for path: want string, got %T", v), t)
 }
 
-func determineMode(t vts.Target) (os.FileMode, error) {
-	v, err := determineAttrValue(t, common.ModeClass)
+func determineMode(t vts.Target, env *vts.RunnerEnv) (os.FileMode, error) {
+	v, err := determineAttrValue(t, common.ModeClass, env)
 	if err != nil {
 		return 0, err
 	}

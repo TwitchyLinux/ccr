@@ -24,7 +24,7 @@ type Attr struct {
 	Parent TargetRef
 	Pos    *DefPosition
 
-	Value starlark.Value
+	Val starlark.Value
 }
 
 func (t *Attr) DefinedAt() *DefPosition {
@@ -60,7 +60,7 @@ func (t *Attr) Validate() error {
 		return errors.New("no parent attr_class specified")
 	}
 
-	if cv, isComputedValue := t.Value.(*ComputedValue); isComputedValue {
+	if cv, isComputedValue := t.Val.(*ComputedValue); isComputedValue {
 		if err := cv.Validate(); err != nil {
 			return fmt.Errorf("invalid computed value: %v", err)
 		}
@@ -90,11 +90,11 @@ func (t *Attr) Hash() (uint32, error) {
 	return uint32(uint32(h[0]) + uint32(h[1])<<8 + uint32(h[2])<<16 + uint32(h[3])<<24), nil
 }
 
-// OutputValue returns the value of the attribute, invoking any computation
+// Value returns the value of the attribute, invoking any computation
 // if necessary.
-func (t *Attr) OutputValue() (starlark.Value, error) {
-	if cv, isComputed := t.Value.(*ComputedValue); isComputed {
+func (t *Attr) Value(env *RunnerEnv) (starlark.Value, error) {
+	if cv, isComputed := t.Val.(*ComputedValue); isComputed {
 		return starlark.None, fmt.Errorf("computed values not yet supported (%v)", cv)
 	}
-	return t.Value, nil
+	return t.Val, nil
 }

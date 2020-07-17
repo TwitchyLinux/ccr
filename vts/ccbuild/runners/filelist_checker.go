@@ -38,7 +38,7 @@ func (t *filelistChecker) Hash() (uint32, error) {
 }
 
 func (flc *filelistChecker) Run(r *vts.Resource, chkr *vts.Checker, opts *vts.RunnerEnv) error {
-	path, err := resourcePath(r)
+	path, err := resourcePath(r, opts)
 	if err != nil {
 		if err == errNoAttr {
 			return errors.New("no path specified")

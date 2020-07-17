@@ -35,9 +35,13 @@ func (t *pathValidRunner) Hash() (uint32, error) {
 }
 
 func (*pathValidRunner) Run(attr *vts.Attr, chkr *vts.Checker, opts *vts.RunnerEnv) error {
-	path := attr.Value.String()
-	if s, ok := attr.Value.(starlark.String); ok {
-		path = string(s)
+	v, err := attr.Value(opts)
+	if err != nil {
+		return err
+	}
+	path := v.String()
+	if p, ok := v.(starlark.String); ok {
+		path = string(p)
 	}
 	if path == "" {
 		return errors.New("path was empty")
@@ -78,12 +82,16 @@ func (t *enumValueRunner) Hash() (uint32, error) {
 }
 
 func (e *enumValueRunner) Run(attr *vts.Attr, chkr *vts.Checker, opts *vts.RunnerEnv) error {
-	v := attr.Value.String()
-	if s, ok := attr.Value.(starlark.String); ok {
-		v = string(s)
+	v, err := attr.Value(opts)
+	if err != nil {
+		return err
 	}
-	if _, ok := e.allowedValues[v]; !ok {
-		return fmt.Errorf("invalid value: %q", v)
+	s := v.String()
+	if ss, ok := v.(starlark.String); ok {
+		s = string(ss)
+	}
+	if _, ok := e.allowedValues[s]; !ok {
+		return fmt.Errorf("invalid value: %q", s)
 	}
 	return nil
 }
@@ -112,9 +120,13 @@ func (t *modeValidRunner) Hash() (uint32, error) {
 }
 
 func (*modeValidRunner) Run(attr *vts.Attr, chkr *vts.Checker, opts *vts.RunnerEnv) error {
-	mode := attr.Value.String()
-	if s, ok := attr.Value.(starlark.String); ok {
-		mode = string(s)
+	v, err := attr.Value(opts)
+	if err != nil {
+		return err
+	}
+	mode := v.String()
+	if m, ok := v.(starlark.String); ok {
+		mode = string(m)
 	}
 	if mode == "" {
 		return errors.New("mode was empty")
@@ -154,8 +166,12 @@ func (t *boolCheckValid) Hash() (uint32, error) {
 }
 
 func (*boolCheckValid) Run(attr *vts.Attr, chkr *vts.Checker, opts *vts.RunnerEnv) error {
-	if _, isBool := attr.Value.(starlark.Bool); !isBool {
-		return fmt.Errorf("attr is not a boolean: got type %T", attr.Value)
+	v, err := attr.Value(opts)
+	if err != nil {
+		return err
+	}
+	if _, isBool := v.(starlark.Bool); !isBool {
+		return fmt.Errorf("attr is not a boolean: got type %T", v)
 	}
 	return nil
 }

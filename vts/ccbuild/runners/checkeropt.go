@@ -34,11 +34,16 @@ func (t *checkerOptValidRunner) Hash() (uint32, error) {
 }
 
 func (*checkerOptValidRunner) Run(attr *vts.Attr, chkr *vts.Checker, opts *vts.RunnerEnv) error {
-	v, ok := attr.Value.(starlark.String)
+	sv, err := attr.Value(opts)
+	if err != nil {
+		return err
+	}
+	v, ok := sv.(starlark.String)
 	if !ok {
-		return fmt.Errorf("expected string, got %T", attr.Value)
+		return fmt.Errorf("expected string, got %T", sv)
 	}
 	s := string(v)
+
 	sepIdx := strings.Index(s, "=")
 	if sepIdx < 0 {
 		return errors.New("missing equals sign to delimit key value pair")

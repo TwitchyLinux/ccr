@@ -19,7 +19,7 @@ func doGenerateCmd() error {
 		},
 	}
 
-	if err := uv.Build([]vts.TargetRef{{Path: flag.Arg(1)}}, &findOpts); err != nil {
+	if err := uv.Build([]vts.TargetRef{{Path: flag.Arg(1)}}, &findOpts, *baseDir); err != nil {
 		return err
 	}
 	if err := uv.Generate(ccr.GenerateConfig{}, vts.TargetRef{Path: flag.Arg(1)}, *baseDir); err != nil {

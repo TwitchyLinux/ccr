@@ -123,7 +123,7 @@ func (i *elfPopulator) Run(t vts.Target, opts *vts.RunnerEnv, info *vts.RuntimeI
 	if !ok {
 		return fmt.Errorf("info.elfPopulator can only operate on resource targets, got %T", t)
 	}
-	path, err := resourcePath(r)
+	path, err := resourcePath(r, opts)
 	if err != nil {
 		return vts.WrapWithTarget(err, t)
 	}

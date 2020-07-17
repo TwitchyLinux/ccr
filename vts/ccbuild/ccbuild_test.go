@@ -50,7 +50,7 @@ var newScriptTestcases = []struct {
 				Path:   "//test:amd64",
 				Name:   "amd64",
 				Parent: vts.TargetRef{Path: "//test/arch"},
-				Value:  starlark.String("amd64"),
+				Val:    starlark.String("amd64"),
 			},
 		},
 	},
@@ -66,19 +66,19 @@ var newScriptTestcases = []struct {
 					{
 						Target: &vts.Attr{
 							Parent: vts.TargetRef{Path: "common://attrs:arch"},
-							Value:  starlark.String("yeetos"),
+							Val:    starlark.String("yeetos"),
 						},
 					},
 					{
 						Target: &vts.Attr{
 							Parent: vts.TargetRef{Target: common.ModeClass},
-							Value:  starlark.String("0755"),
+							Val:    starlark.String("0755"),
 						},
 					},
 					{
 						Target: &vts.Attr{
 							Parent: vts.TargetRef{Target: common.TargetClass},
-							Value:  starlark.String("/doesnt-make/sense"),
+							Val:    starlark.String("/doesnt-make/sense"),
 						},
 					},
 				},
@@ -124,7 +124,7 @@ var newScriptTestcases = []struct {
 					{
 						Target: &vts.Attr{
 							Parent: vts.TargetRef{Target: common.PathClass},
-							Value:  starlark.String("/etc/yeet"),
+							Val:    starlark.String("/etc/yeet"),
 						},
 					},
 				},
@@ -174,7 +174,7 @@ var newScriptTestcases = []struct {
 				Name:   "amd64",
 				Path:   "//test:amd64",
 				Parent: vts.TargetRef{Path: "//test/arch"},
-				Value: &vts.ComputedValue{
+				Val: &vts.ComputedValue{
 					Filename: "a.py",
 					Func:     "some_func",
 				},

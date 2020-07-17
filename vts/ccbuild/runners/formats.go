@@ -34,7 +34,7 @@ func (t *jsonValidRunner) Hash() (uint32, error) {
 }
 
 func (*jsonValidRunner) Run(resource *vts.Resource, chkr *vts.Checker, opts *vts.RunnerEnv) error {
-	path, err := resourcePath(resource)
+	path, err := resourcePath(resource, opts)
 	if err != nil {
 		return err
 	}

@@ -30,7 +30,7 @@ func (i *statPopulator) Run(t vts.Target, opts *vts.RunnerEnv, info *vts.Runtime
 	if !ok {
 		return fmt.Errorf("info.statPopulator can only operate on resource targets, got %T", t)
 	}
-	path, err := resourcePath(r)
+	path, err := resourcePath(r, opts)
 	if err != nil {
 		return err
 	}
