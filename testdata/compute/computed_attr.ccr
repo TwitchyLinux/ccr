@@ -1,17 +1,16 @@
 resource(
-  name   = 'computed',
-  parent = 'common://resources:dir',
-  mode   = '0755',
+  name    = 'computed',
+  parent  = 'common://resources:dir',
   details = [
     attr(parent = "common://attrs:path", value = compute('pather.py', 'parent_name_with_dir_suffix')),
   ],
-  source = 'common://generators:dir',
+  source  = 'common://generators:dir',
 )
 
 resource(
-  name   = 'missing_macro_file',
-  parent = 'common://resources:virtual',
+  name    = 'missing_macro_file',
+  parent  = 'common://resources:virtual',
   details = [
-    attr(parent = "common://attrs:path", value = compute('missing.py', 'parent_name')),
+    attr(parent = "common://attrs:path", value = compute(path='missing.py', run='parent_name')),
   ],
 )

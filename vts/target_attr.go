@@ -96,7 +96,11 @@ type computeEval func(attr *Attr, target Target, runInfo *ComputedValue, env *Ru
 // if necessary.
 func (t *Attr) Value(parent Target, env *RunnerEnv, eval computeEval) (starlark.Value, error) {
 	if cv, isComputed := t.Val.(*ComputedValue); isComputed {
-		return eval(t, parent, cv, env)
+		v, err := eval(t, parent, cv, env)
+		if err != nil {
+			return v, WrapWithComputedValue(err, cv)
+		}
+		return v, nil
 	}
 	return t.Val, nil
 }

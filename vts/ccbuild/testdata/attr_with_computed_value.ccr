@@ -1,5 +1,5 @@
 attr(
   name   = "amd64",
   parent = "//test/arch",
-  value  = compute('a.py', 'some_func'),
+  value  = compute('a.py', run='some_func'),
 )

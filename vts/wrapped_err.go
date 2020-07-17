@@ -3,17 +3,26 @@ package vts
 // WrappedErr provides additional context to an error which occurred when
 // working with virtual targets.
 type WrappedErr struct {
-	Target       Target
-	ActionTarget Target // Generator or checker that lead to the error
-	TargetChain  []Target
-	Path         string
-	Pos          *DefPosition
-	Err          error
+	ComputedValue *ComputedValue
+	Target        Target
+	ActionTarget  Target // Generator or checker that lead to the error
+	TargetChain   []Target
+	Path          string
+	Pos           *DefPosition
+	Err           error
 }
 
 // Error implements the error interface.
 func (e WrappedErr) Error() string {
 	return e.Err.Error()
+}
+
+func WrapWithComputedValue(err error, c *ComputedValue) WrappedErr {
+	if we, ok := err.(WrappedErr); ok {
+		we.ComputedValue = c
+		return we
+	}
+	return WrappedErr{Err: err, ComputedValue: c}
 }
 
 // WrapWithPath wraps an error with path information.
