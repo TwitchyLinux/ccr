@@ -465,14 +465,25 @@ func makeToolchain(s *Script) *starlark.Builtin {
 
 func makeComputedValue(s *Script) *starlark.Builtin {
 	return starlark.NewBuiltin("compute", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-		var fname, fun string
-		if err := starlark.UnpackArgs("compute", args, kwargs, "path?", &fname, "run?", &fun); err != nil {
-			return starlark.None, err
+		var fname, fun, code string
+
+		if len(kwargs) == 0 && len(args) == 1 {
+			c, ok := args[0].(starlark.String)
+			if !ok {
+				return starlark.None, fmt.Errorf("compute in unary-argument form must be called with a string, got %T", args[0])
+			}
+			code = string(c)
+		} else {
+			if err := starlark.UnpackArgs("compute", args, kwargs, "path?", &fname, "run?", &fun, "code?", &code); err != nil {
+				return starlark.None, err
+			}
+			fname = filepath.Join(filepath.Dir(s.fPath), fname)
 		}
 
 		return &vts.ComputedValue{
-			Filename: filepath.Join(filepath.Dir(s.fPath), fname),
-			Func:     fun,
+			Filename:     fname,
+			Func:         fun,
+			InlineScript: []byte(code),
 			Pos: &vts.DefPosition{
 				Path:  s.fPath,
 				Frame: thread.CallFrame(1),

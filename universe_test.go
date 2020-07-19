@@ -628,6 +628,14 @@ func TestBuildComputedAttrValues(t *testing.T) {
 			target: vts.TargetRef{Path: "//computed_attr:missing_macro_file"},
 			err:    "open testdata/compute/missing.py: no such file or directory",
 		},
+		{
+			name:   "inline",
+			base:   "testdata/basic",
+			target: vts.TargetRef{Path: "//computed_attr:inline"},
+			attrs: map[string]starlark.Value{
+				common.PathClass.Path: starlark.String("value_inline"),
+			},
+		},
 	}
 
 	for _, tc := range tcs {

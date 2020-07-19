@@ -127,6 +127,54 @@ func TestComputedAttr(t *testing.T) {
 			},
 			starlark.String("/"),
 		},
+		{
+			"inline",
+			&vts.Attr{
+				Name:   "amd64",
+				Path:   "//test:amd64",
+				Parent: vts.TargetRef{Target: class},
+				Val: &vts.ComputedValue{
+					InlineScript: []byte("'1' + '2'"),
+				},
+			},
+			starlark.String("12"),
+		},
+		{
+			"inline multiline",
+			&vts.Attr{
+				Name:   "amd64",
+				Path:   "//test:amd64",
+				Parent: vts.TargetRef{Target: class},
+				Val: &vts.ComputedValue{
+					InlineScript: []byte("v = 'yeet'\nreturn v"),
+				},
+			},
+			starlark.String("yeet"),
+		},
+		{
+			"inline multiline auto-return",
+			&vts.Attr{
+				Name:   "amd64",
+				Path:   "//test:amd64",
+				Parent: vts.TargetRef{Target: class},
+				Val: &vts.ComputedValue{
+					InlineScript: []byte("\n  v = 2*2\n  v\n  "),
+				},
+			},
+			starlark.MakeInt(4),
+		},
+		{
+			"inline multiline starts first line",
+			&vts.Attr{
+				Name:   "BROSKIE",
+				Path:   "//test:amd64",
+				Parent: vts.TargetRef{Target: class},
+				Val: &vts.ComputedValue{
+					InlineScript: []byte("v = attr.name\nreturn 'yeet_' + v\n\n  "),
+				},
+			},
+			starlark.String("yeet_BROSKIE"),
+		},
 	}
 
 	for _, tc := range tcs {

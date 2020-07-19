@@ -1,9 +1,12 @@
 package proc
 
 import (
+	"bytes"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"strings"
 
 	"github.com/twitchylinux/ccr/vts"
 	"go.starlark.net/starlark"
@@ -68,15 +71,54 @@ func (p *computedAttrProxy) Attr(name string) (starlark.Value, error) {
 		fmt.Sprintf("%s has no .%s attribute", p.Type(), name))
 }
 
+func scriptFromInline(d []byte) ([]byte, error) {
+	var s bytes.Buffer
+	s.Grow(128)
+	s.WriteString("def inline_fn(attr, t):\n")
+
+	spl, had1stLine, indent := strings.Split(strings.TrimRight(string(d), "\n "), "\n"), false, 0
+	for i, line := range spl {
+		if line == "" {
+			continue
+		}
+		// Count indents on the first line, trim from subsequent.
+		if !had1stLine {
+			had1stLine = true
+			for i := 0; i < len(line) && line[i] == ' '; i++ {
+				indent++
+			}
+		}
+		s.WriteString("  ")
+
+		if len(line) < indent || line[:indent] != strings.Repeat(" ", indent) {
+			return nil, errors.New("inline script had inconsistent indentation")
+		}
+		if i+1 == len(spl) && !strings.HasPrefix(line[indent:], "return ") {
+			s.WriteString("return ")
+		}
+		s.WriteString(line[indent:] + "\n")
+	}
+	return s.Bytes(), nil
+}
+
 // EvalComputedAttribute computes the value of an attribute whose value is wired to a function.
 func EvalComputedAttribute(attr *vts.Attr, target vts.Target, runInfo *vts.ComputedValue, env *vts.RunnerEnv) (v starlark.Value, err error) {
 	var (
-		out = &proc{fPath: runInfo.Filename, readOnly: true}
-		d   []byte
+		out             = &proc{fPath: runInfo.Filename, readOnly: true}
+		funcName string = runInfo.Func
+		d        []byte
 	)
-	if d, err = ioutil.ReadFile(runInfo.Filename); err != nil {
-		return starlark.None, err
+	if len(runInfo.InlineScript) > 0 {
+		if d, err = scriptFromInline(runInfo.InlineScript); err != nil {
+			return starlark.None, err
+		}
+		funcName = "inline_fn"
+	} else {
+		if d, err = ioutil.ReadFile(runInfo.Filename); err != nil {
+			return starlark.None, err
+		}
 	}
+
 	defer func() {
 		if out.env != nil {
 			if err2 := out.env.Close(); err2 != nil && err != nil {
@@ -91,7 +133,7 @@ func EvalComputedAttribute(attr *vts.Attr, target vts.Target, runInfo *vts.Compu
 	}
 	defer out.Close()
 
-	fn, exists := out.globals[runInfo.Func]
+	fn, exists := out.globals[funcName]
 	if !exists {
 		return starlark.None, fmt.Errorf("cannot compute value: function %q was not present", runInfo.Func)
 	}

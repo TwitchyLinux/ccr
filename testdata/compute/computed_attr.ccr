@@ -14,3 +14,11 @@ resource(
     attr(parent = "common://attrs:path", value = compute(path='missing.py', run='parent_name')),
   ],
 )
+
+resource(
+  name    = 'inline',
+  parent  = 'common://resources:virtual',
+  details = [
+    attr(parent = "common://attrs:path", value = compute('\'value_\' + t.name')),
+  ],
+)

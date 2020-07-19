@@ -1,6 +1,7 @@
 package ccbuild
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"reflect"
@@ -175,8 +176,23 @@ var newScriptTestcases = []struct {
 				Path:   "//test:amd64",
 				Parent: vts.TargetRef{Path: "//test/arch"},
 				Val: &vts.ComputedValue{
-					Filename: "testdata/a.py",
-					Func:     "some_func",
+					Filename:     "testdata/a.py",
+					Func:         "some_func",
+					InlineScript: []byte(""),
+				},
+			},
+		},
+	},
+	{
+		name:     "attr with inline computed value",
+		filename: "testdata/attr_with_inline_computed_value.ccr",
+		want: []vts.Target{
+			&vts.Attr{
+				Name:   "amd64",
+				Path:   "//test:amd64",
+				Parent: vts.TargetRef{Path: "//test/arch"},
+				Val: &vts.ComputedValue{
+					InlineScript: []byte("\n  v = 2**2\n  return v\n  "),
 				},
 			},
 		},
@@ -197,7 +213,14 @@ func TestNewScript(t *testing.T) {
 				t.Fatalf("NewScript() failed: %v", err)
 			}
 
+			// for _, target := range s.targets {
+			// 	if err := target.Validate(); err != nil {
+			// 		t.Errorf("failed to validate: %v", err)
+			// 	}
+			// }
+
 			if diff := cmp.Diff(tc.want, s.targets, filterPos); diff != "" {
+				fmt.Println(string(s.targets[0].(*vts.Attr).Val.(*vts.ComputedValue).InlineScript))
 				t.Errorf("unexpected targets result (+got, -want): \n%s", diff)
 			}
 		})

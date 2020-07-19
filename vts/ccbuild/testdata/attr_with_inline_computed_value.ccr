@@ -1,0 +1,8 @@
+attr(
+  name   = "amd64",
+  parent = "//test/arch",
+  value  = compute('''
+  v = 2**2
+  return v
+  '''),
+)

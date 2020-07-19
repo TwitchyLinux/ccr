@@ -12,8 +12,9 @@ import (
 type ComputedValue struct {
 	Pos *DefPosition
 
-	Filename string
-	Func     string
+	Filename     string
+	Func         string
+	InlineScript []byte
 }
 
 func (t *ComputedValue) DefinedAt() *DefPosition {
@@ -25,16 +26,20 @@ func (t *ComputedValue) IsClassTarget() bool {
 }
 
 func (t *ComputedValue) Validate() error {
-	if t.Filename == "" {
-		return errors.New("filename must be specified")
+	if t.Filename == "" && len(t.InlineScript) == 0 {
+		return errors.New("filename or code must be specified")
 	}
-	if t.Func == "" {
-		return errors.New("function must be specified")
+	if t.Func == "" && len(t.InlineScript) == 0 {
+		return errors.New("function or code must be specified")
 	}
 	return nil
 }
 
 func (t *ComputedValue) String() string {
+	if len(t.InlineScript) > 0 {
+		hsh := sha256.Sum256(t.InlineScript)
+		return fmt.Sprintf("computed_value<0x%X>", hsh[:4])
+	}
 	return fmt.Sprintf("computed_value<%s, %s>", t.Filename, t.Func)
 }
 
