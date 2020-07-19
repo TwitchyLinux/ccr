@@ -8,6 +8,7 @@ import (
 
 	"github.com/twitchylinux/ccr/vts"
 	"go.starlark.net/starlark"
+	"go.starlark.net/starlarkstruct"
 )
 
 type scriptLoader interface {
@@ -18,6 +19,9 @@ type scriptLoader interface {
 type proc struct {
 	thread  *starlark.Thread
 	globals starlark.StringDict
+
+	readOnly bool
+	env      *Env
 
 	fPath string
 }
@@ -75,9 +79,37 @@ func (p *proc) loadScript(script []byte, fname string, loader scriptLoader) (*st
 	return thread, globals, nil
 }
 
+func (p *proc) runBuiltin() *starlark.Builtin {
+	return starlark.NewBuiltin("run", func(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, _ []starlark.Tuple) (starlark.Value, error) {
+		var err error
+		if p.env == nil {
+			if p.env, err = NewEnv(p.readOnly); err != nil {
+				return starlark.None, fmt.Errorf("initializing environment: %v", err)
+			}
+		}
+
+		vals := make([]string, len(args))
+		for i, a := range args {
+			vals[i], _ = starlark.AsString(a)
+		}
+
+		out, sErr, code, err := p.env.RunBlocking(vals...)
+		if err != nil && code == 0 {
+			return starlark.None, err
+		}
+
+		return starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
+			"output":    starlark.String(out),
+			"stderr":    starlark.String(sErr),
+			"exit_code": starlark.MakeInt(code),
+		}), nil
+	})
+}
+
 func (p *proc) makeBuiltins() (starlark.StringDict, error) {
 	return starlark.StringDict{
 		"none": starlark.None,
+		"run":  p.runBuiltin(),
 	}, nil
 }
 

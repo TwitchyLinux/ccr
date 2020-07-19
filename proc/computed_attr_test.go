@@ -88,6 +88,45 @@ func TestComputedAttr(t *testing.T) {
 			},
 			starlark.String("resource: name=some_file, path=//test:some_file, deps=[], details=[]"),
 		},
+		{
+			"run basic",
+			&vts.Attr{
+				Name:   "amd64",
+				Path:   "//test:amd64",
+				Parent: vts.TargetRef{Target: class},
+				Val: &vts.ComputedValue{
+					Filename: "testdata/run.py",
+					Func:     "run_basic",
+				},
+			},
+			starlark.String("Linux\nye"),
+		},
+		{
+			"no write",
+			&vts.Attr{
+				Name:   "amd64",
+				Path:   "//test:amd64",
+				Parent: vts.TargetRef{Target: class},
+				Val: &vts.ComputedValue{
+					Filename: "testdata/run.py",
+					Func:     "check_no_write",
+				},
+			},
+			starlark.MakeInt(1),
+		},
+		{
+			"working dir",
+			&vts.Attr{
+				Name:   "amd64",
+				Path:   "//test:amd64",
+				Parent: vts.TargetRef{Target: class},
+				Val: &vts.ComputedValue{
+					Filename: "testdata/run.py",
+					Func:     "wd",
+				},
+			},
+			starlark.String("/"),
+		},
 	}
 
 	for _, tc := range tcs {

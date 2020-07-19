@@ -23,24 +23,28 @@ type procCommand struct {
 type procResp struct {
 	Code  cmdCode
 	Error string
+
+	Stdout   []byte
+	Stderr   []byte
+	ExitCode int
 }
 
-func (e *Env) sendCommand(cmd procCommand) error {
+func (e *Env) sendCommand(cmd procCommand) (procResp, error) {
 	e.cmdW.SetWriteDeadline(time.Now().Add(cmdTimeout))
 	if err := e.enc.Encode(cmd); err != nil {
-		return err
+		return procResp{}, err
 	}
 
 	e.respR.SetReadDeadline(time.Now().Add(cmdTimeout))
 	var resp procResp
 	if err := e.dec.Decode(&resp); err != nil {
-		return err
+		return procResp{}, err
 	}
 	if resp.Code != cmd.Code {
-		return fmt.Errorf("bad response: code %v != %v", resp.Code, cmd.Code)
+		return procResp{}, fmt.Errorf("bad response: code %v != %v", resp.Code, cmd.Code)
 	}
 	if resp.Error != "" {
-		return errors.New(resp.Error)
+		return resp, errors.New(resp.Error)
 	}
-	return nil
+	return resp, nil
 }

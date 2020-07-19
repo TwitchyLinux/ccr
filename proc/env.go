@@ -16,7 +16,7 @@ import (
 
 const cmdTimeout = 5 * time.Second
 
-// Env represents an environment in which proceedures or builds can be run.
+// Env represents an isolated host environment.
 type Env struct {
 	dir       string
 	artifacts string
@@ -29,8 +29,12 @@ type Env struct {
 }
 
 // RunBlocking runs the specified command.
-func (e *Env) RunBlocking(args ...string) error {
-	return e.sendCommand(procCommand{Code: cmdRunBlocking, Args: args})
+func (e *Env) RunBlocking(args ...string) ([]byte, []byte, int, error) {
+	resp, err := e.sendCommand(procCommand{Code: cmdRunBlocking, Args: args})
+	if err != nil {
+		return nil, nil, resp.ExitCode, err
+	}
+	return resp.Stdout, resp.Stderr, resp.ExitCode, nil
 }
 
 // dependenciesInstalled returns true if dependencies have been installed.
@@ -111,7 +115,7 @@ func NewEnv(readOnly bool) (*Env, error) {
 }
 
 func (e *Env) Close() error {
-	err := e.sendCommand(procCommand{Code: cmdShutdown})
+	_, err := e.sendCommand(procCommand{Code: cmdShutdown})
 	if err2 := e.p.Process.Kill(); err == nil {
 		err = err2
 	}

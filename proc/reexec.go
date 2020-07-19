@@ -1,6 +1,7 @@
 package proc
 
 import (
+	"bytes"
 	"encoding/gob"
 	"errors"
 	"fmt"
@@ -37,17 +38,23 @@ func commandChannels() (*gob.Encoder, *gob.Decoder, error) {
 
 func runBlocking(cmd procCommand, pivotDir string, readOnly bool) procResp {
 	c := reexec.Command(append([]string{"reexecEntry", "run", pivotDir, strconv.FormatBool(readOnly)}, cmd.Args...)...)
-	c.Stdout = os.Stdout
-	c.Stderr = os.Stderr
+	var sOut, sErr bytes.Buffer
+	c.Stdout = &sOut
+	c.Stderr = &sErr
 	c.Stdin = os.Stdin
 	c.SysProcAttr = &syscall.SysProcAttr{
 		Cloneflags: syscall.CLONE_NEWNS,
 	}
-	errStr := ""
+	resp := procResp{Code: cmd.Code}
 	if err := c.Run(); err != nil {
-		errStr = err.Error()
+		resp.Error = err.Error()
+		if eErr, isExecErr := err.(*exec.ExitError); isExecErr {
+			resp.ExitCode = eErr.ExitCode()
+		}
 	}
-	return procResp{Code: cmd.Code, Error: errStr}
+	resp.Stderr = sErr.Bytes()
+	resp.Stdout = sOut.Bytes()
+	return resp
 }
 
 func envMainloop(cmdW *gob.Encoder, cmdR *gob.Decoder, readOnly bool) error {

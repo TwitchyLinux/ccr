@@ -69,15 +69,21 @@ func (p *computedAttrProxy) Attr(name string) (starlark.Value, error) {
 }
 
 // EvalComputedAttribute computes the value of an attribute whose value is wired to a function.
-func EvalComputedAttribute(attr *vts.Attr, target vts.Target, runInfo *vts.ComputedValue, env *vts.RunnerEnv) (starlark.Value, error) {
+func EvalComputedAttribute(attr *vts.Attr, target vts.Target, runInfo *vts.ComputedValue, env *vts.RunnerEnv) (v starlark.Value, err error) {
 	var (
-		err error
-		out = &proc{fPath: runInfo.Filename}
+		out = &proc{fPath: runInfo.Filename, readOnly: true}
 		d   []byte
 	)
 	if d, err = ioutil.ReadFile(runInfo.Filename); err != nil {
 		return starlark.None, err
 	}
+	defer func() {
+		if out.env != nil {
+			if err2 := out.env.Close(); err2 != nil && err != nil {
+				err = fmt.Errorf("closing env: %v", err2)
+			}
+		}
+	}()
 
 	out.thread, out.globals, err = out.loadScript(d, runInfo.Filename, out)
 	if err != nil {
