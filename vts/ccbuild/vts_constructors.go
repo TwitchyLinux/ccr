@@ -68,13 +68,15 @@ func makeAttrClass(s *Script) *starlark.Builtin {
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var name string
 		var checks *starlark.List
-		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name", &name, "chks?", &checks); err != nil {
+		var repeatable bool
+		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name", &name, "chks?", &checks, "repeatable?", &repeatable); err != nil {
 			return starlark.None, err
 		}
 
 		ac := &vts.AttrClass{
-			Path: s.makePath(name),
-			Name: name,
+			Path:       s.makePath(name),
+			Name:       name,
+			Repeatable: repeatable,
 			Pos: &vts.DefPosition{
 				Path:  s.fPath,
 				Frame: thread.CallFrame(1),

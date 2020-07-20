@@ -139,9 +139,17 @@ func validateDeps(deps []TargetRef) error {
 }
 
 func validateDetails(details []TargetRef) error {
+	seenExclusiveClasses := map[*AttrClass]*Attr{}
 	for i, deet := range details {
-		if _, ok := deet.Target.(*Attr); !ok {
+		a, ok := deet.Target.(*Attr)
+		if !ok {
 			return fmt.Errorf("details[%d] is type %T, but must be attr", i, deet.Target)
+		}
+		if parent := a.Parent.Target.(*AttrClass); !parent.Repeatable {
+			if _, alreadySeen := seenExclusiveClasses[parent]; alreadySeen {
+				return fmt.Errorf("duplicate attributes with non-repeatable class %q", parent.GlobalPath())
+			}
+			seenExclusiveClasses[parent] = a
 		}
 	}
 	return nil

@@ -417,6 +417,43 @@ func TestUniverseCheck(t *testing.T) {
 	}
 }
 
+func TestBuildValidation(t *testing.T) {
+	tcs := []struct {
+		name    string
+		base    string
+		targets []vts.TargetRef
+		err     string
+	}{
+		{
+			name:    "multiple_exclusive_attrs",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//multiple_exclusive_attrs:path"}},
+			err:     "duplicate attributes with non-repeatable class \"common://attrs:path\"",
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			uv := NewUniverse(&silentOpTrack{}, nil)
+			dr := NewDirResolver("testdata/checkers")
+			findOpts := FindOptions{
+				FallbackResolvers: []CCRResolver{dr.Resolve},
+				PrefixResolvers: map[string]CCRResolver{
+					"common": common.Resolve,
+				},
+			}
+
+			err := uv.Build(tc.targets, &findOpts, tc.base)
+			switch {
+			case err == nil && tc.err != "":
+				t.Errorf("universe.Build(%q) returned no error, want %q", tc.targets, tc.err)
+			case err != nil && tc.err != err.Error():
+				t.Errorf("universe.Build(%q) returned %q, want %q", tc.targets, err, tc.err)
+			}
+		})
+	}
+}
+
 func TestUniverseGenerate(t *testing.T) {
 	tcs := []struct {
 		name         string

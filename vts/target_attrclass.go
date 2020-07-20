@@ -4,10 +4,12 @@ import "fmt"
 
 // AttrClass is a target representing an attribute class.
 type AttrClass struct {
-	Path   string
-	Name   string
-	Pos    *DefPosition
-	Checks []TargetRef
+	Path string
+	Name string
+
+	Repeatable bool
+	Pos        *DefPosition
+	Checks     []TargetRef
 }
 
 func (t *AttrClass) DefinedAt() *DefPosition {

@@ -1,0 +1,8 @@
+resource(
+  name    = "path",
+  parent  = "common://resources:virtual",
+  path    = "/some/path",
+  details = [
+    attr(parent = "common://attrs:path", value = "/other/path"),
+  ],
+)
