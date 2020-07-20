@@ -86,13 +86,10 @@ var CheckerOptClass = &vts.AttrClass{
 
 // SemverClass is the class for a string describing a semantic version.
 var SemverClass = &vts.AttrClass{
-	Path:   "common://attrs:semver",
-	Name:   "semver",
+	Path: "common://attrs:semver",
+	Name: "semver",
 	Checks: []vts.TargetRef{
-		// {Target: &vts.Checker{
-		// 	Kind:   vts.ChkKindEachAttr,
-		// 	Runner: runners.CheckerOptCheckValid(),
-		// }},
+		{Target: SemverChecker},
 	},
 }
 

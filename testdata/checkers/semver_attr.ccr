@@ -1,0 +1,40 @@
+resource(
+  name   = "empty",
+  parent = "common://resources:virtual",
+  details = [
+    attr(parent = "common://attrs:semver", value = ""),
+  ],
+)
+
+resource(
+  name   = "bad_semver_1",
+  parent = "common://resources:virtual",
+  details = [
+    attr(parent = "common://attrs:semver", value = "1.2:3"),
+  ],
+)
+
+resource(
+  name   = "bad_semver_2",
+  parent = "common://resources:virtual",
+  details = [
+    attr(parent = "common://attrs:semver", value = compute('"a"')),
+  ],
+)
+
+resource(
+  name   = "simple",
+  parent = "common://resources:virtual",
+  details = [
+    attr(parent = "common://attrs:semver", value = compute('str(2 + 3)')),
+  ],
+)
+
+
+resource(
+  name   = "normal",
+  parent = "common://resources:virtual",
+  details = [
+    attr(parent = "common://attrs:semver", value = "1.2.3"),
+  ],
+)

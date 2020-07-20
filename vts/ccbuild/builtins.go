@@ -40,7 +40,8 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 				"check_valid": runners.JSONCheckValid(),
 			}),
 			"attr": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
-				"path": runners.PathCheckValid(),
+				"path":   runners.PathCheckValid(),
+				"semver": runners.SemverCheckValid(),
 			}),
 			"debug": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
 				"generator_input": runners.GenerateDebugManifest(),

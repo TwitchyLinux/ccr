@@ -361,6 +361,34 @@ func TestUniverseCheck(t *testing.T) {
 			targets: []vts.TargetRef{{Path: "//symlink:bad_missing"}},
 			err:     "lstat testdata/checkers/base/missing_link: no such file or directory",
 		},
+		{
+			name:    "semver_good_1",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//semver_attr:simple"}},
+		},
+		{
+			name:    "semver_good_2",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//semver_attr:normal"}},
+		},
+		{
+			name:    "semver_empty",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//semver_attr:empty"}},
+			err:     "invalid version \"\": upstream_version is empty",
+		},
+		{
+			name:    "semver_invalid_deb",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//semver_attr:bad_semver_1"}},
+			err:     "invalid version \"1.2:3\": semvers cannot contain a trailing epoch",
+		},
+		{
+			name:    "semver_invalid_letters",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//semver_attr:bad_semver_2"}},
+			err:     "invalid version \"a\": upstream_version must start with digit",
+		},
 	}
 
 	for _, tc := range tcs {

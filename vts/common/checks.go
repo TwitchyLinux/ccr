@@ -76,6 +76,13 @@ var DebInfoChecker = &vts.Checker{
 	Runner: runners.DebInfoCheckValid(),
 }
 
+var SemverChecker = &vts.Checker{
+	Path:   "common://checks:semver_valid",
+	Name:   "semver_valid",
+	Kind:   vts.ChkKindEachAttr,
+	Runner: runners.SemverCheckValid(),
+}
+
 var FilelistAllPresentChecker = &vts.Checker{
 	Path:   "common://checks/filelist:present",
 	Name:   "present",

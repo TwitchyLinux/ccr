@@ -4,7 +4,10 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"strings"
 
+	version "github.com/knqyf263/go-deb-version"
+	"github.com/twitchylinux/ccr/proc"
 	"github.com/twitchylinux/ccr/vts"
 	"go.starlark.net/starlark"
 )
@@ -81,5 +84,52 @@ func (*fileCheckPresent) Run(r *vts.Resource, chkr *vts.Checker, opts *vts.Runne
 }
 
 func (*fileCheckPresent) PopulatorsNeeded() []vts.InfoPopulator {
+	return nil
+}
+
+// SemverCheckValid returns a runner that can check attrs
+// are valid semantic version strings.
+func SemverCheckValid() *semverValidRunner {
+	return &semverValidRunner{}
+}
+
+type semverValidRunner struct{}
+
+func (*semverValidRunner) Kind() vts.CheckerKind { return vts.ChkKindEachAttr }
+
+func (*semverValidRunner) String() string { return "attr.checker_semver_valid" }
+
+func (*semverValidRunner) Freeze() {}
+
+func (*semverValidRunner) Truth() starlark.Bool { return true }
+
+func (*semverValidRunner) Type() string { return "runner" }
+
+func (t *semverValidRunner) Hash() (uint32, error) {
+	h := sha256.Sum256([]byte(fmt.Sprintf("%p", t)))
+	return uint32(uint32(h[0]) + uint32(h[1])<<8 + uint32(h[2])<<16 + uint32(h[3])<<24), nil
+}
+
+func (*semverValidRunner) Run(attr *vts.Attr, chkr *vts.Checker, opts *vts.RunnerEnv) error {
+	sv, err := attr.Value(chkr, opts, proc.EvalComputedAttribute)
+	if err != nil {
+		return err
+	}
+	v, ok := sv.(starlark.String)
+	if !ok {
+		return fmt.Errorf("expected string, got %T", sv)
+	}
+	s := string(v)
+
+	if strings.ContainsAny(s, " \n\r\t") {
+		return fmt.Errorf("invalid version %q: semvers cannot contain whitespace", s)
+	}
+	if strings.Contains(s, ":") {
+		return fmt.Errorf("invalid version %q: semvers cannot contain a trailing epoch", s)
+	}
+
+	if _, err := version.NewVersion(s); err != nil {
+		return fmt.Errorf("invalid version %q: %v", s, err)
+	}
 	return nil
 }
