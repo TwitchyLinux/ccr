@@ -15,7 +15,13 @@ type Attr struct {
 	Parent TargetRef
 	Pos    *DefPosition
 
-	Val starlark.Value
+	Val       starlark.Value
+	cachedVal attrCachedVal
+}
+
+type attrCachedVal struct {
+	parent Target
+	val    starlark.Value
 }
 
 func (t *Attr) DefinedAt() *DefPosition {
@@ -87,9 +93,18 @@ type computeEval func(attr *Attr, target Target, runInfo *ComputedValue, env *Ru
 // if necessary.
 func (t *Attr) Value(parent Target, env *RunnerEnv, eval computeEval) (starlark.Value, error) {
 	if cv, isComputed := t.Val.(*ComputedValue); isComputed {
+		// attempt to use cached value.
+		if t.cachedVal.parent == parent && t.cachedVal.val != nil {
+			return t.cachedVal.val, nil
+		}
+
 		v, err := eval(t, parent, cv, env)
 		if err != nil {
 			return v, WrapWithComputedValue(err, cv)
+		}
+		t.cachedVal = attrCachedVal{
+			parent: parent,
+			val:    v,
 		}
 		return v, nil
 	}

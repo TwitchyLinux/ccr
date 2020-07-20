@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/common"
 	"go.starlark.net/starlark"
@@ -219,7 +220,7 @@ func TestNewScript(t *testing.T) {
 			// 	}
 			// }
 
-			if diff := cmp.Diff(tc.want, s.targets, filterPos); diff != "" {
+			if diff := cmp.Diff(tc.want, s.targets, filterPos, cmpopts.IgnoreUnexported(vts.Attr{})); diff != "" {
 				fmt.Println(string(s.targets[0].(*vts.Attr).Val.(*vts.ComputedValue).InlineScript))
 				t.Errorf("unexpected targets result (+got, -want): \n%s", diff)
 			}
