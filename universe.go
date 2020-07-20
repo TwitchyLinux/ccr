@@ -151,6 +151,14 @@ func (u *Universe) linkTarget(t vts.Target) error {
 			}
 		}
 		return nil
+
+	case *vts.Build:
+		for i := range n.HostDeps {
+			if n.HostDeps[i], err = u.makeTargetRef(n.HostDeps[i]); err != nil {
+				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
+			}
+		}
+		return nil
 	}
 
 	return fmt.Errorf("linking failed: cannot handle target of type %T", t)

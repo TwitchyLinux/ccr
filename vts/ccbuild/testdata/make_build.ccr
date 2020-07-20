@@ -1,0 +1,6 @@
+build(
+  name      = "thingy",
+  host_deps = [
+    ":meow",
+  ],
+)

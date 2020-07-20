@@ -1,0 +1,18 @@
+resource_class(
+  name = "animal",
+)
+
+resource(
+  name   = "thingy",
+  parent = ":animal",
+)
+
+resource(
+  name   = "cat",
+  parent = ":animal",
+  source = build(
+    host_deps = [
+      ":thingy",
+    ],
+  ),
+)

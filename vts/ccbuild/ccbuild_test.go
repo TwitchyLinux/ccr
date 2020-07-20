@@ -1,7 +1,6 @@
 package ccbuild
 
 import (
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"reflect"
@@ -198,6 +197,19 @@ var newScriptTestcases = []struct {
 			},
 		},
 	},
+	{
+		name:     "build",
+		filename: "testdata/make_build.ccr",
+		want: []vts.Target{
+			&vts.Build{
+				Path: "//test:thingy",
+				Name: "thingy",
+				HostDeps: []vts.TargetRef{
+					{Path: "//test:meow"},
+				},
+			},
+		},
+	},
 }
 
 func TestNewScript(t *testing.T) {
@@ -221,7 +233,7 @@ func TestNewScript(t *testing.T) {
 			// }
 
 			if diff := cmp.Diff(tc.want, s.targets, filterPos, cmpopts.IgnoreUnexported(vts.Attr{})); diff != "" {
-				fmt.Println(string(s.targets[0].(*vts.Attr).Val.(*vts.ComputedValue).InlineScript))
+				// fmt.Println(string(s.targets[0].(*vts.Attr).Val.(*vts.ComputedValue).InlineScript))
 				t.Errorf("unexpected targets result (+got, -want): \n%s", diff)
 			}
 		})

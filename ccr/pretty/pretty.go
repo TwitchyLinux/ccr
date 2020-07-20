@@ -79,7 +79,7 @@ func (o fmtOpts) LeadIn(b *bytes.Buffer) {
 func expandedFunction(fn syntax.Expr) bool {
 	if id, ok := fn.(*syntax.Ident); ok {
 		switch id.Name {
-		case "deb", "generator", "checker":
+		case "deb", "generator", "checker", "build":
 			return true
 		}
 	}

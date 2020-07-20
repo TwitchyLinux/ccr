@@ -50,6 +50,9 @@ func toGeneratorTarget(currentPath string, v starlark.Value) (vts.TargetRef, err
 	if a, ok := v.(*vts.Generator); ok {
 		return vts.TargetRef{Target: a}, nil
 	}
+	if a, ok := v.(*vts.Build); ok {
+		return vts.TargetRef{Target: a}, nil
+	}
 	if a, ok := v.(*vts.Puesdo); ok && (a.Kind == vts.FileRef || a.Kind == vts.DebRef) {
 		return vts.TargetRef{Target: a}, nil
 	}
@@ -401,7 +404,7 @@ func makeGenerator(s *Script) *starlark.Builtin {
 		}
 
 		// If theres no name, it must be an anonymous generator as part of
-		// anohter target. We don't add it to the targets list.
+		// another target. We don't add it to the targets list.
 		if name == "" {
 			return gen, nil
 		}
@@ -503,5 +506,47 @@ func makeComputedValue(s *Script) *starlark.Builtin {
 				Frame: thread.CallFrame(1),
 			},
 		}, nil
+	})
+}
+
+func makeBuild(s *Script) *starlark.Builtin {
+	t := vts.TargetBuild
+
+	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+		var name string
+		var deps *starlark.List
+		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name?", &name, "host_deps?", &deps); err != nil {
+			return starlark.None, err
+		}
+
+		b := &vts.Build{
+			Path: s.makePath(name),
+			Name: name,
+			Pos: &vts.DefPosition{
+				Path:  s.fPath,
+				Frame: thread.CallFrame(1),
+			},
+		}
+
+		if deps != nil {
+			i := deps.Iterate()
+			defer i.Done()
+			var x starlark.Value
+			for i.Next(&x) {
+				v, err := toDepTarget(s.path, x)
+				if err != nil {
+					return nil, fmt.Errorf("invalid input: %v", err)
+				}
+				b.HostDeps = append(b.HostDeps, v)
+			}
+		}
+
+		// If theres no name, it must be an anonymous build as part of
+		// another target. We don't add it to the targets list.
+		if name == "" {
+			return b, nil
+		}
+		s.targets = append(s.targets, b)
+		return starlark.None, nil
 	})
 }

@@ -32,6 +32,8 @@ const (
 	TargetToolchain
 	// TargetPuesdo represents a special-case, generated target.
 	TargetPuesdo
+	// TargetBuild represents a build target.
+	TargetBuild
 )
 
 func (t TargetType) String() string {
@@ -54,6 +56,8 @@ func (t TargetType) String() string {
 		return "toolchain"
 	case TargetPuesdo:
 		return "puesdo"
+	case TargetBuild:
+		return "build"
 	default:
 		return fmt.Sprintf("TargetType<%d>", int(t))
 	}
@@ -161,6 +165,7 @@ func validateSource(src TargetRef, parent Target) error {
 	}
 	if src.Target != nil {
 		switch n := src.Target.(type) {
+		case *Build:
 		case *Generator:
 		case *Puesdo:
 			switch n.Kind {

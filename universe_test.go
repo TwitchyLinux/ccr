@@ -430,12 +430,17 @@ func TestBuildValidation(t *testing.T) {
 			targets: []vts.TargetRef{{Path: "//multiple_exclusive_attrs:path"}},
 			err:     "duplicate attributes with non-repeatable class \"common://attrs:path\"",
 		},
+		{
+			name:    "resource with source",
+			base:    "testdata/basic/nested",
+			targets: []vts.TargetRef{{Path: "//build:cat"}},
+		},
 	}
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
 			uv := NewUniverse(&silentOpTrack{}, nil)
-			dr := NewDirResolver("testdata/checkers")
+			dr := NewDirResolver(filepath.Dir(tc.base))
 			findOpts := FindOptions{
 				FallbackResolvers: []CCRResolver{dr.Resolve},
 				PrefixResolvers: map[string]CCRResolver{
@@ -715,9 +720,9 @@ func TestBuildComputedAttrValues(t *testing.T) {
 			err := uv.Build([]vts.TargetRef{tc.target}, &findOpts, tc.base)
 			switch {
 			case err == nil && tc.err != "":
-				t.Errorf("universe.Check(%q) returned no error, want %q", tc.target, tc.err)
+				t.Errorf("universe.Build(%q) returned no error, want %q", tc.target, tc.err)
 			case err != nil && tc.err != err.Error():
-				t.Errorf("universe.Check(%q) returned %q, want %q", tc.target, err, tc.err)
+				t.Errorf("universe.Build(%q) returned %q, want %q", tc.target, err, tc.err)
 			}
 
 			for p, val := range tc.attrs {
