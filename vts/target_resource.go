@@ -1,6 +1,7 @@
 package vts
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 )
@@ -86,4 +87,47 @@ func (t *Resource) Validate() error {
 		}
 	}
 	return nil
+}
+
+func (t *Resource) RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error) {
+	hash := sha256.New()
+	fmt.Fprintf(hash, "%q\n%q\n%q\n", t.Path, t.Name, t.Parent.Target.(*ResourceClass).GlobalPath())
+
+	for _, attr := range t.Details {
+		a := attr.Target.(*Attr)
+		fmt.Fprintf(hash, "%q\n%q\n%q\n", a.Name, a.Path, a.Parent.Target.(*AttrClass).GlobalPath())
+		// TODO: Hash attribute class.
+		if cv, isComputedValue := a.Val.(*ComputedValue); isComputedValue {
+			fmt.Fprintf(hash, "computed params: file = %q func = %q inline = %q", cv.Filename, cv.Func, string(cv.InlineScript))
+		}
+		v, err := a.Value(t, env, eval)
+		if err != nil {
+			return nil, WrapWithTarget(err, a)
+		}
+		fmt.Fprint(hash, v)
+	}
+	for _, dep := range t.Deps {
+		rt, isHashable := dep.Target.(ReproducibleTarget)
+		if !isHashable {
+			return nil, WrapWithTarget(fmt.Errorf("cannot compute rollup hash on non-reproducible target of type %T", dep.Target), dep.Target)
+		}
+		h, err := rt.RollupHash(env, eval)
+		if err != nil {
+			return nil, err
+		}
+		hash.Write(h)
+	}
+	if t.Source != nil {
+		s, isHashable := t.Source.Target.(ReproducibleTarget)
+		if !isHashable {
+			return nil, WrapWithTarget(fmt.Errorf("cannot compute rollup hash on non-reproducible source target of type %T", t.Source.Target), t.Source.Target)
+		}
+		h, err := s.RollupHash(env, eval)
+		if err != nil {
+			return nil, err
+		}
+		hash.Write(h)
+	}
+
+	return hash.Sum(nil), nil
 }

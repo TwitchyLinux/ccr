@@ -1,5 +1,10 @@
 package vts
 
+import (
+	"crypto/sha256"
+	"fmt"
+)
+
 // Component is a target representing a component.
 type Component struct {
 	Path string
@@ -57,4 +62,36 @@ func (t *Component) Validate() error {
 		return err
 	}
 	return nil
+}
+
+func (t *Component) RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error) {
+	hash := sha256.New()
+	fmt.Fprintf(hash, "%q\n%q\n", t.Path, t.Name)
+
+	for _, attr := range t.Details {
+		a := attr.Target.(*Attr)
+		fmt.Fprintf(hash, "%q\n%q\n%q\n", a.Name, a.Path, a.Parent.Target.(*AttrClass).GlobalPath())
+		// TODO: Hash attribute class.
+		if cv, isComputedValue := a.Val.(*ComputedValue); isComputedValue {
+			fmt.Fprintf(hash, "computed params: file = %q func = %q inline = %q", cv.Filename, cv.Func, string(cv.InlineScript))
+		}
+		v, err := a.Value(t, env, eval)
+		if err != nil {
+			return nil, WrapWithTarget(err, a)
+		}
+		fmt.Fprint(hash, v)
+	}
+	for _, dep := range t.Deps {
+		rt, isHashable := dep.Target.(ReproducibleTarget)
+		if !isHashable {
+			return nil, WrapWithTarget(fmt.Errorf("cannot compute rollup hash on non-reproducible target of type %T", dep.Target), dep.Target)
+		}
+		h, err := rt.RollupHash(env, eval)
+		if err != nil {
+			return nil, err
+		}
+		hash.Write(h)
+	}
+
+	return hash.Sum(nil), nil
 }

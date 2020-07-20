@@ -81,3 +81,29 @@ func (t *Generator) Run(r *Resource, inputs *InputSet, env *RunnerEnv) error {
 	}
 	return runner.Run(t, inputs, env)
 }
+
+func (t *Generator) RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error) {
+	hash := sha256.New()
+	fmt.Fprintf(hash, "%q\n%q\n", t.Path, t.Name)
+	if t.Runner != nil {
+		rh, err := t.Runner.Hash()
+		if err != nil {
+			return nil, err
+		}
+		fmt.Fprintf(hash, "%v\n", rh)
+	}
+
+	for _, dep := range t.Inputs {
+		rt, isHashable := dep.Target.(ReproducibleTarget)
+		if !isHashable {
+			return nil, WrapWithTarget(fmt.Errorf("cannot compute rollup hash on non-reproducible target of type %T", dep.Target), dep.Target)
+		}
+		h, err := rt.RollupHash(env, eval)
+		if err != nil {
+			return nil, err
+		}
+		hash.Write(h)
+	}
+
+	return hash.Sum(nil), nil
+}

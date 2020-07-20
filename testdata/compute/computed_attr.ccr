@@ -11,7 +11,7 @@ resource(
   name    = 'missing_macro_file',
   parent  = 'common://resources:virtual',
   details = [
-    attr(parent = "common://attrs:path", value = compute(path='missing.py', run='parent_name')),
+    attr(parent = "common://attrs:path", value = compute(path = 'missing.py', run = 'parent_name')),
   ],
 )
 

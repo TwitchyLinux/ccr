@@ -8,15 +8,6 @@ import (
 	"go.starlark.net/starlark"
 )
 
-// TODO: Support meta-attributes. Meta-attributes can take an argument which is
-// an expression or proceedure evaluated at runtime.
-//
-// attr(
-//   name   = "version",
-//   parent = "common://attrs/version:semantic",
-//   value  = compute("gcc_versioner.py", "gcc_version"),
-// )
-
 // Attr is a target representing an attribute.
 type Attr struct {
 	Path   string

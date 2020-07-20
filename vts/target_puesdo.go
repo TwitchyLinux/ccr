@@ -108,3 +108,26 @@ func (t *Puesdo) Hash() (uint32, error) {
 	h := sha256.Sum256([]byte(fmt.Sprintf("%p", t)))
 	return uint32(uint32(h[0]) + uint32(h[1])<<8 + uint32(h[2])<<16 + uint32(h[3])<<24), nil
 }
+
+func (t *Puesdo) RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error) {
+	hash := sha256.New()
+	fmt.Fprintf(hash, "%q\n%q\n%q\n", t.Kind, t.Name, t.TargetPath)
+	fmt.Fprintf(hash, "%q\n%q\n%q\n", t.Path, t.URL, t.SHA256)
+	fmt.Fprintf(hash, "%v\n", t.Host)
+
+	for _, attr := range t.Details {
+		a := attr.Target.(*Attr)
+		fmt.Fprintf(hash, "%q\n%q\n%q\n", a.Name, a.Path, a.Parent.Target.(*AttrClass).GlobalPath())
+		// TODO: Hash attribute class.
+		if cv, isComputedValue := a.Val.(*ComputedValue); isComputedValue {
+			fmt.Fprintf(hash, "computed params: file = %q func = %q inline = %q", cv.Filename, cv.Func, string(cv.InlineScript))
+		}
+		v, err := a.Value(t, env, eval)
+		if err != nil {
+			return nil, WrapWithTarget(err, a)
+		}
+		fmt.Fprint(hash, v)
+	}
+
+	return hash.Sum(nil), nil
+}

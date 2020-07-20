@@ -112,6 +112,13 @@ type SourcedTarget interface {
 	Src() *TargetRef
 }
 
+// ReproducibleTarget describes a node where evaluations in the same
+// environment and with the same hash will produce the same outputs.
+type ReproducibleTarget interface {
+	Target
+	RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error)
+}
+
 // TargetRef refers to another target either by path or by
 // a pointer to its object.
 type TargetRef struct {
