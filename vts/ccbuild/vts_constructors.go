@@ -413,9 +413,9 @@ func makeToolchain(s *Script) *starlark.Builtin {
 
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var name string
-		var deps *starlark.List
+		var deps, details *starlark.List
 		var binaries *starlark.Dict
-		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name", &name, "deps?", &deps, "binaries?", &binaries); err != nil {
+		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name", &name, "deps?", &deps, "details?", &details, "binaries?", &binaries); err != nil {
 			return starlark.None, err
 		}
 
@@ -438,6 +438,18 @@ func makeToolchain(s *Script) *starlark.Builtin {
 					return nil, fmt.Errorf("invalid dep: %v", err)
 				}
 				tc.Deps = append(tc.Deps, v)
+			}
+		}
+		if details != nil {
+			i := details.Iterate()
+			defer i.Done()
+			var x starlark.Value
+			for i.Next(&x) {
+				v, err := toDetailsTarget(s.path, x)
+				if err != nil {
+					return nil, fmt.Errorf("invalid detail: %v", err)
+				}
+				tc.Details = append(tc.Details, v)
 			}
 		}
 		if binaries != nil {

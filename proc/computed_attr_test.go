@@ -1,6 +1,7 @@
 package proc
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -174,6 +175,23 @@ func TestComputedAttr(t *testing.T) {
 				},
 			},
 			starlark.String("yeet_BROSKIE"),
+		},
+		{
+			"go version",
+			&vts.Attr{
+				Name:   "BROSKIE",
+				Path:   "//test:amd64",
+				Parent: vts.TargetRef{Target: class},
+				Val: &vts.ComputedValue{
+					ReadWrite: true,
+					InlineScript: []byte(`
+inv = run("go", "version")
+spl = inv.output.split(" ")
+return spl[2]
+		`),
+				},
+			},
+			starlark.String(runtime.Version()),
 		},
 	}
 

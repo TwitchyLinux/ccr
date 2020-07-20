@@ -15,6 +15,7 @@ type ComputedValue struct {
 	Filename     string
 	Func         string
 	InlineScript []byte
+	ReadWrite    bool
 }
 
 func (t *ComputedValue) DefinedAt() *DefPosition {

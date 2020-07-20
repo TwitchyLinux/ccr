@@ -23,9 +23,6 @@ func doQueryCmd(targetAttr string) error {
 		},
 	}
 
-	if !strings.HasPrefix(targetAttr, "//") {
-		return fmt.Errorf("%q: must provide absolute path", targetAttr)
-	}
 	pIdx := strings.Index(targetAttr, "%")
 	if pIdx < 0 {
 		return errors.New("no attribute specified")

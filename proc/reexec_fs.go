@@ -45,6 +45,9 @@ func setupWriteableFS(baseDir string) (fs, error) {
 	if err := os.Mkdir(u, 0755); err != nil {
 		return nil, err
 	}
+	if err := os.Mkdir(filepath.Join(u, "tmp"), 0755); err != nil {
+		return nil, err
+	}
 	if err := os.Mkdir(work, 0755); err != nil {
 		return nil, err
 	}

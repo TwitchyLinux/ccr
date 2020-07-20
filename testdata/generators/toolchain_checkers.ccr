@@ -4,4 +4,7 @@ toolchain(
     # Expect to have this on all systems right
     "whelp": "/bin/whelpfdgdfkgjdfhkldfgjh",
   },
+  details = [
+    attr(parent = "common://attrs:semver", value = "1.2"),
+  ],
 )

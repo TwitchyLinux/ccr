@@ -6,6 +6,7 @@ type Toolchain struct {
 	Name string
 	Pos  *DefPosition
 
+	Details        []TargetRef
 	BinaryMappings map[string]string
 	Deps           []TargetRef
 }
@@ -31,6 +32,9 @@ func (t *Toolchain) TargetName() string {
 }
 
 func (t *Toolchain) Validate() error {
+	if err := validateDetails(t.Details); err != nil {
+		return err
+	}
 	if err := validateDeps(t.Deps); err != nil {
 		return err
 	}
@@ -39,4 +43,7 @@ func (t *Toolchain) Validate() error {
 
 func (t *Toolchain) Dependencies() []TargetRef {
 	return t.Deps
+}
+func (t *Toolchain) Attributes() []TargetRef {
+	return t.Details
 }

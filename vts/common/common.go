@@ -33,6 +33,7 @@ var commonTargets = map[string]vts.Target{
 	"common://attrs/arch:amd64":  archDir["amd64"],
 	"common://attrs/arch:arm":    archDir["arm"],
 	"common://attrs/arch:arm64":  archDir["arm64"],
+	"common://attrs:semver":      SemverClass,
 
 	"common://resources:dir":         DirResourceClass,
 	"common://resources:file":        FileResourceClass,
@@ -62,5 +63,7 @@ var commonTargets = map[string]vts.Target{
 	"common://generators:dir":     DirGenerator,
 	"common://generators:symlink": SymlinkGenerator,
 
-	"common://toolchains:go": GoToolchain,
+	"common://toolchains:go":         GoToolchain,
+	"common://toolchains/version:go": GoVersion,
+	"common://toolchains:gcc":        GccToolchain,
 }

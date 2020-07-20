@@ -31,10 +31,7 @@ type Env struct {
 // RunBlocking runs the specified command.
 func (e *Env) RunBlocking(args ...string) ([]byte, []byte, int, error) {
 	resp, err := e.sendCommand(procCommand{Code: cmdRunBlocking, Args: args})
-	if err != nil {
-		return nil, nil, resp.ExitCode, err
-	}
-	return resp.Stdout, resp.Stderr, resp.ExitCode, nil
+	return resp.Stdout, resp.Stderr, resp.ExitCode, err
 }
 
 // dependenciesInstalled returns true if dependencies have been installed.

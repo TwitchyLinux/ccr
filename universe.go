@@ -145,6 +145,11 @@ func (u *Universe) linkTarget(t vts.Target) error {
 				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
+		for i := range n.Details {
+			if n.Details[i], err = u.makeTargetRef(n.Details[i]); err != nil {
+				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
+			}
+		}
 		return nil
 	}
 

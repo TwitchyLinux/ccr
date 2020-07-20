@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/twitchylinux/ccr/vts"
 	"go.starlark.net/starlark"
@@ -110,6 +111,13 @@ func (p *proc) makeBuiltins() (starlark.StringDict, error) {
 	return starlark.StringDict{
 		"none": starlark.None,
 		"run":  p.runBuiltin(),
+		"broken_assumption": starlark.NewBuiltin("broken_assumption", func(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, _ []starlark.Tuple) (starlark.Value, error) {
+			vals := make([]string, len(args))
+			for i, a := range args {
+				vals[i], _ = starlark.AsString(a)
+			}
+			return starlark.None, fmt.Errorf("broken assumption: %s", strings.Join(vals, " "))
+		}),
 	}, nil
 }
 
