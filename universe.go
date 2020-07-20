@@ -239,6 +239,14 @@ func (u *Universe) resolveRef(findOpts *FindOptions, t vts.TargetRef) error {
 	return u.resolveTarget(findOpts, target)
 }
 
+func (u *Universe) makeEnv(basePath string) *vts.RunnerEnv {
+	return &vts.RunnerEnv{
+		Dir:      basePath,
+		FS:       osfs.New(basePath),
+		Universe: &runtimeResolver{u, map[string]interface{}{}},
+	}
+}
+
 // Build constructs a fully-resolved tree of targets from those given, and
 // applies VTS-level validation against them.
 func (u *Universe) Build(targets []vts.TargetRef, findOpts *FindOptions, basePath string) error {
@@ -249,17 +257,12 @@ func (u *Universe) Build(targets []vts.TargetRef, findOpts *FindOptions, basePat
 	}
 
 	// Track special targets separately.
-	env := &vts.RunnerEnv{
-		Dir:      basePath,
-		FS:       osfs.New(basePath),
-		Universe: &runtimeResolver{u, map[string]interface{}{}},
-	}
 	for _, t := range u.allTargets {
 		if _, isDetailed := t.(vts.DetailedTarget); !isDetailed {
 			continue
 		}
 		// Track targets that declare a path.
-		path, err := determinePath(t, env)
+		path, err := determinePath(t, u.makeEnv(basePath))
 		if err == errNoAttr {
 			continue
 		}
@@ -332,6 +335,40 @@ func determineMode(t vts.Target, env *vts.RunnerEnv) (os.FileMode, error) {
 		return os.FileMode(mode), err
 	}
 	return 0, vts.WrapWithTarget(fmt.Errorf("bad type for mode: want string, got %T", v), t)
+}
+
+func (u *Universe) query(basePath, target, attr string, byParent bool) (starlark.Value, error) {
+	if !u.resolved {
+		return starlark.None, ErrNotBuilt
+	}
+	t, ok := u.fqTargets[target]
+	if !ok {
+		return starlark.None, os.ErrNotExist
+	}
+	detailedTarget, ok := t.(vts.DetailedTarget)
+	if !ok {
+		return starlark.None, fmt.Errorf("no details on target %q", target)
+	}
+	for _, at := range detailedTarget.Attributes() {
+		if at.Target == nil {
+			return starlark.None, fmt.Errorf("nil target on %v", at)
+		}
+
+		attrib := at.Target.(*vts.Attr)
+		if (!byParent && attrib.Name == attr) || (byParent && attrib.Parent.Target.(*vts.AttrClass).Path == attr) {
+			return attrib.Value(detailedTarget, u.makeEnv(basePath), proc.EvalComputedAttribute)
+		}
+	}
+
+	return starlark.None, nil
+}
+
+func (u *Universe) QueryByName(basePath, target, attr string) (starlark.Value, error) {
+	return u.query(basePath, target, attr, false)
+}
+
+func (u *Universe) QueryByClass(basePath, target, parent string) (starlark.Value, error) {
+	return u.query(basePath, target, parent, true)
 }
 
 // NewUniverse constructs an empty universe.

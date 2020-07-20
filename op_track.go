@@ -43,7 +43,12 @@ func printErr(msg string, err error) {
 	fmt.Printf("%v\n", err)
 
 	if cv := we.ComputedValue; cv != nil {
-		fmt.Printf("   Originating from:  \033[1;33m%s\033[0m\n", fmt.Sprintf("compute(%q, %q)", cv.Filename, cv.Func))
+		if len(cv.InlineScript) > 0 {
+			fmt.Printf("   Originating from:  \033[1;33m%s\033[0m\n", "compute(<inline function>)")
+		} else {
+			fmt.Printf("   Originating from:  \033[1;33m%s\033[0m\n", fmt.Sprintf("compute(%q, %q)", cv.Filename, cv.Func))
+		}
+
 		fmt.Printf("         defined at:  \033[1;33m%s:%d:%d\033[0m\n", cv.Pos.Path, cv.Pos.Frame.Pos.Line, cv.Pos.Frame.Pos.Col)
 		fmt.Println()
 	}

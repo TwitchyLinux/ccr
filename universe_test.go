@@ -11,12 +11,10 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/twitchylinux/ccr/proc"
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/common"
 	"go.starlark.net/starlark"
 	"go.starlark.net/syntax"
-	"gopkg.in/src-d/go-billy.v4/osfs"
 )
 
 func testResolver(path string) (vts.Target, error) {
@@ -657,27 +655,14 @@ func TestBuildComputedAttrValues(t *testing.T) {
 				t.Errorf("universe.Check(%q) returned %q, want %q", tc.target, err, tc.err)
 			}
 
-			target := uv.fqTargets[tc.target.Path]
-		outer:
 			for p, val := range tc.attrs {
-				for _, n := range target.(vts.DetailedTarget).Attributes() {
-					a := n.Target.(*vts.Attr)
-					if p == a.Class().Target.(vts.GlobalTarget).GlobalPath() {
-						v, err := a.Value(target, &vts.RunnerEnv{
-							Dir:      "testdata/compute",
-							FS:       osfs.New("testdata/compute"),
-							Universe: &runtimeResolver{uv, map[string]interface{}{}},
-						}, proc.EvalComputedAttribute)
-						if err != nil {
-							t.Fatalf("Failed to get value for attr %q on %q: %v", a.Name, tc.target.Path, err)
-						}
-						if !reflect.DeepEqual(v, val) {
-							t.Errorf("attr %q was %v, want %v", a.Name, v, val)
-						}
-						continue outer
-					}
+				v, err := uv.QueryByClass(tc.base, tc.target.Path, p)
+				if err != nil {
+					t.Errorf("failed querying for attr %q: %v", p, err)
 				}
-				t.Errorf("did not find attribute with class %q on %q", p, tc.target.Path)
+				if !reflect.DeepEqual(v, val) {
+					t.Errorf("attr %q: got value %v, want %v", p, v, val)
+				}
 			}
 		})
 	}
