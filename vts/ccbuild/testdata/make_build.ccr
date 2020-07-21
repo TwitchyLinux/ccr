@@ -3,4 +3,8 @@ build(
   host_deps = [
     ":meow",
   ],
+  steps     = [
+    step.unpack_gz(to = 'src',path = 'go1.11.4.tar.gz',
+    ),
+  ],
 )

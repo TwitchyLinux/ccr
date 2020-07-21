@@ -14,6 +14,7 @@ type Build struct {
 	Pos  *DefPosition
 
 	HostDeps []TargetRef
+	Steps    []*BuildStep
 }
 
 func (t *Build) DefinedAt() *DefPosition {
@@ -78,6 +79,13 @@ func (t *Build) RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error) {
 			return nil, WrapWithTarget(fmt.Errorf("cannot compute rollup hash on non-reproducible target of type %T", dep.Target), dep.Target)
 		}
 		h, err := rt.RollupHash(env, eval)
+		if err != nil {
+			return nil, err
+		}
+		hash.Write(h)
+	}
+	for _, step := range t.Steps {
+		h, err := step.RollupHash(env, eval)
 		if err != nil {
 			return nil, err
 		}

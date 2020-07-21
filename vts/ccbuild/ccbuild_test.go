@@ -207,6 +207,9 @@ var newScriptTestcases = []struct {
 				HostDeps: []vts.TargetRef{
 					{Path: "//test:meow"},
 				},
+				Steps: []*vts.BuildStep{
+					{Kind: vts.StepUnpackGz, Dir: "testdata", Path: "go1.11.4.tar.gz", ToPath: "src"},
+				},
 			},
 		},
 	},

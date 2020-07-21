@@ -1,6 +1,8 @@
 package ccbuild
 
 import (
+	"path/filepath"
+
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/ccbuild/runners"
 	"github.com/twitchylinux/ccr/vts/ccbuild/runners/syslib"
@@ -56,7 +58,34 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 				"valid_enum": builtinDeriveEnumRunner,
 			}),
 		}),
+		"step": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
+			"unpack_gz": makeBuildStep(s, vts.StepUnpackGz),
+		}),
 		"file": makePuesdotarget(s, vts.FileRef),
 		"deb":  makePuesdotarget(s, vts.DebRef),
 	}, nil
+}
+
+func makeBuildStep(s *Script, kind vts.StepKind) *starlark.Builtin {
+	return starlark.NewBuiltin(string(kind), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+		var to, path, sha256, url string
+		if err := starlark.UnpackArgs(string(kind), args, kwargs,
+			"to?", &to, "path?", &path, "sha256?", &sha256, "url?", &url); err != nil {
+			return starlark.None, err
+		}
+
+		return &vts.BuildStep{
+			Kind:   kind,
+			ToPath: to,
+			Path:   path,
+			SHA256: sha256,
+			URL:    url,
+
+			Dir: filepath.Dir(s.fPath),
+			Pos: &vts.DefPosition{
+				Path:  s.fPath,
+				Frame: thread.CallFrame(1),
+			},
+		}, nil
+	})
 }

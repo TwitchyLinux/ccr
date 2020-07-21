@@ -103,6 +103,14 @@ func TestRollupHash(t *testing.T) {
 			nil,
 			"cannot compute rollup hash on non-reproducible target of type *vts.AttrClass",
 		},
+		{
+			"build",
+			&Build{Name: "users", Path: "//systems:users_list",
+				Steps:    []*BuildStep{{Kind: StepUnpackGz, Dir: "testdata", Path: "go1.11.4.tar.gz", ToPath: "src"}},
+				HostDeps: []TargetRef{{Target: &Component{Name: "mmkay"}}}},
+			mustDecodeHex(t, "7EAD67BD0EC0B8A28DEC75A394834FED61B269D5CBE396F6951A05E03A6B7883"),
+			"",
+		},
 	}
 
 	for _, tc := range tcs {

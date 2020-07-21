@@ -514,8 +514,8 @@ func makeBuild(s *Script) *starlark.Builtin {
 
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var name string
-		var deps *starlark.List
-		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name?", &name, "host_deps?", &deps); err != nil {
+		var deps, steps *starlark.List
+		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name?", &name, "host_deps?", &deps, "steps?", &steps); err != nil {
 			return starlark.None, err
 		}
 
@@ -538,6 +538,18 @@ func makeBuild(s *Script) *starlark.Builtin {
 					return nil, fmt.Errorf("invalid input: %v", err)
 				}
 				b.HostDeps = append(b.HostDeps, v)
+			}
+		}
+		if steps != nil {
+			i := steps.Iterate()
+			defer i.Done()
+			var x starlark.Value
+			for i.Next(&x) {
+				v, ok := x.(*vts.BuildStep)
+				if !ok {
+					return nil, fmt.Errorf("invalid build step: cannot use type %T", x)
+				}
+				b.Steps = append(b.Steps, v)
 			}
 		}
 

@@ -4,9 +4,7 @@ package ccr
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
-	"strconv"
 
 	"github.com/twitchylinux/ccr/cache"
 	"github.com/twitchylinux/ccr/proc"
@@ -339,25 +337,13 @@ func determinePath(t vts.Target, env *vts.RunnerEnv) (string, error) {
 	return "", vts.WrapWithTarget(fmt.Errorf("bad type for path: want string, got %T", v), t)
 }
 
-func determineMode(t vts.Target, env *vts.RunnerEnv) (os.FileMode, error) {
-	v, err := determineAttrValue(t, common.ModeClass, env)
-	if err != nil {
-		return 0, err
-	}
-	if s, ok := v.(starlark.String); ok {
-		mode, err := strconv.ParseInt(string(s), 8, 64)
-		return os.FileMode(mode), err
-	}
-	return 0, vts.WrapWithTarget(fmt.Errorf("bad type for mode: want string, got %T", v), t)
-}
-
 func (u *Universe) query(basePath, target, attr string, byParent bool) (starlark.Value, error) {
 	if !u.resolved {
 		return starlark.None, ErrNotBuilt
 	}
 	t, ok := u.fqTargets[target]
 	if !ok {
-		return starlark.None, os.ErrNotExist
+		return starlark.None, ErrNotExists(target)
 	}
 	detailedTarget, ok := t.(vts.DetailedTarget)
 	if !ok {
@@ -365,7 +351,7 @@ func (u *Universe) query(basePath, target, attr string, byParent bool) (starlark
 	}
 	for _, at := range detailedTarget.Attributes() {
 		if at.Target == nil {
-			return starlark.None, fmt.Errorf("nil target on %v", at)
+			return starlark.None, fmt.Errorf("nil attribute target on %v", at)
 		}
 
 		attrib := at.Target.(*vts.Attr)
