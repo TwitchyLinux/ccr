@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/twitchylinux/ccr/vts"
-	"gopkg.in/src-d/go-billy.v4/osfs"
 )
 
 type targetSet map[vts.Target]struct{}
@@ -18,11 +17,7 @@ func (u *Universe) Check(targets []vts.TargetRef, basePath string) error {
 
 	var (
 		evaluatedTargets = make(targetSet, 4096)
-		opts             = vts.RunnerEnv{
-			Dir:      basePath,
-			FS:       osfs.New(basePath),
-			Universe: &runtimeResolver{u, map[string]interface{}{}},
-		}
+		runnerEnv        = u.makeEnv(basePath)
 	)
 	for _, t := range targets {
 		target := t.Target
@@ -33,13 +28,13 @@ func (u *Universe) Check(targets []vts.TargetRef, basePath string) error {
 				return ErrNotExists(t.Path)
 			}
 		}
-		if err := u.checkTarget(target, &opts, evaluatedTargets); err != nil {
+		if err := u.checkTarget(target, runnerEnv, evaluatedTargets); err != nil {
 			return err
 		}
 	}
 
 	for _, chkr := range u.globalCheckers {
-		if err := chkr.RunCheckedTarget(nil, &opts); err != nil {
+		if err := chkr.RunCheckedTarget(nil, runnerEnv); err != nil {
 			u.logger.Error(MsgFailedCheck, err)
 			return err
 		}

@@ -1,18 +1,10 @@
 package ccr
 
 import (
-	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
-	"io"
-	"os"
-	"path/filepath"
-	"strings"
 
-	"github.com/twitchylinux/ccr/ccr/deb"
+	"github.com/twitchylinux/ccr/gen"
 	"github.com/twitchylinux/ccr/vts"
-	"github.com/twitchyliquid64/debdep/dpkg"
 	"gopkg.in/src-d/go-billy.v4/osfs"
 )
 
@@ -37,13 +29,8 @@ func (u *Universe) Generate(conf GenerateConfig, t vts.TargetRef, basePath strin
 	if !u.resolved {
 		return ErrNotBuilt
 	}
-	opts := vts.RunnerEnv{
-		Dir:      basePath,
-		FS:       osfs.New(basePath),
-		Universe: &runtimeResolver{u, map[string]interface{}{}},
-	}
-	var target vts.Target
 
+	var target vts.Target
 	if t.Target == nil {
 		var ok bool
 		target, ok = u.fqTargets[t.Path]
@@ -53,10 +40,11 @@ func (u *Universe) Generate(conf GenerateConfig, t vts.TargetRef, basePath strin
 		}
 	}
 
+	runnerEnv := u.makeEnv(basePath)
 	if err := u.generateTarget(generationState{
 		basePath:               basePath,
 		conf:                   &conf,
-		runnerEnv:              &opts,
+		runnerEnv:              runnerEnv,
 		haveGenerated:          make(targetSet, 4096),
 		targetChain:            make([]vts.Target, 0, 64),
 		rootTarget:             target,
@@ -67,11 +55,11 @@ func (u *Universe) Generate(conf GenerateConfig, t vts.TargetRef, basePath strin
 	}
 
 	checked := make(targetSet, 4096)
-	if err := u.checkTarget(target, &opts, checked); err != nil {
+	if err := u.checkTarget(target, runnerEnv, checked); err != nil {
 		return err
 	}
 	for _, chkr := range u.globalCheckers {
-		if err := chkr.RunCheckedTarget(nil, &opts); err != nil {
+		if err := chkr.RunCheckedTarget(nil, runnerEnv); err != nil {
 			u.logger.Error(MsgFailedCheck, err)
 			return err
 		}
@@ -238,13 +226,18 @@ func (u *Universe) generateResourceUsingSource(s generationState, resource *vts.
 		info.Directs[i] = resource.Deps[i].Target
 	}
 
+	gc := gen.GenerationContext{
+		Cache:     u.cache,
+		RunnerEnv: s.runnerEnv,
+		Inputs:    &info,
+	}
 	switch src := source.(type) {
 	case *vts.Puesdo:
 		switch src.Kind {
 		case vts.FileRef:
-			return u.generateFileSource(s, resource, src)
+			return gen.GenerateFile(gc, resource, src)
 		case vts.DebRef:
-			return u.generateDebSource(s, resource, src)
+			return gen.GenerateDebSource(gc, resource, src)
 		}
 		return fmt.Errorf("cannot generate using puesdo source %v", src.Kind)
 
@@ -268,119 +261,4 @@ func (u *Universe) generateResourceUsingSource(s generationState, resource *vts.
 	}
 
 	return fmt.Errorf("cannot generate using source %T for resource %v", source, resource)
-}
-
-func fileSrcInfo(resource *vts.Resource, src *vts.Puesdo, env *vts.RunnerEnv) (string, string, os.FileMode, error) {
-	outFilePath, err := determinePath(resource, env)
-	if err != nil {
-		return "", "", 0, err
-	}
-	srcFilePath := filepath.Join(filepath.Dir(src.ContractPath), src.Path)
-	if src.Host {
-		srcFilePath = src.Path
-	}
-
-	mode, err := determineMode(resource, env)
-	switch {
-	case err == errNoAttr:
-		st, err := os.Stat(srcFilePath)
-		if err != nil {
-			return "", "", 0, vts.WrapWithPath(err, srcFilePath)
-		}
-		mode = st.Mode() & os.ModePerm
-	case err != nil:
-		return "", "", 0, err
-	}
-	return srcFilePath, outFilePath, mode, nil
-}
-
-func (u *Universe) generateFileSource(s generationState, resource *vts.Resource, src *vts.Puesdo) error {
-	srcPath, outPath, mode, err := fileSrcInfo(resource, src, s.runnerEnv)
-	if err != nil {
-		return err
-	}
-
-	r, err := os.OpenFile(srcPath, os.O_RDONLY, 0644)
-	if err != nil {
-		return vts.WrapWithPath(err, srcPath)
-	}
-	defer r.Close()
-
-	w, err := s.runnerEnv.FS.OpenFile(outPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
-	if err != nil {
-		return vts.WrapWithPath(err, outPath)
-	}
-	defer w.Close()
-	if _, err := io.Copy(w, r); err != nil {
-		return vts.WrapWithPath(err, outPath)
-	}
-	return nil
-}
-
-func (u *Universe) unpackedDeb(src *vts.Puesdo) (*dpkg.Deb, error) {
-	var dr deb.ReadSeekCloser
-	var err error
-
-	cv, ok := u.cache.GetObj(src.SHA256)
-	if ok {
-		return cv.(*dpkg.Deb), nil
-	}
-
-	if src.URL != "" {
-		if dr, err = deb.PkgReader(u.cache, src.SHA256, src.URL); err != nil {
-			return nil, err
-		}
-	} else {
-		if dr, err = os.Open(filepath.Join(filepath.Dir(src.ContractPath), src.Path)); err != nil {
-			return nil, err
-		}
-	}
-	defer dr.Close()
-
-	// Verify hash.
-	hasher := sha256.New()
-	if _, err := io.Copy(hasher, dr); err != nil {
-		return nil, err
-	}
-	if got, want := strings.ToLower(hex.EncodeToString(hasher.Sum(nil))), strings.ToLower(src.SHA256); got != want {
-		return nil, fmt.Errorf("sha256 mismatch: got %s but expected %s", got, want)
-	}
-
-	var d *dpkg.Deb
-	dr.Seek(0, os.SEEK_SET)
-	if d, err = dpkg.Open(dr); err != nil {
-		return nil, fmt.Errorf("failed decoding deb: %v", err)
-	}
-	u.cache.PutObj(src.SHA256, d)
-
-	return d, nil
-}
-
-func (u *Universe) generateDebSource(s generationState, resource *vts.Resource, src *vts.Puesdo) error {
-	p, err := determinePath(resource, s.runnerEnv)
-	if err != nil {
-		return vts.WrapWithTarget(err, resource)
-	}
-
-	d, err := u.unpackedDeb(src)
-	if err != nil {
-		return vts.WrapWithTarget(err, src)
-	}
-
-	// TODO: better way to do this?
-	for _, f := range d.Files() {
-		if f.Hdr.Name == "."+p {
-			w, err := s.runnerEnv.FS.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.FileMode(f.Hdr.Mode))
-			if err != nil {
-				return vts.WrapWithTarget(vts.WrapWithPath(err, p), resource)
-			}
-			defer w.Close()
-			if _, err := io.Copy(w, bytes.NewReader(f.Data)); err != nil {
-				return vts.WrapWithTarget(vts.WrapWithPath(err, p), resource)
-			}
-			return nil
-		}
-	}
-
-	return fmt.Errorf("couldnt find %s in deb", p)
 }
