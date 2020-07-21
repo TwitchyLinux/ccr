@@ -7,19 +7,14 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/twitchylinux/ccr/cache"
 	"github.com/twitchyliquid64/debdep"
 	"github.com/twitchyliquid64/debdep/deb"
 )
 
 const debInfoName = "deb-pkgs"
 
-type cache interface {
-	NamePath(string) string
-	SHA256Path(string) string
-	BySHA256(string) (ReadSeekCloser, error)
-}
-
-func DebPackages(cache cache) (*debdep.PackageInfo, error) {
+func DebPackages(cache *cache.Cache) (*debdep.PackageInfo, error) {
 	pkgPath := cache.NamePath(debInfoName)
 
 	// Write it out if it doesn't exist.
@@ -52,17 +47,12 @@ func DebPackages(cache cache) (*debdep.PackageInfo, error) {
 	return debdep.LoadPackageInfo(debdep.DefaultResolverConfig, pkgPath, true)
 }
 
-type ReadSeekCloser interface {
-	io.ReadCloser
-	io.Seeker
-}
-
 // PkgReader returns a reader to the deb package, caching and
 // downloading it if necessary.
-func PkgReader(cache cache, sha256, url string) (ReadSeekCloser, error) {
-	f, err := cache.BySHA256(sha256)
+func PkgReader(c *cache.Cache, sha256, url string) (cache.ReadSeekCloser, error) {
+	f, err := c.BySHA256(sha256)
 	switch {
-	case err != nil && err.Error() == "cache miss":
+	case err == cache.ErrCacheMiss:
 	case err == nil:
 		return f, nil
 	default:
@@ -85,7 +75,7 @@ func PkgReader(cache cache, sha256, url string) (ReadSeekCloser, error) {
 	default:
 		return nil, fmt.Errorf("unexpected response code '%d' (%s)", r.StatusCode, r.Status)
 	}
-	w, err := os.OpenFile(cache.SHA256Path(sha256), os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
+	w, err := os.OpenFile(c.SHA256Path(sha256), os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
 	if err != nil {
 		return nil, err
 	}

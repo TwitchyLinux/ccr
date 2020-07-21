@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/twitchylinux/ccr/cache"
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/common"
 	"go.starlark.net/starlark"
@@ -572,7 +573,7 @@ Class: //basic:whelp
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(cd)
-	cache, err := NewCache(cd)
+	cache, err := cache.NewCache(cd)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -644,7 +645,7 @@ func TestSystemLibraryStuff(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(cd)
-	cache, err := NewCache(cd)
+	cache, err := cache.NewCache(cd)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -744,7 +745,7 @@ func TestBuildFailsDuplicatePaths(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(cd)
-	cache, err := NewCache(cd)
+	cache, err := cache.NewCache(cd)
 	if err != nil {
 		t.Fatal(err)
 	}

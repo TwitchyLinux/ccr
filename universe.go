@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/twitchylinux/ccr/cache"
 	"github.com/twitchylinux/ccr/proc"
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/common"
@@ -39,7 +40,7 @@ type Universe struct {
 
 	resolved bool
 	logger   opTrack
-	cache    *Cache
+	cache    *cache.Cache
 }
 
 func (u *Universe) makeTargetRef(from vts.TargetRef) (vts.TargetRef, error) {
@@ -385,7 +386,7 @@ func (u *Universe) QueryByClass(basePath, target, parent string) (starlark.Value
 }
 
 // NewUniverse constructs an empty universe.
-func NewUniverse(logger opTrack, cache *Cache) *Universe {
+func NewUniverse(logger opTrack, cache *cache.Cache) *Universe {
 	if logger == nil {
 		logger = &consoleOpTrack{}
 	}

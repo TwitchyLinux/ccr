@@ -9,5 +9,6 @@ require (
 	github.com/knqyf263/go-deb-version v0.0.0-20190517075300-09fca494f03d
 	github.com/twitchyliquid64/debdep v0.2.4
 	go.starlark.net v0.0.0-20191202231402-1e82a9dd93ba
+	golang.org/x/sys v0.0.0-20191002063906-3421d5a6bb1c
 	gopkg.in/src-d/go-billy.v4 v4.3.2
 )

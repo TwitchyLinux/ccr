@@ -12,7 +12,7 @@ import (
 )
 
 func goDebGenCmd(mode, pkg string) error {
-	pkgs, err := deb.DebPackages(cache)
+	pkgs, err := deb.DebPackages(resCache)
 	if err != nil {
 		return err
 	}
@@ -25,7 +25,7 @@ func goDebGenCmd(mode, pkg string) error {
 			return err
 		}
 
-		dr, err := deb.PkgReader(cache, p.Values["SHA256"], debdep.DefaultResolverConfig.BaseURL+"/"+p.Values["Filename"])
+		dr, err := deb.PkgReader(resCache, p.Values["SHA256"], debdep.DefaultResolverConfig.BaseURL+"/"+p.Values["Filename"])
 		if err != nil {
 			return err
 		}
@@ -65,7 +65,7 @@ func goDebGenCmd(mode, pkg string) error {
 		fmt.Printf("\n -= %s =-\n", strings.ToUpper(p.Values["Package"]))
 		fmt.Printf("Version: %s\n", p.Values["Version"])
 
-		dr, err := deb.PkgReader(cache, p.Values["SHA256"], debdep.DefaultResolverConfig.BaseURL+"/"+p.Values["Filename"])
+		dr, err := deb.PkgReader(resCache, p.Values["SHA256"], debdep.DefaultResolverConfig.BaseURL+"/"+p.Values["Filename"])
 		if err != nil {
 			return err
 		}

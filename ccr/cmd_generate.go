@@ -9,7 +9,7 @@ import (
 )
 
 func doGenerateCmd() error {
-	uv := ccr.NewUniverse(nil, nil)
+	uv := ccr.NewUniverse(nil, resCache)
 
 	dr := ccr.NewDirResolver(*dir)
 	findOpts := ccr.FindOptions{

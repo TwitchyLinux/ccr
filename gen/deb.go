@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/twitchylinux/ccr/cache"
 	"github.com/twitchylinux/ccr/ccr/deb"
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchyliquid64/debdep/dpkg"
@@ -18,7 +19,7 @@ import (
 // unpackedDeb resolves a debian package referenced in a target,
 // to a *dpkg.Deb object.
 func unpackedDeb(gc GenerationContext, src *vts.Puesdo) (*dpkg.Deb, error) {
-	var dr deb.ReadSeekCloser
+	var dr cache.ReadSeekCloser
 	var err error
 
 	cv, ok := gc.Cache.GetObj(src.SHA256)

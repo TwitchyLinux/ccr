@@ -7,15 +7,16 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 
-	"github.com/twitchylinux/ccr"
+	"github.com/twitchylinux/ccr/cache"
 )
 
 var (
-	inline  = flag.Bool("i", false, "When formatting, update files inline.")
-	dir     = flag.String("contracts-dir", "", "Use the provided directory when reading contracts instead of the working directory.")
-	baseDir = flag.String("base-dir", "", "Use the provided directory as the base directory instead of the working directory.")
-	cache   *ccr.Cache
+	inline   = flag.Bool("i", false, "When formatting, update files inline.")
+	dir      = flag.String("contracts-dir", "", "Use the provided directory when reading contracts instead of the working directory.")
+	baseDir  = flag.String("base-dir", "", "Use the provided directory as the base directory instead of the working directory.")
+	resCache *cache.Cache
 )
 
 func main() {
@@ -27,7 +28,7 @@ func main() {
 	}
 
 	var err error
-	if cache, err = ccr.NewCache(os.Getenv("CCRCACHE")); err != nil {
+	if resCache, err = cache.NewCache(os.Getenv("CCRCACHE")); err != nil {
 		fmt.Fprintf(os.Stderr, "Error initializing cache: %v\n", err)
 		os.Exit(1)
 	}
@@ -40,6 +41,13 @@ func main() {
 	if err := run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
+	}
+
+	if time.Now().Unix()%64 == 0 {
+		if err := resCache.Clean(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error cleaning cache: %v\n", err)
+			os.Exit(1)
+		}
 	}
 }
 
