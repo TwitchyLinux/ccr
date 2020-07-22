@@ -10,3 +10,7 @@ attr_class(
 checker(
   kind = const.checker.each_resource,
 )
+
+build(
+  name = "thingy",
+)
