@@ -18,6 +18,7 @@ type procCommand struct {
 	Code cmdCode
 
 	Args []string
+	Dir  string
 }
 
 type procResp struct {

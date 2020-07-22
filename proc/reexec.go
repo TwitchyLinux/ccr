@@ -37,7 +37,7 @@ func commandChannels() (*gob.Encoder, *gob.Decoder, error) {
 }
 
 func runBlocking(cmd procCommand, pivotDir string, readOnly bool) procResp {
-	c := reexec.Command(append([]string{"reexecEntry", "run", pivotDir, strconv.FormatBool(readOnly)}, cmd.Args...)...)
+	c := reexec.Command(append([]string{"reexecEntry", "run", pivotDir, strconv.FormatBool(readOnly), cmd.Dir}, cmd.Args...)...)
 	var sOut, sErr bytes.Buffer
 	c.Stdout = &sOut
 	c.Stderr = &sErr
@@ -118,7 +118,7 @@ func isolatedMain() {
 			os.Exit(reexecExitCode)
 		}
 		return
-	} else if len(os.Args) > 4 && os.Args[1] == "run" {
+	} else if len(os.Args) > 5 && os.Args[1] == "run" {
 		readOnly, err := strconv.ParseBool(os.Args[3])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed parsing read-only argument: %v\n", err)
@@ -128,7 +128,7 @@ func isolatedMain() {
 			fmt.Fprintf(os.Stderr, "Failed setting up pivot root: %v\n", err)
 			os.Exit(reexecExitCode)
 		}
-		prog := os.Args[4]
+		prog := os.Args[5]
 		if !filepath.IsAbs(prog) {
 			p, err := exec.LookPath(prog)
 			if err != nil {
@@ -137,6 +137,7 @@ func isolatedMain() {
 			}
 			prog = p
 		}
-		syscall.Exec(prog, os.Args[4:], os.Environ())
+		os.Chdir(os.Args[4])
+		syscall.Exec(prog, os.Args[5:], os.Environ())
 	}
 }

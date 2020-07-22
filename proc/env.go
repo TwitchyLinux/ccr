@@ -29,8 +29,8 @@ type Env struct {
 }
 
 // RunBlocking runs the specified command.
-func (e *Env) RunBlocking(args ...string) ([]byte, []byte, int, error) {
-	resp, err := e.sendCommand(procCommand{Code: cmdRunBlocking, Args: args})
+func (e *Env) RunBlocking(dir string, args ...string) ([]byte, []byte, int, error) {
+	resp, err := e.sendCommand(procCommand{Code: cmdRunBlocking, Args: args, Dir: dir})
 	return resp.Stdout, resp.Stderr, resp.ExitCode, err
 }
 

@@ -94,7 +94,7 @@ func (p *proc) runBuiltin() *starlark.Builtin {
 			vals[i], _ = starlark.AsString(a)
 		}
 
-		out, sErr, code, err := p.env.RunBlocking(vals...)
+		out, sErr, code, err := p.env.RunBlocking(p.fPath, vals...)
 		if err != nil && code == 0 {
 			return starlark.None, err
 		}
