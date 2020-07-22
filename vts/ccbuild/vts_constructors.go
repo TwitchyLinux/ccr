@@ -2,6 +2,7 @@ package ccbuild
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -497,7 +498,9 @@ func makeComputedValue(s *Script) *starlark.Builtin {
 			fname = filepath.Join(filepath.Dir(s.fPath), fname)
 		}
 
+		wd, _ := os.Getwd()
 		return &vts.ComputedValue{
+			Dir:          filepath.Join(wd, filepath.Dir(s.fPath)),
 			Filename:     fname,
 			Func:         fun,
 			InlineScript: []byte(code),

@@ -24,6 +24,7 @@ type proc struct {
 	readOnly bool
 	env      *Env
 
+	dir   string
 	fPath string
 }
 
@@ -94,7 +95,7 @@ func (p *proc) runBuiltin() *starlark.Builtin {
 			vals[i], _ = starlark.AsString(a)
 		}
 
-		out, sErr, code, err := p.env.RunBlocking(p.fPath, vals...)
+		out, sErr, code, err := p.env.RunBlocking(p.dir, vals...)
 		if err != nil && code == 0 {
 			return starlark.None, err
 		}

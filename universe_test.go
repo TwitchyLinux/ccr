@@ -676,6 +676,7 @@ func TestSystemLibraryStuff(t *testing.T) {
 }
 
 func TestBuildComputedAttrValues(t *testing.T) {
+	wd, _ := os.Getwd()
 	tcs := []struct {
 		name   string
 		base   string
@@ -703,6 +704,14 @@ func TestBuildComputedAttrValues(t *testing.T) {
 			target: vts.TargetRef{Path: "//computed_attr:inline"},
 			attrs: map[string]starlark.Value{
 				common.PathClass.Path: starlark.String("value_inline"),
+			},
+		},
+		{
+			name:   "wd",
+			base:   "testdata/basic",
+			target: vts.TargetRef{Path: "//computed_attr:wd"},
+			attrs: map[string]starlark.Value{
+				common.PathClass.Path: starlark.String(filepath.Join(wd, "testdata/compute")),
 			},
 		},
 	}
