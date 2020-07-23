@@ -566,6 +566,11 @@ Class: //basic:whelp
 			err:    "toolchain component missing: whelp",
 			config: GenerateConfig{},
 		},
+		{
+			name:   "basic_build",
+			target: "//basic_build:output",
+			config: GenerateConfig{},
+		},
 	}
 
 	cd, err := ioutil.TempDir("", "")

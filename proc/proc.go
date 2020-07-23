@@ -29,7 +29,10 @@ type proc struct {
 }
 
 // Close shuts down all resources associated with the script.
-func (*proc) Close() error {
+func (p *proc) Close() error {
+	if p.env != nil {
+		return p.env.Close()
+	}
 	return nil
 }
 

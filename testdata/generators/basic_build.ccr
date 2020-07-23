@@ -1,0 +1,14 @@
+build(
+  name      = "simple_build",
+  steps     = [
+    step.unpack_gz(to = 'src', path = 'cool.tar.gz'),
+  ],
+)
+
+
+resource(
+  name   = "output",
+  parent = "common://resources:file",
+  path   = "cool.txt",
+  source = ":simple_build",
+)

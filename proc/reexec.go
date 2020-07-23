@@ -65,6 +65,8 @@ func envMainloop(cmdW *gob.Encoder, cmdR *gob.Decoder, respW *gob.Encoder, readO
 		}
 
 		switch cmd.Code {
+		case cmdPing:
+			cmdW.Encode(procResp{Code: cmdPing})
 		case cmdRunBlocking:
 			cmdW.Encode(runBlocking(cmd, fs.Root(), readOnly))
 		case cmdRunStreaming:

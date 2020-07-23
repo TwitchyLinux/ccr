@@ -12,6 +12,7 @@ type Build struct {
 	Path string
 	Name string
 	Pos  *DefPosition
+	Dir  string
 
 	HostDeps []TargetRef
 	Steps    []*BuildStep

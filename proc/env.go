@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"syscall"
@@ -78,6 +79,15 @@ func (e *Env) WaitStreaming(id string) error {
 			return nil
 		}
 	}
+}
+
+func (e *Env) Dir() string {
+	return filepath.Join(e.dir, "top")
+}
+
+func (e *Env) ping() error {
+	_, err := e.sendCommand(procCommand{Code: cmdPing})
+	return err
 }
 
 // dependenciesInstalled returns true if dependencies have been installed.
@@ -162,7 +172,7 @@ func NewEnv(readOnly bool) (*Env, error) {
 	out.dec = gob.NewDecoder(out.respR)
 	out.stream = gob.NewDecoder(out.stdR)
 	go out.streamToConsole()
-	return &out, nil
+	return &out, out.ping()
 }
 
 func (e *Env) streamToConsole() {

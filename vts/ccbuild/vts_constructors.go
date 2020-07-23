@@ -522,7 +522,9 @@ func makeBuild(s *Script) *starlark.Builtin {
 			return starlark.None, err
 		}
 
+		wd, _ := os.Getwd()
 		b := &vts.Build{
+			Dir:  filepath.Join(wd, filepath.Dir(s.fPath)),
 			Path: s.makePath(name),
 			Name: name,
 			Pos: &vts.DefPosition{

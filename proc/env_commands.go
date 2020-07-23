@@ -13,6 +13,7 @@ const (
 	cmdShutdown
 	cmdRunBlocking
 	cmdRunStreaming
+	cmdPing
 )
 
 type procCommand struct {

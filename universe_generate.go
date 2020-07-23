@@ -258,6 +258,9 @@ func (u *Universe) generateResourceUsingSource(s generationState, resource *vts.
 			}
 		}
 		return src.Run(resource, &info, s.runnerEnv)
+
+	case *vts.Build:
+		return gen.GenerateBuildSource(gc, resource, src)
 	}
 
 	return fmt.Errorf("cannot generate using source %T for resource %v", source, resource)

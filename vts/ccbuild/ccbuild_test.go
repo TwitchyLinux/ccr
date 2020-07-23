@@ -237,7 +237,8 @@ func TestNewScript(t *testing.T) {
 
 			if diff := cmp.Diff(tc.want, s.targets, filterPos,
 				cmpopts.IgnoreUnexported(vts.Attr{}),
-				cmpopts.IgnoreFields(vts.ComputedValue{}, "Dir")); diff != "" {
+				cmpopts.IgnoreFields(vts.ComputedValue{}, "Dir"),
+				cmpopts.IgnoreFields(vts.Build{}, "Dir")); diff != "" {
 				// fmt.Println(string(s.targets[0].(*vts.Attr).Val.(*vts.ComputedValue).InlineScript))
 				t.Errorf("unexpected targets result (+got, -want): \n%s", diff)
 			}
