@@ -12,6 +12,7 @@ const (
 	cmdInvalid cmdCode = iota
 	cmdShutdown
 	cmdRunBlocking
+	cmdRunStreaming
 )
 
 type procCommand struct {
@@ -19,6 +20,8 @@ type procCommand struct {
 
 	Args []string
 	Dir  string
+
+	ProcID string
 }
 
 type procResp struct {

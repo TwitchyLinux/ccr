@@ -1,7 +1,6 @@
 package proc
 
 import (
-	"bytes"
 	"encoding/gob"
 	"errors"
 	"fmt"
@@ -24,40 +23,23 @@ func init() {
 	}
 }
 
-func commandChannels() (*gob.Encoder, *gob.Decoder, error) {
+func commandChannels() (*gob.Encoder, *gob.Decoder, *gob.Encoder, error) {
 	instReader := os.NewFile(3, "control")
 	if instReader == nil {
-		return nil, nil, errors.New("fd 3 was not valid")
+		return nil, nil, nil, errors.New("fd 3 was not valid")
 	}
 	respWriter := os.NewFile(4, "resp")
 	if respWriter == nil {
-		return nil, nil, errors.New("fd 4 was not valid")
+		return nil, nil, nil, errors.New("fd 4 was not valid")
 	}
-	return gob.NewEncoder(respWriter), gob.NewDecoder(instReader), nil
+	streamWriter := os.NewFile(5, "stream")
+	if streamWriter == nil {
+		return nil, nil, nil, errors.New("fd 5 was not valid")
+	}
+	return gob.NewEncoder(respWriter), gob.NewDecoder(instReader), gob.NewEncoder(streamWriter), nil
 }
 
-func runBlocking(cmd procCommand, pivotDir string, readOnly bool) procResp {
-	c := reexec.Command(append([]string{"reexecEntry", "run", pivotDir, strconv.FormatBool(readOnly), cmd.Dir}, cmd.Args...)...)
-	var sOut, sErr bytes.Buffer
-	c.Stdout = &sOut
-	c.Stderr = &sErr
-	c.Stdin = os.Stdin
-	c.SysProcAttr = &syscall.SysProcAttr{
-		Cloneflags: syscall.CLONE_NEWNS,
-	}
-	resp := procResp{Code: cmd.Code}
-	if err := c.Run(); err != nil {
-		resp.Error = err.Error()
-		if eErr, isExecErr := err.(*exec.ExitError); isExecErr {
-			resp.ExitCode = eErr.ExitCode()
-		}
-	}
-	resp.Stderr = sErr.Bytes()
-	resp.Stdout = sOut.Bytes()
-	return resp
-}
-
-func envMainloop(cmdW *gob.Encoder, cmdR *gob.Decoder, readOnly bool) error {
+func envMainloop(cmdW *gob.Encoder, cmdR *gob.Decoder, respW *gob.Encoder, readOnly bool) error {
 	wd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -70,6 +52,12 @@ func envMainloop(cmdW *gob.Encoder, cmdR *gob.Decoder, readOnly bool) error {
 	}
 	defer fs.Close()
 
+	em, err := makeExecManager(respW)
+	if err != nil {
+		return err
+	}
+	defer em.Close()
+
 	for {
 		var cmd procCommand
 		if err := cmdR.Decode(&cmd); err != nil {
@@ -79,7 +67,15 @@ func envMainloop(cmdW *gob.Encoder, cmdR *gob.Decoder, readOnly bool) error {
 		switch cmd.Code {
 		case cmdRunBlocking:
 			cmdW.Encode(runBlocking(cmd, fs.Root(), readOnly))
+		case cmdRunStreaming:
+			cmdW.Encode(em.RunStreaming(cmd, fs.Root(), readOnly))
 		case cmdShutdown:
+			// em.Close() can be called multiple times, so we close here as well as
+			// in the defer to make sure things shut down before our invoker recieves
+			// the command response.
+			if err := em.Close(); err != nil {
+				return err
+			}
 			cmdW.Encode(procResp{Code: cmd.Code})
 			return nil
 		default:
@@ -107,13 +103,13 @@ func isolatedMain() {
 			os.Exit(reexecExitCode)
 		}
 
-		cmdW, cmdR, err := commandChannels()
+		cmdW, cmdR, respW, err := commandChannels()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed setting up command channels: %v\n", err)
 			os.Exit(reexecExitCode)
 		}
 
-		if err := envMainloop(cmdW, cmdR, readOnly); err != nil {
+		if err := envMainloop(cmdW, cmdR, respW, readOnly); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(reexecExitCode)
 		}
@@ -124,11 +120,12 @@ func isolatedMain() {
 			fmt.Fprintf(os.Stderr, "Failed parsing read-only argument: %v\n", err)
 			os.Exit(reexecExitCode)
 		}
-		if err := setRootFS(os.Args[2], readOnly); err != nil {
+		pivotDir, prog, wd, args := os.Args[2], os.Args[5], os.Args[4], os.Args[5:]
+
+		if err := setRootFS(pivotDir, readOnly); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed setting up pivot root: %v\n", err)
 			os.Exit(reexecExitCode)
 		}
-		prog := os.Args[5]
 		if !filepath.IsAbs(prog) {
 			p, err := exec.LookPath(prog)
 			if err != nil {
@@ -137,7 +134,7 @@ func isolatedMain() {
 			}
 			prog = p
 		}
-		os.Chdir(os.Args[4])
-		syscall.Exec(prog, os.Args[5:], os.Environ())
+		os.Chdir(wd)
+		syscall.Exec(prog, args, os.Environ())
 	}
 }

@@ -67,3 +67,38 @@ func TestRunBlocking(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestRunStreaming(t *testing.T) {
+	e, err := NewEnv(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	id, err := e.RunStreaming("/", &stdout, &stderr, "echo", "yeow")
+	if err != nil {
+		t.Fatalf("RunStreaming() failed: %v", err)
+	}
+	id2, err2 := e.RunStreaming("/", &stdout, &stderr, "bash", "-c", ">&2 echo noot")
+	if err2 != nil {
+		t.Fatalf("RunStreaming() failed: %v", err2)
+	}
+
+	if err := e.WaitStreaming(id); err != nil {
+		t.Errorf("WaitStreaming() failed: %v", err)
+	}
+	if err := e.WaitStreaming(id2); err != nil {
+		t.Errorf("WaitStreaming() failed: %v", err)
+	}
+
+	if want := []byte("yeow\n"); !bytes.Equal(want, stdout.Bytes()) {
+		t.Errorf("stdout = %q, want %q", string(stdout.Bytes()), string(want))
+	}
+	if want := []byte("noot\n"); !bytes.Equal(want, stderr.Bytes()) {
+		t.Errorf("stderr = %q, want %q", string(stderr.Bytes()), string(want))
+	}
+
+	if err := e.Close(); err != nil {
+		t.Error(err)
+	}
+}

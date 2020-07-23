@@ -1,13 +1,17 @@
 package proc
 
 import (
+	"bytes"
+	"crypto/rand"
 	"encoding/gob"
+	"encoding/hex"
 	"errors"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
+	"sync"
 	"syscall"
 	"time"
 
@@ -18,20 +22,62 @@ const cmdTimeout = 5 * time.Second
 
 // Env represents an isolated host environment.
 type Env struct {
-	dir       string
-	artifacts string
+	dir string
+
+	l                  sync.Mutex
+	streamingProcesses map[string]envProc
 
 	p            *exec.Cmd
 	cmdW, cmdR   *os.File
 	respW, respR *os.File
+	stdW, stdR   *os.File
+	stream       *gob.Decoder
 	enc          *gob.Encoder
 	dec          *gob.Decoder
+}
+
+type envProc struct {
+	stdout io.Writer
+	stderr io.Writer
 }
 
 // RunBlocking runs the specified command.
 func (e *Env) RunBlocking(dir string, args ...string) ([]byte, []byte, int, error) {
 	resp, err := e.sendCommand(procCommand{Code: cmdRunBlocking, Args: args, Dir: dir})
 	return resp.Stdout, resp.Stderr, resp.ExitCode, err
+}
+
+// RunStreaming runs the specified command without blocking.
+func (e *Env) RunStreaming(dir string, out, err io.Writer, args ...string) (string, error) {
+	c := procCommand{Code: cmdRunStreaming, Args: args, Dir: dir}
+	var rData [16]byte
+	if _, err := rand.Read(rData[:]); err != nil {
+		return "", err
+	}
+	c.ProcID = hex.EncodeToString(rData[:])
+
+	if _, err := e.sendCommand(c); err != nil {
+		return "", err
+	}
+	e.l.Lock()
+	e.streamingProcesses[c.ProcID] = envProc{
+		stdout: out,
+		stderr: err,
+	}
+	e.l.Unlock()
+	return c.ProcID, nil
+}
+
+func (e *Env) WaitStreaming(id string) error {
+	for {
+		time.Sleep(45 * time.Millisecond)
+		e.l.Lock()
+		_, running := e.streamingProcesses[id]
+		e.l.Unlock()
+		if !running {
+			return nil
+		}
+	}
 }
 
 // dependenciesInstalled returns true if dependencies have been installed.
@@ -56,11 +102,7 @@ func NewEnv(readOnly bool) (*Env, error) {
 		return nil, err
 	}
 
-	out := Env{dir: tmp, artifacts: filepath.Join(tmp, "artifacts")}
-	if err := os.Mkdir(out.artifacts, 0755); err != nil {
-		os.RemoveAll(tmp)
-		return nil, err
-	}
+	out := Env{dir: tmp, streamingProcesses: map[string]envProc{}}
 
 	if out.cmdR, out.cmdW, err = os.Pipe(); err != nil {
 		os.RemoveAll(tmp)
@@ -69,6 +111,14 @@ func NewEnv(readOnly bool) (*Env, error) {
 	if out.respR, out.respW, err = os.Pipe(); err != nil {
 		out.cmdW.Close()
 		out.cmdR.Close()
+		os.RemoveAll(tmp)
+		return nil, err
+	}
+	if out.stdR, out.stdW, err = os.Pipe(); err != nil {
+		out.cmdW.Close()
+		out.cmdR.Close()
+		out.respW.Close()
+		out.respR.Close()
 		os.RemoveAll(tmp)
 		return nil, err
 	}
@@ -95,20 +145,51 @@ func NewEnv(readOnly bool) (*Env, error) {
 		Setpgid: true,
 		Pgid:    0,
 	}
-	out.p.ExtraFiles = []*os.File{out.cmdR, out.respW}
+	out.p.ExtraFiles = []*os.File{out.cmdR, out.respW, out.stdW}
 
 	if err := out.p.Start(); err != nil {
 		out.cmdW.Close()
 		out.cmdR.Close()
 		out.respW.Close()
 		out.respR.Close()
+		out.stdW.Close()
+		out.stdR.Close()
 		os.RemoveAll(tmp)
 		return nil, err
 	}
 
 	out.enc = gob.NewEncoder(out.cmdW)
 	out.dec = gob.NewDecoder(out.respR)
+	out.stream = gob.NewDecoder(out.stdR)
+	go out.streamToConsole()
 	return &out, nil
+}
+
+func (e *Env) streamToConsole() {
+	for {
+		var resp outputData
+		if err := e.stream.Decode(&resp); err != nil {
+			return
+		}
+		e.l.Lock()
+		procInfo, ok := e.streamingProcesses[resp.ProcID]
+		e.l.Unlock()
+		if !ok {
+			continue
+		}
+
+		if resp.Complete {
+			e.l.Lock()
+			delete(e.streamingProcesses, resp.ProcID)
+			e.l.Unlock()
+		} else {
+			if resp.IsStderr {
+				io.Copy(procInfo.stderr, bytes.NewReader(resp.Data))
+			} else {
+				io.Copy(procInfo.stdout, bytes.NewReader(resp.Data))
+			}
+		}
+	}
 }
 
 func (e *Env) Close() error {
@@ -126,6 +207,12 @@ func (e *Env) Close() error {
 		err = err2
 	}
 	if err2 := e.respR.Close(); err == nil {
+		err = err2
+	}
+	if err2 := e.stdW.Close(); err == nil {
+		err = err2
+	}
+	if err2 := e.stdR.Close(); err == nil {
 		err = err2
 	}
 	if err2 := e.p.Wait(); err == nil {
