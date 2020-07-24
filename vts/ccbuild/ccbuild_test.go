@@ -40,7 +40,7 @@ func TestLoad(t *testing.T) {
 var newScriptTestcases = []struct {
 	name     string
 	filename string
-	err      error
+	err      string
 	want     []vts.Target
 }{
 	{
@@ -176,6 +176,7 @@ var newScriptTestcases = []struct {
 				Path:   "//test:amd64",
 				Parent: vts.TargetRef{Path: "//test/arch"},
 				Val: &vts.ComputedValue{
+					ContractPath: "testdata/attr_with_computed_value.ccr",
 					Filename:     "testdata/a.py",
 					Func:         "some_func",
 					InlineScript: []byte(""),
@@ -192,6 +193,7 @@ var newScriptTestcases = []struct {
 				Path:   "//test:amd64",
 				Parent: vts.TargetRef{Path: "//test/arch"},
 				Val: &vts.ComputedValue{
+					ContractPath: "testdata/attr_with_inline_computed_value.ccr",
 					InlineScript: []byte("\n  v = 2**2\n  return v\n  "),
 				},
 			},
@@ -202,16 +204,22 @@ var newScriptTestcases = []struct {
 		filename: "testdata/make_build.ccr",
 		want: []vts.Target{
 			&vts.Build{
-				Path: "//test:thingy",
-				Name: "thingy",
+				Path:         "//test:thingy",
+				ContractPath: "testdata/make_build.ccr",
+				Name:         "thingy",
 				HostDeps: []vts.TargetRef{
 					{Path: "//test:meow"},
 				},
 				Steps: []*vts.BuildStep{
-					{Kind: vts.StepUnpackGz, Dir: "testdata", Path: "go1.11.4.tar.gz", ToPath: "src"},
+					{Kind: vts.StepUnpackGz, Path: "go1.11.4.tar.gz", ToPath: "src"},
 				},
 			},
 		},
+	},
+	{
+		name:     "build_invalid_output",
+		filename: "testdata/invalid_build_output.ccr",
+		err:      "invalid build output key: cannot use type starlark.Int",
 	},
 }
 
@@ -225,22 +233,24 @@ func TestNewScript(t *testing.T) {
 			s, err := NewScript(d, "//test", tc.filename, nil, func(msg string) {
 				t.Logf("script msg: %q", msg)
 			})
-			if err != nil {
+			if err != nil && tc.err != err.Error() {
 				t.Fatalf("NewScript() failed: %v", err)
 			}
 
-			// for _, target := range s.targets {
-			// 	if err := target.Validate(); err != nil {
-			// 		t.Errorf("failed to validate: %v", err)
-			// 	}
-			// }
+			if tc.err == "" {
+				// for _, target := range s.targets {
+				// 	if err := target.Validate(); err != nil {
+				// 		t.Errorf("failed to validate: %v", err)
+				// 	}
+				// }
 
-			if diff := cmp.Diff(tc.want, s.targets, filterPos,
-				cmpopts.IgnoreUnexported(vts.Attr{}),
-				cmpopts.IgnoreFields(vts.ComputedValue{}, "Dir"),
-				cmpopts.IgnoreFields(vts.Build{}, "Dir")); diff != "" {
-				// fmt.Println(string(s.targets[0].(*vts.Attr).Val.(*vts.ComputedValue).InlineScript))
-				t.Errorf("unexpected targets result (+got, -want): \n%s", diff)
+				if diff := cmp.Diff(tc.want, s.targets, filterPos,
+					cmpopts.IgnoreUnexported(vts.Attr{}),
+					cmpopts.IgnoreFields(vts.ComputedValue{}, "ContractDir"),
+					cmpopts.IgnoreFields(vts.Build{}, "ContractDir", "Output")); diff != "" {
+					// fmt.Println(string(s.targets[0].(*vts.Attr).Val.(*vts.ComputedValue).InlineScript))
+					t.Errorf("unexpected targets result (+got, -want): \n%s", diff)
+				}
 			}
 		})
 	}

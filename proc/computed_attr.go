@@ -104,7 +104,7 @@ func scriptFromInline(d []byte) ([]byte, error) {
 // EvalComputedAttribute computes the value of an attribute whose value is wired to a function.
 func EvalComputedAttribute(attr *vts.Attr, target vts.Target, runInfo *vts.ComputedValue, env *vts.RunnerEnv) (v starlark.Value, err error) {
 	var (
-		out             = &proc{dir: runInfo.Dir, fPath: runInfo.Filename, readOnly: !runInfo.ReadWrite}
+		out             = &proc{dir: runInfo.ContractDir, fPath: runInfo.Filename, readOnly: !runInfo.ReadWrite}
 		funcName string = runInfo.Func
 		d        []byte
 	)

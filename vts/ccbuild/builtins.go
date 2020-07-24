@@ -1,8 +1,6 @@
 package ccbuild
 
 import (
-	"path/filepath"
-
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/ccbuild/runners"
 	"github.com/twitchylinux/ccr/vts/ccbuild/runners/syslib"
@@ -81,7 +79,6 @@ func makeBuildStep(s *Script, kind vts.StepKind) *starlark.Builtin {
 			SHA256: sha256,
 			URL:    url,
 
-			Dir: filepath.Dir(s.fPath),
 			Pos: &vts.DefPosition{
 				Path:  s.fPath,
 				Frame: thread.CallFrame(1),

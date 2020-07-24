@@ -69,6 +69,8 @@ func (e *Env) RunStreaming(dir string, out, err io.Writer, args ...string) (stri
 	return c.ProcID, nil
 }
 
+// WaitStreaming returns when the streaming commands previously specified
+// completes.
 func (e *Env) WaitStreaming(id string) error {
 	for {
 		time.Sleep(45 * time.Millisecond)
@@ -81,6 +83,7 @@ func (e *Env) WaitStreaming(id string) error {
 	}
 }
 
+// Dir returns the path to the RW view of the system.
 func (e *Env) Dir() string {
 	return filepath.Join(e.dir, "top")
 }

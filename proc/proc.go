@@ -16,7 +16,7 @@ type scriptLoader interface {
 	resolveImport(name string) ([]byte, error)
 }
 
-// proc represents execution of a procedure or macro.
+// proc wraps Env to facilitate execution of a procedure or macro.
 type proc struct {
 	thread  *starlark.Thread
 	globals starlark.StringDict

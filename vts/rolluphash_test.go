@@ -18,6 +18,10 @@ func mustDecodeHex(t *testing.T, s string) []byte {
 }
 
 func TestRollupHash(t *testing.T) {
+	outputFiles := starlark.NewDict(3)
+	outputFiles.SetKey(starlark.String("cool.txt"), starlark.String("cool.txt"))
+	outputFiles.SetKey(starlark.String("*.txt"), starlark.String("/kek.txt"))
+	outputFiles.SetKey(starlark.String("*.go"), starlark.String("/src"))
 	tcs := []struct {
 		name   string
 		target ReproducibleTarget
@@ -106,9 +110,11 @@ func TestRollupHash(t *testing.T) {
 		{
 			"build",
 			&Build{Name: "users", Path: "//systems:users_list",
-				Steps:    []*BuildStep{{Kind: StepUnpackGz, Dir: "testdata", Path: "go1.11.4.tar.gz", ToPath: "src"}},
-				HostDeps: []TargetRef{{Target: &Component{Name: "mmkay"}}}},
-			mustDecodeHex(t, "7EAD67BD0EC0B8A28DEC75A394834FED61B269D5CBE396F6951A05E03A6B7883"),
+				Steps:    []*BuildStep{{Kind: StepUnpackGz, Path: "go1.11.4.tar.gz", ToPath: "src"}},
+				HostDeps: []TargetRef{{Target: &Component{Name: "mmkay"}}},
+				Output:   outputFiles,
+			},
+			mustDecodeHex(t, "FBE26561610A0C76688E4F8104AEBA79D12D87ACD2DFE20D602799F408645B48"),
 			"",
 		},
 	}

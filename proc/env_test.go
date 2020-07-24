@@ -7,6 +7,7 @@ import (
 )
 
 func TestRunEnv(t *testing.T) {
+	t.Parallel()
 	e, err := NewEnv(true)
 	if err != nil {
 		t.Fatal(err)
@@ -18,6 +19,7 @@ func TestRunEnv(t *testing.T) {
 }
 
 func TestRunBlocking(t *testing.T) {
+	t.Parallel()
 	e, err := NewEnv(true)
 	if err != nil {
 		t.Fatal(err)
@@ -69,6 +71,7 @@ func TestRunBlocking(t *testing.T) {
 }
 
 func TestRunStreaming(t *testing.T) {
+	t.Parallel()
 	e, err := NewEnv(true)
 	if err != nil {
 		t.Fatal(err)
@@ -79,7 +82,7 @@ func TestRunStreaming(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RunStreaming() failed: %v", err)
 	}
-	id2, err2 := e.RunStreaming("/", &stdout, &stderr, "bash", "-c", ">&2 echo noot")
+	id2, err2 := e.RunStreaming("/", &stdout, &stderr, "bash", "-c", "sleep 0.1 && >&2 echo noot")
 	if err2 != nil {
 		t.Fatalf("RunStreaming() failed: %v", err2)
 	}

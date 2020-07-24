@@ -11,6 +11,8 @@ import (
 	"github.com/twitchylinux/ccr/vts"
 )
 
+// RunUnpackGz unpacks a .tar.gz file referenced in the build step, into the
+// specified directory.
 func RunUnpackGz(rb RunningBuild, step *vts.BuildStep) error {
 	gz, err := rb.SourceFS().Open(step.Path)
 	if err != nil {

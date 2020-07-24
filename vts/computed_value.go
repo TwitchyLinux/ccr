@@ -10,8 +10,9 @@ import (
 
 // ComputedValue is an anonymous target representing a runtime computation.
 type ComputedValue struct {
-	Pos *DefPosition
-	Dir string
+	Pos          *DefPosition
+	ContractDir  string
+	ContractPath string
 
 	Filename     string
 	Func         string

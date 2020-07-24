@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/gobwas/glob"
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/common"
 	"go.starlark.net/starlark"
@@ -500,7 +501,8 @@ func makeComputedValue(s *Script) *starlark.Builtin {
 
 		wd, _ := os.Getwd()
 		return &vts.ComputedValue{
-			Dir:          filepath.Join(wd, filepath.Dir(s.fPath)),
+			ContractDir:  filepath.Join(wd, filepath.Dir(s.fPath)),
+			ContractPath: s.fPath,
 			Filename:     fname,
 			Func:         fun,
 			InlineScript: []byte(code),
@@ -518,15 +520,18 @@ func makeBuild(s *Script) *starlark.Builtin {
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var name string
 		var deps, steps *starlark.List
-		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name?", &name, "host_deps?", &deps, "steps?", &steps); err != nil {
+		var output *starlark.Dict
+		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name?", &name, "host_deps?", &deps, "steps?", &steps,
+			"output?", &output); err != nil {
 			return starlark.None, err
 		}
 
 		wd, _ := os.Getwd()
 		b := &vts.Build{
-			Dir:  filepath.Join(wd, filepath.Dir(s.fPath)),
-			Path: s.makePath(name),
-			Name: name,
+			ContractDir:  filepath.Join(wd, filepath.Dir(s.fPath)),
+			ContractPath: s.fPath,
+			Path:         s.makePath(name),
+			Name:         name,
 			Pos: &vts.DefPosition{
 				Path:  s.fPath,
 				Frame: thread.CallFrame(1),
@@ -556,6 +561,21 @@ func makeBuild(s *Script) *starlark.Builtin {
 				}
 				b.Steps = append(b.Steps, v)
 			}
+		}
+		if output != nil {
+			for _, v := range output.Items() {
+				k, ok := v[0].(starlark.String)
+				if !ok {
+					return nil, fmt.Errorf("invalid build output key: cannot use type %T", v[0])
+				}
+				if _, err := glob.Compile(string(k)); err != nil {
+					return nil, fmt.Errorf("invalid build output match %q: %v", string(k), err)
+				}
+				if v[1].Type() != "string" {
+					return nil, fmt.Errorf("invalid build output value: cannot use type %T", v[1])
+				}
+			}
+			b.Output = output
 		}
 
 		// If theres no name, it must be an anonymous build as part of

@@ -571,6 +571,12 @@ Class: //basic:whelp
 			target: "//basic_build:output",
 			config: GenerateConfig{},
 		},
+		{
+			name:   "artifact_missing_in_build",
+			target: "//basic_build:output_missing_in_build",
+			err:    "could not find file in build artifacts",
+			config: GenerateConfig{},
+		},
 	}
 
 	cd, err := ioutil.TempDir("", "")

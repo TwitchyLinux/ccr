@@ -3,6 +3,9 @@ build(
   steps     = [
     step.unpack_gz(to = 'src', path = 'cool.tar.gz'),
   ],
+  output    = {
+    'src/cool.txt': 'cool.txt',
+  },
 )
 
 
@@ -10,5 +13,12 @@ resource(
   name   = "output",
   parent = "common://resources:file",
   path   = "cool.txt",
+  source = ":simple_build",
+)
+
+resource(
+  name   = "output_missing_in_build",
+  parent = "common://resources:file",
+  path   = "missing.txt",
   source = ":simple_build",
 )

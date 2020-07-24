@@ -88,6 +88,15 @@ func envMainloop(cmdW *gob.Encoder, cmdR *gob.Decoder, respW *gob.Encoder, readO
 
 // isolatedMain is the program entrypoint when this binary is invoked in the isolated environment.
 // Instructions for setting up the namespace are provided via the file system.
+//
+// This main provides two functions:
+//  - 'env' mode: This is intended to be run in isolated namespaces mapped to
+//    UID 0. In this mode, an isolated filesystem is established, and requests
+//    over process file descriptors are serviced to create processes.
+//  - 'run' mode: These processes are created from 'env' mode processes in
+//    response to a request to run something. In run mode, The process
+//    pivot_root()'s to a new view of the filesystem, before calling exec()
+//    for the requested process.
 func isolatedMain() {
 	runtime.GOMAXPROCS(1)
 	runtime.LockOSThread()

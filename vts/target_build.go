@@ -3,19 +3,23 @@ package vts
 import (
 	"crypto/sha256"
 	"fmt"
+	"sort"
 
+	"github.com/gobwas/glob"
 	"go.starlark.net/starlark"
 )
 
 // Build is a target representing a build.
 type Build struct {
-	Path string
-	Name string
-	Pos  *DefPosition
-	Dir  string
+	Path         string
+	Name         string
+	Pos          *DefPosition
+	ContractDir  string
+	ContractPath string
 
 	HostDeps []TargetRef
 	Steps    []*BuildStep
+	Output   *starlark.Dict
 }
 
 func (t *Build) DefinedAt() *DefPosition {
@@ -93,5 +97,53 @@ func (t *Build) RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error) {
 		hash.Write(h)
 	}
 
+	if t.Output != nil {
+		fmt.Fprintln(hash, "Output mappings:")
+		outKeyVals := make([]string, 0, t.Output.Len())
+		for _, e := range t.Output.Items() {
+			outKeyVals = append(outKeyVals, fmt.Sprintf("%s: %s", e[0].String(), e[1].String()))
+		}
+		sort.Strings(outKeyVals)
+		for _, kv := range outKeyVals {
+			hash.Write([]byte(kv))
+		}
+	}
+
 	return hash.Sum(nil), nil
+}
+
+type artifactMatch struct {
+	p   glob.Glob
+	out string
+}
+
+type BuildArtifactMatcher struct {
+	rules []artifactMatch
+}
+
+func (m *BuildArtifactMatcher) Match(artifactPath string) string {
+	for _, r := range m.rules {
+		if r.p.Match(artifactPath) {
+			return r.out
+		}
+	}
+	return ""
+}
+
+func (t *Build) OutputMappings() BuildArtifactMatcher {
+	out := BuildArtifactMatcher{rules: make([]artifactMatch, t.Output.Len())}
+	keys := make([]string, 0, t.Output.Len())
+	for _, e := range t.Output.Keys() {
+		keys = append(keys, string(e.(starlark.String)))
+	}
+	sort.Strings(keys)
+
+	for i, k := range keys {
+		v, _, _ := t.Output.Get(starlark.String(k))
+		out.rules[i] = artifactMatch{
+			p:   glob.MustCompile(k),
+			out: string(v.(starlark.String)),
+		}
+	}
+	return out
 }

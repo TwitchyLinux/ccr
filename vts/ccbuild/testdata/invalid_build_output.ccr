@@ -7,6 +7,6 @@ build(
     step.unpack_gz(to = 'src', path = 'go1.11.4.tar.gz'),
   ],
   output    = {
-    'cool.txt': 'cool.txt',
+    22: 'cool.txt',
   },
 )

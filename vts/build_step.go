@@ -18,7 +18,6 @@ const (
 type BuildStep struct {
 	Pos  *DefPosition
 	Kind StepKind
-	Dir  string
 
 	ToPath string
 	Path   string
@@ -61,8 +60,8 @@ func (t *BuildStep) Hash() (uint32, error) {
 
 func (t *BuildStep) RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error) {
 	hash := sha256.New()
-	fmt.Fprintf(hash, "step: %q\n%q\n", t.Kind, t.Dir)
-	fmt.Fprintf(hash, "step: %q\n%q\n%q\n%q\n", t.ToPath, t.Path, t.URL, t.SHA256)
+	fmt.Fprintf(hash, "step: %q\n", t.Kind)
+	fmt.Fprintf(hash, "%q\n%q\n%q\n%q\n", t.ToPath, t.Path, t.URL, t.SHA256)
 
 	return hash.Sum(nil), nil
 }

@@ -89,22 +89,27 @@ func setupWriteableFS(baseDir string) (fs, error) {
 }
 
 func setRootFS(newroot string, readOnly bool) error {
+	// Create a new directory which will be the root of our FS view.
 	base := filepath.Dir(newroot)
 	ourBase, err := ioutil.TempDir(base, "")
 	if err != nil {
 		return fmt.Errorf("creating base dir %s: %v", base, err)
 	}
 
+	// Bind mount our created root to the root path provided to this process.
+	// This will typically be an overlayfs mount.
 	if err := syscall.Mount(newroot, ourBase, "", syscall.MS_BIND|syscall.MS_REC|syscall.MS_SLAVE, ""); err != nil {
 		return fmt.Errorf("bind mount: %v", err)
 	}
 
 	putold := filepath.Join(ourBase, "/.temp_old")
+	// Mount proc as we are in our own fs/pid namespace.
 	os.Mkdir(path.Join(ourBase, "proc"), 0755)
 	if err := syscall.Mount("proc", path.Join(ourBase, "proc"), "proc", 0, ""); err != nil {
 		return fmt.Errorf("mount proc: %v", err)
 	}
 
+	// Do the pivot_root dance to switch over to our FS view.
 	if err := syscall.Mount(ourBase, ourBase, "", syscall.MS_BIND|syscall.MS_REC, ""); err != nil {
 		return fmt.Errorf("mount failed: %v", err)
 	}
