@@ -1,6 +1,6 @@
 # Core Contracts
 
-(ccr = Core Contracts Resolver, the tool that works with core contract specifications).
+(ccr = Core Contracts Resolver, the tool that works with core contracts).
 
 ## What is it?
 
@@ -17,10 +17,10 @@ In my experience, there are two main ways to build up a Linux system:
    so they work & play nicely, most of the time
 
 The problem with both of these approaches is the details about _how_ dependencies
-are embodied. Scripts tend to implicitely encode the nuance of inter-dependencies and the assumptions
+are embodied. Scripts tend to implicitly encode the nuance of inter-dependencies and the assumptions
 of the maintainer, rather than be obvious to an observer trying to change or fix something. Due to
 the complexity of a modern system, any change is fraught with the danger of breaking some unknown
-interdependency.
+dependencies.
 
 Package managers are better in this respect, but have some of the same issues. Decisions
 around what should be contained within one package or another, which logic should exist in
