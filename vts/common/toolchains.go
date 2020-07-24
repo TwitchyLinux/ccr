@@ -66,3 +66,39 @@ return spl[-1]
 		},
 	}
 )
+
+var (
+	BashToolchain = &vts.Toolchain{
+		Path: "common://toolchains:bash",
+		Name: "bash",
+		BinaryMappings: map[string]string{
+			"bash": "/bin/bash",
+		},
+		Details: []vts.TargetRef{
+			{Target: BashVersion},
+		},
+	}
+
+	BashVersion = &vts.Attr{
+		Path:   "common://toolchains/version:bash",
+		Name:   "bash",
+		Parent: vts.TargetRef{Target: SemverClass},
+		Val: &vts.ComputedValue{
+			InlineScript: []byte(`
+inv = run("bash", "--version")
+lines = inv.output.split('\n')
+if len(lines) < 2:
+  broken_assumption("bash --version output format may have changed")
+
+spl = lines[0].split(' ')
+if len(spl) < 3 or spl[1] != 'bash,':
+  broken_assumption("bash --version output format may have changed")
+idx = spl.index('version')
+if not idx:
+  broken_assumption("bash --version output format may have changed")
+return str(spl[idx+1]).split('(')[0]
+
+	`),
+		},
+	}
+)

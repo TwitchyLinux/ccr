@@ -64,7 +64,10 @@ var commonTargets = map[string]vts.Target{
 	"common://generators:dir":     DirGenerator,
 	"common://generators:symlink": SymlinkGenerator,
 
-	"common://toolchains:go":         GoToolchain,
-	"common://toolchains/version:go": GoVersion,
-	"common://toolchains:gcc":        GccToolchain,
+	"common://toolchains:go":           GoToolchain,
+	"common://toolchains/version:go":   GoVersion,
+	"common://toolchains:gcc":          GccToolchain,
+	"common://toolchains/version:gcc":  GccVersion,
+	"common://toolchains:bash":         BashToolchain,
+	"common://toolchains/version:bash": BashVersion,
 }

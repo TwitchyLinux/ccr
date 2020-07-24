@@ -21,7 +21,7 @@ build(
     'in.txt': 'out.txt',
   },
   host_deps = [
-    ":bash" >> semver("1.2.3"),
+    "common://toolchains:bash" >> semver("4"),
     ":binutils",
   ],
 )
@@ -32,13 +32,6 @@ toolchain(
     "ls": "/bin/ls",
     "cp": "/bin/cp",
     "chmod": "/bin/chmod",
-  },
-)
-
-toolchain(
-  name     = "bash",
-  binaries = {
-    "bash": "/bin/bash",
   },
 )
 
