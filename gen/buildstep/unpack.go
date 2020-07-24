@@ -24,7 +24,7 @@ func RunUnpackGz(rb RunningBuild, step *vts.BuildStep) error {
 		return fmt.Errorf("reading gzip: %v", err)
 	}
 
-	fs := rb.BuildFS()
+	fs := rb.RootFS()
 	if err := fs.MkdirAll(filepath.Join(rb.Dir(), step.ToPath), 0755); err != nil && !os.IsExist(err) {
 		return fmt.Errorf("mkdir to %q: %v", step.ToPath, err)
 	}

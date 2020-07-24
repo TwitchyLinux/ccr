@@ -5,6 +5,6 @@ import "gopkg.in/src-d/go-billy.v4"
 
 type RunningBuild interface {
 	Dir() string
-	BuildFS() billy.Filesystem
+	RootFS() billy.Filesystem
 	SourceFS() billy.Filesystem
 }

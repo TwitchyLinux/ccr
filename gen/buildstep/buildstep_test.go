@@ -21,7 +21,7 @@ type runningBuildMock struct {
 func (rb *runningBuildMock) Dir() string {
 	return rb.dir
 }
-func (rb *runningBuildMock) BuildFS() billy.Filesystem {
+func (rb *runningBuildMock) RootFS() billy.Filesystem {
 	return rb.buildFS
 }
 func (rb *runningBuildMock) SourceFS() billy.Filesystem {

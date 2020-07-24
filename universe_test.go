@@ -574,7 +574,7 @@ Class: //basic:whelp
 		{
 			name:   "artifact_missing_in_build",
 			target: "//basic_build:output_missing_in_build",
-			err:    "could not find file in build artifacts",
+			err:    os.ErrNotExist.Error(),
 			config: GenerateConfig{},
 		},
 	}
