@@ -46,7 +46,7 @@ func (t *Build) Validate() error {
 	return nil
 }
 
-func (t *Build) Dependencies() []TargetRef {
+func (t *Build) HostDependencies() []TargetRef {
 	return t.HostDeps
 }
 

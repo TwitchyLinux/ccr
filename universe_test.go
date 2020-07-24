@@ -563,7 +563,7 @@ Class: //basic:whelp
 		{
 			name:   "toolchain_check_missing",
 			target: "//toolchain_checkers:missing",
-			err:    "toolchain component missing: whelp",
+			err:    "toolchain component missing: ls",
 			config: GenerateConfig{},
 		},
 		{
@@ -575,6 +575,11 @@ Class: //basic:whelp
 			name:   "artifact_missing_in_build",
 			target: "//basic_build:output_missing_in_build",
 			err:    os.ErrNotExist.Error(),
+			config: GenerateConfig{},
+		},
+		{
+			name:   "should_exist",
+			target: "//toolchain_checkers:should_exist",
 			config: GenerateConfig{},
 		},
 	}

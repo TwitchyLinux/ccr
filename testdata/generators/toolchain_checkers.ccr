@@ -1,10 +1,26 @@
 toolchain(
-  name = "missing",
+  name     = "missing",
   binaries = {
-    # Expect to have this on all systems right
-    "whelp": "/bin/whelpfdgdfkgjdfhkldfgjh",
+    # Calling check on toolchain directly should have the toolchain
+    # be checked against the output directory, not the host system.
+    # As such, this should fail.
+    "ls": "/bin/ls",
   },
-  details = [
+  details  = [
     attr(parent = "common://attrs:semver", value = "1.2"),
+  ],
+)
+
+toolchain(
+  name     = "ls",
+  binaries = {
+    "ls": "/bin/ls",
+  },
+)
+
+build(
+  name      = "should_exist",
+  host_deps = [
+    ":ls",
   ],
 )

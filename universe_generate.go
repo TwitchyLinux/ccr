@@ -176,18 +176,19 @@ func (u *Universe) generateTarget(s generationState, t vts.Target) error {
 		s.haveGenerated[t] = struct{}{}
 	}
 
-	// Toolchains are a special case: They represent the state of the host system,
-	// so the checkers for them and their deps should be run against the host.
-	if tc, isToolchain := t.(*vts.Toolchain); isToolchain {
-		if err := u.checkTarget(tc, &vts.RunnerEnv{
+	// If a target has host dependencies, they need to be checked against
+	// the host system, not the output system.
+	if hdt, hasHostDeps := t.(vts.HostDepTarget); hasHostDeps {
+		env := &vts.RunnerEnv{
 			Dir:      "/",
 			FS:       osfs.New("/"),
 			Universe: s.runnerEnv.Universe,
-		}, s.completedToolchainDeps); err != nil {
-			return vts.WrapWithTarget(err, tc)
 		}
-		s.haveGenerated[t] = struct{}{}
-		return nil
+		for _, dep := range hdt.HostDependencies() {
+			if err := u.checkTarget(dep.Target, env, s.completedToolchainDeps); err != nil {
+				return vts.WrapWithTarget(err, hdt)
+			}
+		}
 	}
 
 	// As inputs have already been evaluated, the only remaining source of nested

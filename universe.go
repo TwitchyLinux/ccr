@@ -201,6 +201,13 @@ func (u *Universe) resolveTarget(findOpts *FindOptions, t vts.Target) error {
 			}
 		}
 	}
+	if deps, hasHostDeps := gt.(vts.HostDepTarget); hasHostDeps {
+		for _, dep := range deps.HostDependencies() {
+			if err := u.resolveRef(findOpts, dep); err != nil {
+				return err
+			}
+		}
+	}
 	if chks, hasCheckers := gt.(vts.CheckedTarget); hasCheckers {
 		for _, c := range chks.Checkers() {
 			if err := u.resolveRef(findOpts, c); err != nil {

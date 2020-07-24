@@ -78,6 +78,12 @@ type DepTarget interface {
 	Dependencies() []TargetRef
 }
 
+// HostDepTarget describes a node which depends on stuff on the host.
+type HostDepTarget interface {
+	Target
+	HostDependencies() []TargetRef
+}
+
 // InputTarget describes a node which needs inputs from other nodes.
 type InputTarget interface {
 	Target
