@@ -120,18 +120,25 @@ func (c *Cache) Clean() error {
 	return nil
 }
 
+func defaultCacheDir() (string, error) {
+	if cd, err := os.UserCacheDir(); err == nil {
+		return filepath.Join(cd, "ccr"), nil
+	}
+
+	hd, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(hd, ".ccr", "cache"), nil
+}
+
 // NewCache initializes a new cache backed by dir. If dir is the empty string,
 // a standard dotpath in the users home directory is used.
 func NewCache(dir string) (*Cache, error) {
 	if dir == "" {
-		if cd, err := os.UserCacheDir(); err != nil {
-			dir = filepath.Join(cd, "ccr")
-		} else {
-			hd, err := os.UserHomeDir()
-			if err != nil {
-				return nil, err
-			}
-			dir = filepath.Join(hd, ".ccr", "cache")
+		var err error
+		if dir, err = defaultCacheDir(); err != nil {
+			return nil, err
 		}
 	}
 
