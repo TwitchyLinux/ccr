@@ -21,7 +21,7 @@ resource(
 )
 
 build(
-  name      = "passing_build",
+  name      = "passing_gt_build",
   steps     = [
     step.unpack_gz(to = 'src', path = 'cool.tar.gz'),
   ],
@@ -34,8 +34,28 @@ build(
 )
 
 resource(
-  name   = "passing_constraint",
+  name   = "passing_gt_constraint",
   parent = "common://resources:virtual",
-  source = ":passing_build",
+  source = ":passing_gt_build",
+  path   = "cool.txt",
+)
+
+build(
+  name      = "passing_lt_build",
+  steps     = [
+    step.unpack_gz(to = 'src', path = 'cool.tar.gz'),
+  ],
+  output    = {
+    'src/cool.txt': 'cool.txt',
+  },
+  host_deps = [
+    ":some_host_tooling" << semver("45.4"),
+  ],
+)
+
+resource(
+  name   = "passing_lt_constraint",
+  parent = "common://resources:virtual",
+  source = ":passing_lt_build",
   path   = "cool.txt",
 )

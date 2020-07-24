@@ -628,8 +628,13 @@ Class: //basic:whelp
 			config: GenerateConfig{},
 		},
 		{
-			name:   "hostdep_constraint",
-			target: "//build_hostdep_constraint:passing_constraint",
+			name:   "hostdep_constraint_gt",
+			target: "//build_hostdep_constraint:passing_gt_constraint",
+			config: GenerateConfig{},
+		},
+		{
+			name:   "hostdep_constraint_lt",
+			target: "//build_hostdep_constraint:passing_lt_constraint",
 			config: GenerateConfig{},
 		},
 		{

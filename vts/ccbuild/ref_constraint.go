@@ -2,7 +2,6 @@ package ccbuild
 
 import (
 	"crypto/sha256"
-	"errors"
 	"fmt"
 
 	semver "github.com/blang/semver/v4"
@@ -48,7 +47,7 @@ func (c *RefComparisonConstraint) Hash() (uint32, error) {
 func (c *RefComparisonConstraint) Binary(op syntax.Token, y starlark.Value, side starlark.Side) (starlark.Value, error) {
 	c.Op = op
 	switch op {
-	case syntax.GTGT:
+	case syntax.GTGT, syntax.LTLT:
 	default:
 		return nil, fmt.Errorf("cannot handle constraint with op %q", op.String())
 	}
@@ -60,10 +59,6 @@ func (c *RefComparisonConstraint) Binary(op syntax.Token, y starlark.Value, side
 }
 
 func (c *RefComparisonConstraint) Name() string { return c.Type() }
-
-func (c *RefComparisonConstraint) CallInternal(thread *starlark.Thread, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	return nil, errors.New("not implemented")
-}
 
 func (c *RefComparisonConstraint) Check(env *vts.RunnerEnv, lhs starlark.Value) error {
 	l, ok := lhs.(starlark.String)
@@ -89,6 +84,10 @@ func (c *RefComparisonConstraint) Check(env *vts.RunnerEnv, lhs starlark.Value) 
 		switch c.Op {
 		case syntax.GTGT:
 			if lv.GT(rv) {
+				return nil
+			}
+		case syntax.LTLT:
+			if lv.LT(rv) {
 				return nil
 			}
 		}

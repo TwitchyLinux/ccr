@@ -44,18 +44,26 @@ func printComputedValueErr(cv *vts.ComputedValue) {
 }
 
 func printErrSource(we vts.WrappedErr) {
+	msg := "Failing"
+	if _, isConstErr := we.Err.(vts.FailingConstraintInfo); isConstErr {
+		msg = "Constrained"
+	}
 	switch {
 	case we.Pos != nil:
 		pos := we.Pos
-		fmt.Printf("  Failing target at:  \033[1;33m%s:%d:%d\033[0m\n", pos.Path, pos.Frame.Pos.Line, pos.Frame.Pos.Col)
+		fmt.Printf("  %s target at:  \033[1;33m%s:%d:%d\033[0m\n", msg, pos.Path, pos.Frame.Pos.Line, pos.Frame.Pos.Col)
 	case we.Target != nil:
 		if pos := we.Target.DefinedAt(); pos != nil {
-			fmt.Printf("  Failing target at:  \033[1;33m%s:%d:%d\033[0m\n", pos.Path, pos.Frame.Pos.Line, pos.Frame.Pos.Col)
+			fmt.Printf("  %s target at:  \033[1;33m%s:%d:%d\033[0m\n", msg, pos.Path, pos.Frame.Pos.Line, pos.Frame.Pos.Col)
 		}
 	}
 	if we.ActionTarget != nil {
 		if gt, ok := we.ActionTarget.(vts.GlobalTarget); ok {
-			fmt.Printf("  Failed by %s:\n    \033[1;35m%s\033[0m\n", gt.TargetType(), gt.GlobalPath())
+			msg := "Failed by"
+			if _, isConstErr := we.Err.(vts.FailingConstraintInfo); isConstErr {
+				msg = "Constraint set on"
+			}
+			fmt.Printf("  %s %s:\n    \033[1;35m%s\033[0m\n", msg, gt.TargetType(), gt.GlobalPath())
 		}
 		if pos := we.ActionTarget.DefinedAt(); pos != nil {
 			fmt.Printf("    Defined at \033[1;35m%s:%d:%d\033[0m\n", pos.Path, pos.Frame.Pos.Line, pos.Frame.Pos.Col)
@@ -82,7 +90,7 @@ func printErr(msg string, err error) {
 	we, _ := err.(vts.WrappedErr)
 	printErrBanner(msg, we)
 	if c, isConstraint := we.Err.(vts.FailingConstraintInfo); isConstraint {
-		fmt.Printf("  Failing constraint:  \033[1;33m%s\033[0m  %s  \033[1;33m%s\033[0m\n", c.Lhs, c.Op, c.Rhs)
+		fmt.Printf("  Failing constraint:     \033[1;33m%s\033[0m  %s  \033[1;33m%s\033[0m\n", c.Lhs, c.Op, c.Rhs)
 	}
 
 	if cv := we.ComputedValue; cv != nil {
