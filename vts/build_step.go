@@ -13,6 +13,7 @@ type StepKind string
 // Valid BuildStep StepKind values.
 const (
 	StepUnpackGz = "unpack_gz"
+	StepShellCmd = "bash_cmd"
 )
 
 // BuildStep is an anonymous target representing a step in a build.
@@ -24,6 +25,8 @@ type BuildStep struct {
 	Path   string
 	URL    string
 	SHA256 string
+
+	Args []string
 }
 
 func (t *BuildStep) DefinedAt() *DefPosition {
@@ -41,6 +44,10 @@ func (t *BuildStep) Validate() error {
 			return errors.New("sha256 must be specified for all URLs")
 		} else if t.Path == "" {
 			return errors.New("path or url must be specified")
+		}
+	case StepShellCmd:
+		if len(t.Args) != 1 {
+			return errors.New("only one argument can be provided")
 		}
 	}
 	return nil

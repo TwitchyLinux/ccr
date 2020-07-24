@@ -48,6 +48,12 @@ func setupWriteableFS(baseDir string) (fs, error) {
 	if err := os.Mkdir(filepath.Join(u, "tmp"), 0755); err != nil {
 		return nil, err
 	}
+	// if err := unix.Setxattr(filepath.Join(u, "tmp"), "user.fuseoverlayfs.opaque", []byte{'y'}, 0); err != nil {
+	// 	return nil, fmt.Errorf("failed to set /tmp as opaque: %v", err)
+	// }
+	// if err := ioutil.WriteFile(filepath.Join(u, "tmp", ".wh..wh..opq"), nil, 0700); err != nil {
+	// 	return nil, fmt.Errorf("failed to make whiteout dir: %v", err)
+	// }
 	if err := os.Mkdir(work, 0755); err != nil {
 		return nil, err
 	}

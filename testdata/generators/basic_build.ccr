@@ -11,27 +11,43 @@ build(
   ],
 )
 
+build(
+  name      = "exec_build",
+  steps     = [
+    step.shell_cmd('echo "some data goes here" > /in.txt'),
+    step.shell_cmd('chmod 0600 /in.txt'),
+  ],
+  output    = {
+    'in.txt': 'out.txt',
+  },
+  host_deps = [
+    ":bash",
+    ":binutils",
+  ],
+)
+
 toolchain(
-  name = "binutils",
+  name     = "binutils",
   binaries = {
     "ls": "/bin/ls",
     "cp": "/bin/cp",
+    "chmod": "/bin/chmod",
+  },
+)
+
+toolchain(
+  name     = "bash",
+  binaries = {
+    "bash": "/bin/bash",
   },
 )
 
 build(
   name      = "missing_dep_build",
-  steps     = [
-    step.unpack_gz(to = 'src', path = 'cool.tar.gz'),
-  ],
-  output    = {
-    'src/cool.txt': 'cool.txt',
-  },
   host_deps = [
     ":missing",
   ],
 )
-
 
 toolchain(
   name     = "missing",
@@ -45,6 +61,13 @@ resource(
   parent = "common://resources:file",
   path   = "cool.txt",
   source = ":simple_build",
+)
+
+resource(
+  name   = "exec_output",
+  parent = "common://resources:file",
+  path   = "out.txt",
+  source = ":exec_build",
 )
 
 resource(

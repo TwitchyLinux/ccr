@@ -83,9 +83,15 @@ func (e *Env) WaitStreaming(id string) error {
 	}
 }
 
-// Dir returns the path to the RW view of the system.
-func (e *Env) Dir() string {
+// OverlayMountPath returns the path to the RW view of the system, within the isolated
+// environment.
+func (e *Env) OverlayMountPath() string {
 	return filepath.Join(e.dir, "top")
+}
+
+// OverlayUpperPath returns the path to files the environment wrote to.
+func (e *Env) OverlayUpperPath() string {
+	return filepath.Join(e.dir, "u")
 }
 
 func (e *Env) ping() error {

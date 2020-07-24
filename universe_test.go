@@ -572,6 +572,14 @@ Class: //basic:whelp
 			config: GenerateConfig{},
 		},
 		{
+			name:   "exec_build",
+			target: "//basic_build:exec_output",
+			config: GenerateConfig{},
+			hasFiles: map[string]os.FileMode{
+				"/out.txt": os.FileMode(0600),
+			},
+		},
+		{
 			name:   "artifact_missing_in_build",
 			target: "//basic_build:output_missing_in_build",
 			err:    "file missing from build output",

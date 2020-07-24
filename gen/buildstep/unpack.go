@@ -25,7 +25,7 @@ func RunUnpackGz(rb RunningBuild, step *vts.BuildStep) error {
 	}
 
 	fs := rb.RootFS()
-	if err := fs.MkdirAll(filepath.Join(rb.Dir(), step.ToPath), 0755); err != nil && !os.IsExist(err) {
+	if err := fs.MkdirAll(filepath.Join(rb.OverlayUpperPath(), step.ToPath), 0755); err != nil && !os.IsExist(err) {
 		return fmt.Errorf("mkdir to %q: %v", step.ToPath, err)
 	}
 
@@ -41,11 +41,11 @@ func RunUnpackGz(rb RunningBuild, step *vts.BuildStep) error {
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if err := fs.MkdirAll(filepath.Join(rb.Dir(), step.ToPath, header.Name), header.FileInfo().Mode()); err != nil && !os.IsExist(err) {
+			if err := fs.MkdirAll(filepath.Join(rb.OverlayUpperPath(), step.ToPath, header.Name), header.FileInfo().Mode()); err != nil && !os.IsExist(err) {
 				return fmt.Errorf("mkdir %q: %v", header.Name, err)
 			}
 		case tar.TypeReg:
-			outFile, err := fs.OpenFile(filepath.Join(rb.Dir(), step.ToPath, header.Name), os.O_WRONLY|os.O_CREATE|os.O_EXCL|os.O_TRUNC, header.FileInfo().Mode())
+			outFile, err := fs.OpenFile(filepath.Join(rb.OverlayUpperPath(), step.ToPath, header.Name), os.O_WRONLY|os.O_CREATE|os.O_EXCL|os.O_TRUNC, header.FileInfo().Mode())
 			if err != nil {
 				return fmt.Errorf("open %q: %v", header.Name, err)
 			}

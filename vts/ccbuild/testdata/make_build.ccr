@@ -5,6 +5,7 @@ build(
   ],
   steps     = [
     step.unpack_gz(to = 'src', path = 'go1.11.4.tar.gz'),
+    step.shell_cmd('echo mate'),
   ],
   output    = {
     'cool.txt': 'cool.txt',

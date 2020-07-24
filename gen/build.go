@@ -24,8 +24,12 @@ type RunningBuild struct {
 	steps       []*vts.BuildStep
 }
 
-func (rb *RunningBuild) Dir() string {
-	return rb.env.Dir()
+func (rb *RunningBuild) OverlayMountPath() string {
+	return rb.env.OverlayMountPath()
+}
+
+func (rb *RunningBuild) OverlayUpperPath() string {
+	return rb.env.OverlayUpperPath()
 }
 
 func (rb *RunningBuild) RootFS() billy.Filesystem {
@@ -40,11 +44,23 @@ func (rb *RunningBuild) Close() error {
 	return rb.env.Close()
 }
 
+func (rb *RunningBuild) ExecBlocking(args []string, stdout, stderr io.Writer) error {
+	id, err := rb.env.RunStreaming("/tmp", stdout, stderr, args...)
+	if err != nil {
+		return err
+	}
+	return rb.env.WaitStreaming(id)
+}
+
 func (rb *RunningBuild) Generate() error {
 	for i, step := range rb.steps {
 		switch step.Kind {
 		case vts.StepUnpackGz:
 			if err := buildstep.RunUnpackGz(rb, step); err != nil {
+				return fmt.Errorf("step %d (%s) failed: %v", i+1, step.Kind, err)
+			}
+		case vts.StepShellCmd:
+			if err := buildstep.RunShellCmd(rb, step); err != nil {
 				return fmt.Errorf("step %d (%s) failed: %v", i+1, step.Kind, err)
 			}
 		default:
@@ -61,7 +77,7 @@ func (rb *RunningBuild) WriteToCache(c *cache.Cache, b *vts.Build, hash []byte) 
 	}
 	defer fs.Close()
 
-	buildDir, outPathMatcher := rb.env.Dir(), b.OutputMappings()
+	buildDir, outPathMatcher := rb.env.OverlayUpperPath(), b.OutputMappings()
 	err = filepath.Walk(buildDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err

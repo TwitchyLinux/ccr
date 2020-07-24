@@ -3,6 +3,7 @@ package proc
 import (
 	"bytes"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -101,6 +102,28 @@ func TestRunStreaming(t *testing.T) {
 		t.Errorf("stderr = %q, want %q", string(stderr.Bytes()), string(want))
 	}
 
+	if err := e.Close(); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestFilePersistance(t *testing.T) {
+	t.Parallel()
+	e, err := NewEnv(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	o, s, _, err := e.RunBlocking("/tmp", "touch", "yee")
+	if err != nil {
+		e.Close()
+		t.Errorf("RunBlocking(%q) failed: %v", "echo", err)
+		t.Logf("stdout = %q\nstderr = %q", string(o), string(s))
+	}
+
+	if _, err := os.Stat(filepath.Join(e.OverlayUpperPath(), "tmp", "yee")); err != nil {
+		t.Errorf("could not stat /tmp/yee: %v", err)
+	}
 	if err := e.Close(); err != nil {
 		t.Error(err)
 	}
