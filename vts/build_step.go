@@ -2,6 +2,7 @@ package vts
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 
 	"go.starlark.net/starlark"
@@ -34,6 +35,14 @@ func (t *BuildStep) IsClassTarget() bool {
 }
 
 func (t *BuildStep) Validate() error {
+	switch t.Kind {
+	case StepUnpackGz:
+		if t.URL != "" && t.SHA256 == "" {
+			return errors.New("sha256 must be specified for all URLs")
+		} else if t.Path == "" {
+			return errors.New("path or url must be specified")
+		}
+	}
 	return nil
 }
 
