@@ -1,6 +1,7 @@
 package gen
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -104,7 +105,7 @@ func writeResourceFromBuild(gc GenerationContext, resource *vts.Resource, b *vts
 			return err
 		}
 		if err == os.ErrNotExist {
-			return vts.WrapWithPath(vts.WrapWithTarget(vts.WrapWithActionTarget(err, resource), b), p)
+			return vts.WrapWithPath(vts.WrapWithTarget(vts.WrapWithActionTarget(errors.New("file missing from build output"), resource), b), p)
 		}
 		return vts.WrapWithPath(vts.WrapWithTarget(fmt.Errorf("reading from build artifacts: %v", err), resource), p)
 	}

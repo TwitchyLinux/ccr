@@ -186,7 +186,7 @@ func (u *Universe) generateTarget(s generationState, t vts.Target) error {
 		}
 		for _, dep := range hdt.HostDependencies() {
 			if err := u.checkTarget(dep.Target, env, s.completedToolchainDeps); err != nil {
-				return vts.WrapWithTarget(err, hdt)
+				return err
 			}
 		}
 	}

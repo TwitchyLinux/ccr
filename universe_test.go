@@ -574,7 +574,13 @@ Class: //basic:whelp
 		{
 			name:   "artifact_missing_in_build",
 			target: "//basic_build:output_missing_in_build",
-			err:    os.ErrNotExist.Error(),
+			err:    "file missing from build output",
+			config: GenerateConfig{},
+		},
+		{
+			name:   "host_dep_missing",
+			target: "//basic_build:output_missing_host_dep",
+			err:    "toolchain component missing: something_missing",
 			config: GenerateConfig{},
 		},
 		{

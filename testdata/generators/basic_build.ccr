@@ -6,8 +6,39 @@ build(
   output    = {
     'src/cool.txt': 'cool.txt',
   },
+  host_deps = [
+    ":binutils",
+  ],
 )
 
+toolchain(
+  name = "binutils",
+  binaries = {
+    "ls": "/bin/ls",
+    "cp": "/bin/cp",
+  },
+)
+
+build(
+  name      = "missing_dep_build",
+  steps     = [
+    step.unpack_gz(to = 'src', path = 'cool.tar.gz'),
+  ],
+  output    = {
+    'src/cool.txt': 'cool.txt',
+  },
+  host_deps = [
+    ":missing",
+  ],
+)
+
+
+toolchain(
+  name     = "missing",
+  binaries = {
+    "something_missing": "/dfgldikfjdfghlkdfgjhkldfgjh",
+  },
+)
 
 resource(
   name   = "output",
@@ -21,4 +52,11 @@ resource(
   parent = "common://resources:file",
   path   = "missing.txt",
   source = ":simple_build",
+)
+
+resource(
+  name   = "output_missing_host_dep",
+  parent = "common://resources:file",
+  path   = "missing.txt",
+  source = ":missing_dep_build",
 )
