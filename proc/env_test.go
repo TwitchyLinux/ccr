@@ -3,7 +3,10 @@ package proc
 import (
 	"bytes"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -126,5 +129,43 @@ func TestFilePersistance(t *testing.T) {
 	}
 	if err := e.Close(); err != nil {
 		t.Error(err)
+	}
+}
+
+func TestTmpMasked(t *testing.T) {
+	o, err := exec.Command("fuse-overlayfs", "--version").Output()
+	if err != nil {
+		t.SkipNow()
+		return
+	}
+	for _, line := range strings.Split(string(o), "\n") {
+		if strings.Contains(line, "fuse-overlayfs: version ") {
+			s2 := strings.Split(line, " ")
+			vers, err := strconv.ParseFloat(s2[len(s2)-1], 64)
+			if err != nil {
+				t.SkipNow()
+				return
+			}
+			if vers < 0.7 {
+				t.Skipf("fuse-overlayfs has version %v, need at least 0.7", vers)
+				return
+			}
+		}
+	}
+
+	t.Parallel()
+	e, err := NewEnv(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer e.Close()
+
+	out, _, _, err := e.RunBlocking("/tmp", "ls")
+	if err != nil {
+		t.Errorf("RunBlocking(%q) failed: %v", "echo", err)
+	}
+	if strings.Count(string(out), "\n") > 5 {
+		t.Errorf("Far too many entries being listed in /tmp for the masking to have worked (#files = %d)", strings.Count(string(out), "\n"))
+		t.Logf("Output: \n%s", string(out))
 	}
 }

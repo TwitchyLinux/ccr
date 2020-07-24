@@ -11,6 +11,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"golang.org/x/sys/unix"
 )
 
 type fs interface {
@@ -48,12 +50,14 @@ func setupWriteableFS(baseDir string) (fs, error) {
 	if err := os.Mkdir(filepath.Join(u, "tmp"), 0755); err != nil {
 		return nil, err
 	}
-	// if err := unix.Setxattr(filepath.Join(u, "tmp"), "user.fuseoverlayfs.opaque", []byte{'y'}, 0); err != nil {
-	// 	return nil, fmt.Errorf("failed to set /tmp as opaque: %v", err)
+	// Best effort to whiteout /tmp:
+	unix.Setxattr(filepath.Join(u, "tmp"), "user.overlay.opaque", []byte{'y'}, unix.XATTR_CREATE)
+	unix.Setxattr(filepath.Join(u, "tmp"), "user.fuseoverlayfs.opaque", []byte{'y'}, unix.XATTR_CREATE)
+	ioutil.WriteFile(filepath.Join(u, "tmp", ".wh..wh..opq"), nil, 0700)
+	// if err := unix.Mknod(filepath.Join(u, ".wh.tmp"), uint32(os.ModeCharDevice), 0); err != nil {
+	// 	fmt.Println(err)
 	// }
-	// if err := ioutil.WriteFile(filepath.Join(u, "tmp", ".wh..wh..opq"), nil, 0700); err != nil {
-	// 	return nil, fmt.Errorf("failed to make whiteout dir: %v", err)
-	// }
+
 	if err := os.Mkdir(work, 0755); err != nil {
 		return nil, err
 	}
