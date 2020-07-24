@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	version "github.com/knqyf263/go-deb-version"
+	semver "github.com/blang/semver/v4"
 	"github.com/twitchylinux/ccr/proc"
 	"github.com/twitchylinux/ccr/vts"
 	"go.starlark.net/starlark"
@@ -128,7 +128,7 @@ func (*semverValidRunner) Run(attr *vts.Attr, chkr *vts.Checker, opts *vts.Runne
 		return fmt.Errorf("invalid version %q: semvers cannot contain a trailing epoch", s)
 	}
 
-	if _, err := version.NewVersion(s); err != nil {
+	if _, err := semver.ParseTolerant(s); err != nil {
 		return fmt.Errorf("invalid version %q: %v", s, err)
 	}
 	return nil

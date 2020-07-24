@@ -188,6 +188,9 @@ func (u *Universe) generateTarget(s generationState, t vts.Target) error {
 			if err := u.checkTarget(dep.Target, env, s.completedToolchainDeps); err != nil {
 				return err
 			}
+			if err := u.checkRefConstraints(dep, env); err != nil {
+				return vts.WrapSetHostCheck(vts.WrapWithActionTarget(err, t))
+			}
 		}
 	}
 

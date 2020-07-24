@@ -32,31 +32,18 @@ type opMsg struct {
 	t        vts.Target
 }
 
-func printErr(msg string, err error) {
-	we, _ := err.(vts.WrappedErr)
-	fmt.Printf("\033[1;31mError: \033[0m(%s) ", msg)
-	if we.Target != nil {
-		if gt, ok := we.Target.(vts.GlobalTarget); ok && gt.GlobalPath() != "" {
-			fmt.Printf("\033[1;33m%s\033[0m: ", gt.GlobalPath())
-		}
-	}
-	fmt.Printf("%v\n", err)
-
-	if cv := we.ComputedValue; cv != nil {
-		if len(cv.InlineScript) > 0 {
-			fmt.Printf("   Originating from:  \033[1;33m%s\033[0m\n", "compute(<inline function>)")
-		} else {
-			fmt.Printf("   Originating from:  \033[1;33m%s\033[0m\n", fmt.Sprintf("compute(%q, %q)", cv.Filename, cv.Func))
-		}
-
-		fmt.Printf("         defined at:  \033[1;33m%s:%d:%d\033[0m\n", cv.Pos.Path, cv.Pos.Frame.Pos.Line, cv.Pos.Frame.Pos.Col)
-		fmt.Println()
+func printComputedValueErr(cv *vts.ComputedValue) {
+	if len(cv.InlineScript) > 0 {
+		fmt.Printf("   Originating from:  \033[1;33m%s\033[0m\n", "compute(<inline function>)")
+	} else {
+		fmt.Printf("   Originating from:  \033[1;33m%s\033[0m\n", fmt.Sprintf("compute(%q, %q)", cv.Filename, cv.Func))
 	}
 
-	if we.Path != "" {
-		fmt.Printf("  Affected path at:   \033[1;33m%s\033[0m\n", we.Path)
-	}
+	fmt.Printf("         defined at:  \033[1;33m%s:%d:%d\033[0m\n", cv.Pos.Path, cv.Pos.Frame.Pos.Line, cv.Pos.Frame.Pos.Col)
+	fmt.Println()
+}
 
+func printErrSource(we vts.WrappedErr) {
 	switch {
 	case we.Pos != nil:
 		pos := we.Pos
@@ -74,6 +61,39 @@ func printErr(msg string, err error) {
 			fmt.Printf("    Defined at \033[1;35m%s:%d:%d\033[0m\n", pos.Path, pos.Frame.Pos.Line, pos.Frame.Pos.Col)
 		}
 	}
+}
+
+func printErrBanner(msg string, we vts.WrappedErr) {
+	cta := "Error"
+	if we.IsHostCheck {
+		cta = "Host Error"
+	}
+
+	fmt.Printf("\033[1;31m%s: \033[0m(%s) ", cta, msg)
+	if we.Target != nil {
+		if gt, ok := we.Target.(vts.GlobalTarget); ok && gt.GlobalPath() != "" {
+			fmt.Printf("\033[1;33m%s\033[0m: ", gt.GlobalPath())
+		}
+	}
+	fmt.Printf("%v\n", we)
+}
+
+func printErr(msg string, err error) {
+	we, _ := err.(vts.WrappedErr)
+	printErrBanner(msg, we)
+	if c, isConstraint := we.Err.(vts.FailingConstraintInfo); isConstraint {
+		fmt.Printf("  Failing constraint:  \033[1;33m%s\033[0m  %s  \033[1;33m%s\033[0m\n", c.Lhs, c.Op, c.Rhs)
+	}
+
+	if cv := we.ComputedValue; cv != nil {
+		printComputedValueErr(cv)
+	}
+
+	if we.Path != "" {
+		fmt.Printf("  Affected path at:   \033[1;33m%s\033[0m\n", we.Path)
+	}
+
+	printErrSource(we)
 
 	if len(we.TargetChain) > 0 {
 		fmt.Println()

@@ -1,5 +1,19 @@
 package vts
 
+import "fmt"
+
+// FailingConstraintInfo
+type FailingConstraintInfo struct {
+	Lhs  string
+	Rhs  string
+	Kind string
+	Op   string
+}
+
+func (i FailingConstraintInfo) Error() string {
+	return fmt.Sprintf("%s constraint was not met", i.Kind)
+}
+
 // WrappedErr provides additional context to an error which occurred when
 // working with virtual targets.
 type WrappedErr struct {
@@ -10,11 +24,20 @@ type WrappedErr struct {
 	Path          string
 	Pos           *DefPosition
 	Err           error
+	IsHostCheck   bool
 }
 
 // Error implements the error interface.
 func (e WrappedErr) Error() string {
 	return e.Err.Error()
+}
+
+func WrapSetHostCheck(err error) WrappedErr {
+	if we, ok := err.(WrappedErr); ok {
+		we.IsHostCheck = true
+		return we
+	}
+	return WrappedErr{Err: err, IsHostCheck: true}
 }
 
 func WrapWithComputedValue(err error, c *ComputedValue) WrappedErr {

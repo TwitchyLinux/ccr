@@ -145,7 +145,11 @@ type TargetRef struct {
 type RefConstraint struct {
 	Meta   TargetRef
 	Params []starlark.Value
-	Eval   starlark.Callable
+	Eval   ConstraintEvaluator
+}
+
+type ConstraintEvaluator interface {
+	Check(env *RunnerEnv, val starlark.Value) error
 }
 
 func validateDeps(deps []TargetRef, allowConstraints bool) error {

@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 
+	semver "github.com/blang/semver/v4"
 	"github.com/twitchylinux/ccr/vts"
+	"github.com/twitchylinux/ccr/vts/common"
 	"go.starlark.net/starlark"
 	"go.starlark.net/syntax"
 )
@@ -61,4 +63,42 @@ func (c *RefComparisonConstraint) Name() string { return c.Type() }
 
 func (c *RefComparisonConstraint) CallInternal(thread *starlark.Thread, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	return nil, errors.New("not implemented")
+}
+
+func (c *RefComparisonConstraint) Check(env *vts.RunnerEnv, lhs starlark.Value) error {
+	l, ok := lhs.(starlark.String)
+	if !ok {
+		return fmt.Errorf("lhs was of type %T, want string", lhs)
+	}
+	r, ok := c.CompareValue.(starlark.String)
+	if !ok {
+		return fmt.Errorf("rhs was of type %T, want string", c.CompareValue)
+	}
+
+	switch c.AttrClass {
+	case common.SemverClass:
+		lv, err := semver.ParseTolerant(string(l))
+		if err != nil {
+			return fmt.Errorf("lhs: %v", err)
+		}
+		rv, err := semver.ParseTolerant(string(r))
+		if err != nil {
+			return fmt.Errorf("rhs: %v", err)
+		}
+
+		switch c.Op {
+		case syntax.GTGT:
+			if lv.GT(rv) {
+				return nil
+			}
+		}
+		return vts.FailingConstraintInfo{
+			Lhs:  string(l),
+			Rhs:  fmt.Sprintf("semver(%q)", string(r)),
+			Op:   c.Op.String(),
+			Kind: "semver",
+		}
+	}
+
+	return fmt.Errorf("attr class %q not supported", c.AttrClass.GlobalPath())
 }

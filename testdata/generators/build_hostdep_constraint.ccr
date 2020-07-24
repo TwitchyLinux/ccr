@@ -1,0 +1,41 @@
+build(
+  name      = "failing_build",
+  host_deps = [
+    ":some_host_tooling" >> semver("4.4.2"),
+  ],
+)
+
+resource(
+  name    = "some_host_tooling",
+  parent  = "common://resources:virtual",
+  details = [
+    attr(parent = "common://attrs:semver", value = "3.2.8"),
+  ],
+)
+
+resource(
+  name   = "failing_constraint",
+  parent = "common://resources:file",
+  path   = "cool.txt",
+  source = ":failing_build",
+)
+
+build(
+  name      = "passing_build",
+  steps     = [
+    step.unpack_gz(to = 'src', path = 'cool.tar.gz'),
+  ],
+  output    = {
+    'src/cool.txt': 'cool.txt',
+  },
+  host_deps = [
+    ":some_host_tooling" >> semver("2"),
+  ],
+)
+
+resource(
+  name   = "passing_constraint",
+  parent = "common://resources:virtual",
+  source = ":passing_build",
+  path   = "cool.txt",
+)

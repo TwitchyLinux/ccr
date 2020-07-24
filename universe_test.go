@@ -407,7 +407,7 @@ func TestUniverseCheck(t *testing.T) {
 			name:    "semver_empty",
 			base:    "testdata/checkers/base",
 			targets: []vts.TargetRef{{Path: "//semver_attr:empty"}},
-			err:     "invalid version \"\": upstream_version is empty",
+			err:     "invalid version \"\": strconv.ParseUint: parsing \"\": invalid syntax",
 		},
 		{
 			name:    "semver_invalid_deb",
@@ -419,7 +419,7 @@ func TestUniverseCheck(t *testing.T) {
 			name:    "semver_invalid_letters",
 			base:    "testdata/checkers/base",
 			targets: []vts.TargetRef{{Path: "//semver_attr:bad_semver_2"}},
-			err:     "invalid version \"a\": upstream_version must start with digit",
+			err:     "invalid version \"a\": Invalid character(s) found in major number \"a\"",
 		},
 	}
 
@@ -625,6 +625,17 @@ Class: //basic:whelp
 		{
 			name:   "should_exist",
 			target: "//toolchain_checkers:should_exist",
+			config: GenerateConfig{},
+		},
+		{
+			name:   "hostdep_constraint",
+			target: "//build_hostdep_constraint:passing_constraint",
+			config: GenerateConfig{},
+		},
+		{
+			name:   "hostdep_constraint_semver_fail",
+			target: "//build_hostdep_constraint:failing_constraint",
+			err:    "semver constraint was not met",
 			config: GenerateConfig{},
 		},
 	}

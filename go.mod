@@ -3,6 +3,7 @@ module github.com/twitchylinux/ccr
 go 1.13
 
 require (
+	github.com/blang/semver/v4 v4.0.0
 	github.com/docker/docker v1.13.1
 	github.com/gobwas/glob v0.2.3
 	github.com/google/go-cmp v0.3.1

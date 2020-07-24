@@ -1,6 +1,7 @@
 package ccr
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/twitchylinux/ccr/vts"
@@ -111,6 +112,8 @@ func (u *Universe) checkTarget(t vts.Target, opts *vts.RunnerEnv, checked target
 	// As a special case, toolchain targets need to check that the binaries they
 	// map exist on the system. opts.FS will point to the host system if
 	// we are checking a host toolchain.
+	// TODO: Lets make a new interface type 'vts.ExtraSelfChecks' that can
+	// have this logic on the concrete target type itself.
 	if tc, isToolchain := t.(*vts.Toolchain); isToolchain {
 		for n, p := range tc.BinaryMappings {
 			if _, err := opts.FS.Stat(p); err != nil {
@@ -134,6 +137,22 @@ func (u *Universe) checkAgainstSource(opts *vts.RunnerEnv, t vts.Target, src vts
 	case *vts.Build:
 	default:
 		return fmt.Errorf("cannot check against source of type %T", src)
+	}
+	return nil
+}
+
+func (u *Universe) checkRefConstraints(ref vts.TargetRef, opts *vts.RunnerEnv) error {
+	for _, c := range ref.Constraints {
+		if c.Meta.Target == nil {
+			return errors.New("constraint target is not resolved")
+		}
+		v1, err := determineAttrValue(ref.Target, c.Meta.Target.(*vts.AttrClass), opts)
+		if err != nil {
+			return err
+		}
+		if err := c.Eval.Check(opts, v1); err != nil {
+			return vts.WrapWithTarget(err, ref.Target)
+		}
 	}
 	return nil
 }
