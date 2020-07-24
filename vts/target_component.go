@@ -58,8 +58,13 @@ func (t *Component) Validate() error {
 	if err := validateDetails(t.Details); err != nil {
 		return err
 	}
-	if err := validateDeps(t.Deps); err != nil {
+	if err := validateDeps(t.Deps, false); err != nil {
 		return err
+	}
+	for i, chk := range t.Checks {
+		if len(chk.Constraints) > 0 {
+			return fmt.Errorf("chks[%d]: cannot specify constraints here", i)
+		}
 	}
 	return nil
 }

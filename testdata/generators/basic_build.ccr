@@ -21,7 +21,7 @@ build(
     'in.txt': 'out.txt',
   },
   host_deps = [
-    ":bash",
+    ":bash" >> semver("1.2.3"),
     ":binutils",
   ],
 )

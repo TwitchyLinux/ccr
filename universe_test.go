@@ -13,6 +13,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/twitchylinux/ccr/cache"
 	"github.com/twitchylinux/ccr/vts"
+	"github.com/twitchylinux/ccr/vts/ccbuild"
 	"github.com/twitchylinux/ccr/vts/common"
 	"go.starlark.net/starlark"
 	"go.starlark.net/syntax"
@@ -39,6 +40,24 @@ func testResolver(path string) (vts.Target, error) {
 					Parent: vts.TargetRef{Path: "common://attrs:path"},
 					Val:    starlark.String("/other_thing"),
 				}},
+			},
+			Source: &vts.TargetRef{Path: "//root:some_build"},
+		}, nil
+	case "//root:some_build":
+		return &vts.Build{
+			Path: "//root:some_build",
+			Name: "some_build",
+			HostDeps: []vts.TargetRef{
+				{
+					Path: "common://toolchains:go",
+					Constraints: []vts.RefConstraint{
+						{
+							Meta:   vts.TargetRef{Target: common.SemverClass},
+							Params: []starlark.Value{starlark.String(">>"), starlark.String("1.2.3")},
+							Eval:   &ccbuild.RefComparisonConstraint{},
+						},
+					},
+				},
 			},
 		}, nil
 	case "//distant/yolo:reee":
@@ -164,6 +183,18 @@ func TestUniverseBuild(t *testing.T) {
 			for i, inp := range inputs.NeedInputs() {
 				if inp.Target == nil {
 					t.Errorf("%s: inputs[%d].Target = nil, want non-nil", target.GlobalPath(), i)
+				}
+			}
+		}
+		if hostDeps, hasHostDeps := target.(vts.HostDepTarget); hasHostDeps {
+			for i, d := range hostDeps.HostDependencies() {
+				if d.Target == nil {
+					t.Errorf("%s: host_deps[%d].Target = nil, want non-nil", target.GlobalPath(), i)
+				}
+				for x, c := range d.Constraints {
+					if c.Meta.Target == nil {
+						t.Errorf("%s: host_deps[%d].Constraint[%d].Meta.Target = nil, want non-nil", target.GlobalPath(), i, x)
+					}
 				}
 			}
 		}

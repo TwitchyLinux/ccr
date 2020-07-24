@@ -42,6 +42,12 @@ type Universe struct {
 }
 
 func (u *Universe) makeTargetRef(from vts.TargetRef) (vts.TargetRef, error) {
+	for i, _ := range from.Constraints {
+		var err error
+		if from.Constraints[i].Meta, err = u.makeTargetRef(from.Constraints[i].Meta); err != nil {
+			return vts.TargetRef{}, err
+		}
+	}
 	if from.Target != nil {
 		return from, nil
 	}
@@ -49,7 +55,7 @@ func (u *Universe) makeTargetRef(from vts.TargetRef) (vts.TargetRef, error) {
 		return vts.TargetRef{}, errors.New("cannot reference target with empty path")
 	}
 	if t, ok := u.fqTargets[from.Path]; ok {
-		return vts.TargetRef{Target: t}, nil
+		return vts.TargetRef{Target: t, Constraints: from.Constraints}, nil
 	}
 	return vts.TargetRef{}, ErrNotExists(from.Path)
 }

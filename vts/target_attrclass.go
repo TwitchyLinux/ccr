@@ -37,6 +37,11 @@ func (t *AttrClass) Checkers() []TargetRef {
 }
 
 func (t *AttrClass) Validate() error {
+	for i, chk := range t.Checks {
+		if len(chk.Constraints) > 0 {
+			return fmt.Errorf("chks[%d]: cannot specify constraints here", i)
+		}
+	}
 	return nil
 }
 

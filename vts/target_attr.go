@@ -56,6 +56,9 @@ func (t *Attr) Validate() error {
 	} else if t.Parent.Path == "" {
 		return errors.New("no parent attr_class specified")
 	}
+	if len(t.Parent.Constraints) > 0 {
+		return errors.New("cannot specify constraints on a parent target")
+	}
 
 	if cv, isComputedValue := t.Val.(*ComputedValue); isComputedValue {
 		if err := cv.Validate(); err != nil {

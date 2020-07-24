@@ -208,7 +208,16 @@ var newScriptTestcases = []struct {
 				ContractPath: "testdata/make_build.ccr",
 				Name:         "thingy",
 				HostDeps: []vts.TargetRef{
-					{Path: "//test:meow"},
+					{
+						Path: "//test:meow",
+						Constraints: []vts.RefConstraint{
+							{
+								Meta:   vts.TargetRef{Target: common.SemverClass},
+								Params: []starlark.Value{starlark.String(">>"), starlark.String("1.2.3")},
+								Eval:   &RefComparisonConstraint{},
+							},
+						},
+					},
 				},
 				Steps: []*vts.BuildStep{
 					{Kind: vts.StepUnpackGz, Path: "go1.11.4.tar.gz", ToPath: "src"},
@@ -248,7 +257,8 @@ func TestNewScript(t *testing.T) {
 				if diff := cmp.Diff(tc.want, s.targets, filterPos,
 					cmpopts.IgnoreUnexported(vts.Attr{}),
 					cmpopts.IgnoreFields(vts.ComputedValue{}, "ContractDir"),
-					cmpopts.IgnoreFields(vts.Build{}, "ContractDir", "Output")); diff != "" {
+					cmpopts.IgnoreFields(vts.Build{}, "ContractDir", "Output"),
+					cmpopts.IgnoreFields(vts.RefConstraint{}, "Eval")); diff != "" {
 					// fmt.Println(string(s.targets[0].(*vts.Attr).Val.(*vts.ComputedValue).InlineScript))
 					t.Errorf("unexpected targets result (+got, -want): \n%s", diff)
 				}

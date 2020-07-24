@@ -132,17 +132,33 @@ type ReproducibleTarget interface {
 // TargetRef refers to another target either by path or by
 // a pointer to its object.
 type TargetRef struct {
-	Path   string
-	Target Target
+	Path        string
+	Target      Target
+	Constraints []RefConstraint
 }
 
-func validateDeps(deps []TargetRef) error {
+// RefConstraint describes a constraint on a referenced target.
+// For instance, a constraint intended to check the semantic version
+// of a target could have Meta == common.SemverClass, Params =
+// ["1.2.3"], and Eval pointing to an evaluator which compares the two
+// and returns an error or not.
+type RefConstraint struct {
+	Meta   TargetRef
+	Params []starlark.Value
+	Eval   starlark.Callable
+}
+
+func validateDeps(deps []TargetRef, allowConstraints bool) error {
 	for i, dep := range deps {
 		_, component := dep.Target.(*Component)
 		_, resource := dep.Target.(*Resource)
 		_, toolchain := dep.Target.(*Toolchain)
 		if !component && !resource && !toolchain {
 			return fmt.Errorf("deps[%d] is type %T, but must be resource or component", i, dep.Target)
+		}
+
+		if !allowConstraints && len(dep.Constraints) > 0 {
+			return fmt.Errorf("deps[%d]: constraints are not valid here", i)
 		}
 	}
 	return nil
@@ -160,6 +176,9 @@ func validateDetails(details []TargetRef) error {
 				return fmt.Errorf("duplicate attributes with non-repeatable class %q", parent.GlobalPath())
 			}
 			seenExclusiveClasses[parent] = a
+		}
+		if len(deet.Constraints) > 0 {
+			return fmt.Errorf("details[%d]: constraints are not valid here", i)
 		}
 	}
 	return nil
@@ -183,6 +202,9 @@ func validateSource(src TargetRef, parent Target) error {
 		default:
 			return fmt.Errorf("target of type %T cannot be used as a source", src.Target)
 		}
+	}
+	if len(src.Constraints) > 0 {
+		return errors.New("invalid source: constraints cannot be specified here")
 	}
 	return nil
 }

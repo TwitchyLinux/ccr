@@ -32,6 +32,18 @@ func toDepTarget(currentPath string, v starlark.Value) (vts.TargetRef, error) {
 		}
 		return vts.TargetRef{Path: string(s)}, nil
 	}
+	if constraint, isConstraint := v.(*RefComparisonConstraint); isConstraint {
+		base, err := toDepTarget(currentPath, constraint.Target)
+		if err != nil {
+			return vts.TargetRef{}, fmt.Errorf("constraint target: %v", err)
+		}
+		base.Constraints = append(base.Constraints, vts.RefConstraint{
+			Meta:   vts.TargetRef{Target: constraint.AttrClass},
+			Params: []starlark.Value{starlark.String(constraint.Op.String()), constraint.CompareValue},
+			Eval:   constraint,
+		})
+		return base, nil
+	}
 	return vts.TargetRef{}, fmt.Errorf("cannot reference dep with starklark type %T (%s)", v, v.String())
 }
 

@@ -74,11 +74,14 @@ func (t *Resource) Validate() error {
 	} else if t.Parent.Path == "" {
 		return errors.New("no parent attr_class specified")
 	}
+	if len(t.Parent.Constraints) > 0 {
+		return errors.New("cannot specify constraints on a parent target")
+	}
 
 	if err := validateDetails(t.Details); err != nil {
 		return err
 	}
-	if err := validateDeps(t.Deps); err != nil {
+	if err := validateDeps(t.Deps, false); err != nil {
 		return err
 	}
 	if t.Source != nil {

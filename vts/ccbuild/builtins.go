@@ -1,11 +1,13 @@
 package ccbuild
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/ccbuild/runners"
 	"github.com/twitchylinux/ccr/vts/ccbuild/runners/syslib"
+	"github.com/twitchylinux/ccr/vts/common"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 )
@@ -17,6 +19,15 @@ var builtinDeriveEnumRunner = starlark.NewBuiltin("valid_enum", func(_ *starlark
 	}
 	return runners.EnumCheckValid(vals), nil
 })
+
+func mkTargetConstraint(class *vts.AttrClass) *starlark.Builtin {
+	return starlark.NewBuiltin("semver", func(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, _ []starlark.Tuple) (starlark.Value, error) {
+		if len(args) != 1 {
+			return nil, errors.New("expected 1 argument")
+		}
+		return &RefComparisonConstraint{AttrClass: common.SemverClass, CompareValue: args[0]}, nil
+	})
+}
 
 func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 	return starlark.StringDict{
@@ -62,8 +73,9 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 			"unpack_gz": makeBuildStep(s, vts.StepUnpackGz),
 			"shell_cmd": makeBuildStep(s, vts.StepShellCmd),
 		}),
-		"file": makePuesdotarget(s, vts.FileRef),
-		"deb":  makePuesdotarget(s, vts.DebRef),
+		"file":   makePuesdotarget(s, vts.FileRef),
+		"deb":    makePuesdotarget(s, vts.DebRef),
+		"semver": mkTargetConstraint(common.SemverClass),
 	}, nil
 }
 

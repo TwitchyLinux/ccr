@@ -1,7 +1,7 @@
 build(
   name      = "thingy",
   host_deps = [
-    ":meow",
+    ":meow" >> semver("1.2.3"),
   ],
   steps     = [
     step.unpack_gz(to = 'src', path = 'go1.11.4.tar.gz'),

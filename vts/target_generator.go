@@ -45,6 +45,9 @@ func (t *Generator) Validate() error {
 		if !component && !resource && !resourceClass {
 			return fmt.Errorf("inputs[%d] is type %T, but must be resource, resource_class, or component", i, inp.Target)
 		}
+		if len(inp.Constraints) > 0 {
+			return fmt.Errorf("inputs[%d]: cannot specify constraints here", i)
+		}
 	}
 	return nil
 }

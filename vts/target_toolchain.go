@@ -41,7 +41,7 @@ func (t *Toolchain) Validate() error {
 	if err := validateDetails(t.Details); err != nil {
 		return err
 	}
-	if err := validateDeps(t.Deps); err != nil {
+	if err := validateDeps(t.Deps, false); err != nil {
 		return err
 	}
 	return nil
