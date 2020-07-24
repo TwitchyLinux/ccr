@@ -5,9 +5,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
+
+	version "github.com/knqyf263/go-deb-version"
 )
 
 func TestRunEnv(t *testing.T) {
@@ -141,12 +142,12 @@ func TestTmpMasked(t *testing.T) {
 	for _, line := range strings.Split(string(o), "\n") {
 		if strings.Contains(line, "fuse-overlayfs: version ") {
 			s2 := strings.Split(line, " ")
-			vers, err := strconv.ParseFloat(s2[len(s2)-1], 64)
+			vers, err := version.NewVersion(s2[len(s2)-1])
 			if err != nil {
 				t.SkipNow()
 				return
 			}
-			if vers < 0.7 {
+			if minVers, _ := version.NewVersion("0.7"); vers.LessThan(minVers) {
 				t.Skipf("fuse-overlayfs has version %v, need at least 0.7", vers)
 				return
 			}
