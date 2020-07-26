@@ -59,6 +59,7 @@ var commonTargets = map[string]vts.Target{
 	"common://checks:deb_info":                DebInfoChecker,
 	"common://checks:semver_valid":            SemverChecker,
 	"common://checks:always_fail":             DebugFailingComponentChecker,
+	"common://checks:c_headers":               CHeadersChecker,
 	"common://checks/filelist:present":        FilelistAllPresentChecker,
 	"common://checks/universe:syslib_linking": SystemLinkChecker,
 

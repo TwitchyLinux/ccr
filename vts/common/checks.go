@@ -90,6 +90,13 @@ var FilelistAllPresentChecker = &vts.Checker{
 	Runner: runners.FilelistCheckAllFiles(0, false),
 }
 
+var CHeadersChecker = &vts.Checker{
+	Path:   "common://checks:c_headers",
+	Name:   "c_headers",
+	Kind:   vts.ChkKindEachResource,
+	Runner: runners.DirOnlyCxxHeaders(),
+}
+
 var SystemLinkChecker = &vts.Checker{
 	Path:   "common://checks/universe:syslib_linking",
 	Name:   "syslib_linking",

@@ -61,9 +61,9 @@ var VirtualResourceClass = &vts.ResourceClass{
 }
 
 var CHeadersResourceClass = &vts.ResourceClass{
-	Path:   "common://resources:c_headers",
-	Name:   "c_headers",
+	Path: "common://resources:c_headers",
+	Name: "c_headers",
 	Checks: []vts.TargetRef{
-		// {Target: DirPresentChecker},
+		{Target: CHeadersChecker},
 	},
 }

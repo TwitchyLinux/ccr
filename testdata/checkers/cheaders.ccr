@@ -1,0 +1,17 @@
+resource(
+  name   = "bad_extension",
+  parent = "common://resources:c_headers",
+  path   = "/c_headers_bad_ext"
+)
+
+resource(
+  name   = "bad_missing_dir",
+  parent = "common://resources:c_headers",
+  path   = "/c_headers_missing"
+)
+
+resource(
+  name   = "good",
+  parent = "common://resources:c_headers",
+  path   = "/c_headers_good"
+)

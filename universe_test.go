@@ -421,6 +421,23 @@ func TestUniverseCheck(t *testing.T) {
 			targets: []vts.TargetRef{{Path: "//semver_attr:bad_semver_2"}},
 			err:     "invalid version \"a\": Invalid character(s) found in major number \"a\"",
 		},
+		{
+			name:    "c_headers_bad_extension",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//cheaders:bad_extension"}},
+			err:     "file is not a C header: extension is \".ch\"",
+		},
+		{
+			name:    "c_headers_missing",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//cheaders:bad_missing_dir"}},
+			err:     "stat testdata/checkers/base/c_headers_missing: no such file or directory",
+		},
+		{
+			name:    "c_headers_good",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//cheaders:good"}},
+		},
 	}
 
 	for _, tc := range tcs {
