@@ -2,6 +2,7 @@ package gen
 
 import (
 	"bytes"
+	"encoding/hex"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -11,6 +12,7 @@ import (
 	"github.com/twitchylinux/ccr/cache"
 	"github.com/twitchylinux/ccr/proc"
 	"github.com/twitchylinux/ccr/vts"
+	"github.com/twitchylinux/ccr/vts/common"
 	"go.starlark.net/starlark"
 	"gopkg.in/src-d/go-billy.v4/osfs"
 )
@@ -152,5 +154,130 @@ func TestStepShellCmd(t *testing.T) {
 	_, err := ioutil.ReadFile(filepath.Join(rb.OverlayUpperPath(), "tmp", "blueberries"))
 	if err != nil {
 		t.Fatalf("failed to read file: %v", err)
+	}
+}
+
+func TestWriteResourceFromBuild(t *testing.T) {
+	tcs := []struct {
+		name           string
+		r              *vts.Resource
+		expectFiles    map[string]os.FileMode
+		backingArchive string
+	}{
+		{
+			name: "file",
+			r: &vts.Resource{
+				Path:   "//test:yeet",
+				Name:   "yeet",
+				Parent: vts.TargetRef{Target: common.FileResourceClass},
+				Details: []vts.TargetRef{
+					{
+						Target: &vts.Attr{
+							Parent: vts.TargetRef{Target: common.PathClass},
+							Val:    starlark.String("/yeetfile"),
+						},
+					},
+					{
+						Target: &vts.Attr{
+							Parent: vts.TargetRef{Target: common.ModeClass},
+							Val:    starlark.String("0600"),
+						},
+					},
+				},
+				Source: &vts.TargetRef{
+					Target: &vts.Build{
+						Path: "//test:fake_file_build",
+						Name: "fake_file_build",
+					},
+				},
+			},
+			expectFiles:    map[string]os.FileMode{"/yeetfile": os.FileMode(0600)},
+			backingArchive: "testdata/fake_file_build_cache.tar.gz",
+		},
+		{
+			name: "c headers",
+			r: &vts.Resource{
+				Path:   "//test:yote",
+				Name:   "yote",
+				Parent: vts.TargetRef{Target: common.CHeadersResourceClass},
+				Details: []vts.TargetRef{
+					{
+						Target: &vts.Attr{
+							Parent: vts.TargetRef{Target: common.PathClass},
+							Val:    starlark.String("/usr/include"),
+						},
+					},
+				},
+				Source: &vts.TargetRef{
+					Target: &vts.Build{
+						Path: "//test:fake_headers_build",
+						Name: "fake_headers_build",
+					},
+				},
+			},
+			expectFiles: map[string]os.FileMode{
+				"/usr":                       os.ModeDir | os.FileMode(0755),
+				"/usr/include":               os.ModeDir | os.FileMode(0755),
+				"/usr/include/asm":           os.ModeDir | os.FileMode(0755),
+				"/usr/include/asm/headerz.h": os.FileMode(0644),
+			},
+			backingArchive: "testdata/fake_cheaders_build_cache.tar.gz",
+		},
+	}
+
+	cd, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(cd)
+	c, err := cache.NewCache(cd)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			outDir, err := ioutil.TempDir("", "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer os.RemoveAll(outDir)
+
+			b := tc.r.Source.Target.(*vts.Build)
+			h, err := b.RollupHash(nil, nil)
+			if err != nil {
+				t.Fatalf("RollupHash() failed: %v", err)
+			}
+
+			// This is not the correct way to write filesets into the cache (should
+			// use cache.PendingFileset etc), but because the fileset format is .tar.gz,
+			// this should work fine.
+			if tc.backingArchive != "" {
+				p := c.SHA256Path(hex.EncodeToString(h))
+				cmd := exec.Command("install", "-D", tc.backingArchive, p)
+				cmd.Stderr, cmd.Stdout = os.Stderr, os.Stdout
+				if err := cmd.Run(); err != nil {
+					t.Fatalf("Failed to yeet backing archive into cache: %v", err)
+				}
+			}
+
+			if err := writeResourceFromBuild(GenerationContext{
+				Cache: c,
+				RunnerEnv: &vts.RunnerEnv{
+					FS: osfs.New(outDir),
+				}}, tc.r, b, h); err != nil {
+				t.Errorf("writeResourceFromBuild(%v, %v, %X) failed: %v", tc.r, b, h, err)
+			}
+
+			for p, m := range tc.expectFiles {
+				s, err := os.Stat(filepath.Join(outDir, p))
+				if err != nil {
+					t.Errorf("failed to check expected file %q: %v", p, err)
+				}
+				if err == nil && m != s.Mode() {
+					t.Errorf("%q: mode = %v, want %v", p, s.Mode(), m)
+				}
+			}
+		})
 	}
 }

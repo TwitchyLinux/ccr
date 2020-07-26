@@ -86,6 +86,7 @@ func unpackTarReader(tape io.Reader, rb RunningBuild, step *vts.BuildStep) error
 				return fmt.Errorf("open %q: %v", header.Name, err)
 			}
 			if _, err := io.Copy(outFile, tr); err != nil {
+				outFile.Close()
 				return fmt.Errorf("copying %q: %v", header.Name, err)
 			}
 			outFile.Close()

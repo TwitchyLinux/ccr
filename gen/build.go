@@ -1,6 +1,7 @@
 package gen
 
 import (
+	"archive/tar"
 	"errors"
 	"fmt"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"github.com/twitchylinux/ccr/gen/buildstep"
 	"github.com/twitchylinux/ccr/proc"
 	"github.com/twitchylinux/ccr/vts"
+	"github.com/twitchylinux/ccr/vts/common"
 	"gopkg.in/src-d/go-billy.v4"
 	"gopkg.in/src-d/go-billy.v4/osfs"
 )
@@ -106,6 +108,63 @@ func (rb *RunningBuild) WriteToCache(c *cache.Cache, b *vts.Build, hash []byte) 
 }
 
 func writeResourceFromBuild(gc GenerationContext, resource *vts.Resource, b *vts.Build, hash []byte) error {
+	parent := resource.Parent.Target.(*vts.ResourceClass)
+	switch parent {
+	case common.FileResourceClass:
+		return writeFileResourceFromBuild(gc, resource, b, hash)
+	case common.CHeadersResourceClass:
+		return writeMultiFilesFromBuild(gc, resource, b, hash)
+	}
+	return fmt.Errorf("cannot populate from build for resources of class %q", parent.GlobalPath())
+}
+
+func writeMultiFilesFromBuild(gc GenerationContext, resource *vts.Resource, b *vts.Build, hash []byte) error {
+	p, err := determinePath(resource, gc.RunnerEnv)
+	if err != nil {
+		return err
+	}
+
+	fr, err := gc.Cache.FilesetReader(hash)
+	if err != nil {
+		if err == cache.ErrCacheMiss {
+			return err
+		}
+		return vts.WrapWithPath(vts.WrapWithTarget(fmt.Errorf("reading from build artifacts: %v", err), resource), p)
+	}
+	defer fr.Close()
+
+	for {
+		path, h, err := fr.Next()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return vts.WrapWithTarget(fmt.Errorf("iterating build fileset: %v", err), resource)
+		}
+
+		switch h.Typeflag {
+		case tar.TypeDir:
+			if err := gc.RunnerEnv.FS.MkdirAll(filepath.Join(p, path), 0755); err != nil {
+				return vts.WrapWithPath(fmt.Errorf("mkdir from fileset: %v", err), path)
+			}
+
+		case tar.TypeReg:
+			outFile, err := gc.RunnerEnv.FS.OpenFile(filepath.Join(p, path), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, h.FileInfo().Mode())
+			if err != nil {
+				return vts.WrapWithPath(fmt.Errorf("open from fileset: %v", err), path)
+			}
+			if _, err := io.Copy(outFile, fr); err != nil {
+				outFile.Close()
+				return vts.WrapWithPath(fmt.Errorf("copying from fileset: %v", err), path)
+			}
+			outFile.Close()
+		}
+	}
+
+	return nil
+}
+
+func writeFileResourceFromBuild(gc GenerationContext, resource *vts.Resource, b *vts.Build, hash []byte) error {
 	p, err := determinePath(resource, gc.RunnerEnv)
 	if err != nil {
 		return err

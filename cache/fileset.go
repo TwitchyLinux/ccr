@@ -105,3 +105,40 @@ func (c *Cache) FileInFileset(fsHash []byte, fsPath string) (io.Reader, io.Close
 	f.Close()
 	return nil, nil, 0, os.ErrNotExist
 }
+
+type FilesetReader struct {
+	f    io.Closer
+	tape *tar.Reader
+}
+
+func (fsr *FilesetReader) Close() error {
+	return fsr.f.Close()
+}
+
+func (fsr *FilesetReader) Next() (path string, header *tar.Header, err error) {
+	h, err := fsr.tape.Next()
+	if err != nil {
+		return "", nil, err
+	}
+	return h.Name, h, nil
+}
+
+func (fsr *FilesetReader) Read(b []byte) (int, error) {
+	return fsr.tape.Read(b)
+}
+
+func (c *Cache) FilesetReader(fsHash []byte) (*FilesetReader, error) {
+	f, err := c.BySHA256(hex.EncodeToString(fsHash))
+	if err != nil {
+		return nil, err
+	}
+
+	tape, err := gzip.NewReader(f)
+	if err != nil {
+		return nil, fmt.Errorf("reading gzip: %v", err)
+	}
+	return &FilesetReader{
+		f:    f,
+		tape: tar.NewReader(tape),
+	}, nil
+}

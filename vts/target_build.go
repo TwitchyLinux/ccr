@@ -9,6 +9,8 @@ import (
 	"go.starlark.net/starlark"
 )
 
+const buildOutputHashCacheBuster = 1
+
 // Build is a target representing a build.
 type Build struct {
 	Path         string
@@ -76,7 +78,7 @@ func (t *Build) Hash() (uint32, error) {
 
 func (t *Build) RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error) {
 	hash := sha256.New()
-	fmt.Fprintf(hash, "build: %q\n%q\n", t.Path, t.Name)
+	fmt.Fprintf(hash, "%d-build: %q\n%q\n", buildOutputHashCacheBuster, t.Path, t.Name)
 
 	for _, dep := range t.HostDeps {
 		rt, isHashable := dep.Target.(ReproducibleTarget)

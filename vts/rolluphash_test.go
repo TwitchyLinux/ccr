@@ -21,7 +21,7 @@ func TestRollupHash(t *testing.T) {
 	outputFiles := starlark.NewDict(3)
 	outputFiles.SetKey(starlark.String("cool.txt"), starlark.String("cool.txt"))
 	outputFiles.SetKey(starlark.String("*.txt"), starlark.String("/kek.txt"))
-	outputFiles.SetKey(starlark.String("*.go"), starlark.String("/src"))
+	outputFiles.SetKey(starlark.String("*.go"), &StripPrefixOutputMapper{Prefix: "/usr/local/go/src"})
 	tcs := []struct {
 		name   string
 		target ReproducibleTarget
@@ -114,7 +114,7 @@ func TestRollupHash(t *testing.T) {
 				HostDeps: []TargetRef{{Target: &Component{Name: "mmkay"}}},
 				Output:   outputFiles,
 			},
-			mustDecodeHex(t, "FBE26561610A0C76688E4F8104AEBA79D12D87ACD2DFE20D602799F408645B48"),
+			mustDecodeHex(t, "06C17484C20974AC0535843EC22882B52E661470AD58C26B766A3934A1AEC0C6"),
 			"",
 		},
 	}

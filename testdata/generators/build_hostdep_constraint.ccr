@@ -35,7 +35,7 @@ build(
 
 resource(
   name   = "passing_gt_constraint",
-  parent = "common://resources:virtual",
+  parent = "common://resources:file",
   source = ":passing_gt_build",
   path   = "cool.txt",
 )
@@ -55,7 +55,7 @@ build(
 
 resource(
   name   = "passing_lt_constraint",
-  parent = "common://resources:virtual",
+  parent = "common://resources:file",
   source = ":passing_lt_build",
   path   = "cool.txt",
 )

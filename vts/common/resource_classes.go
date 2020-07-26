@@ -21,7 +21,7 @@ var DirResourceClass = &vts.ResourceClass{
 }
 var LibDirResourceClass = &vts.ResourceClass{
 	Path: "common://resources:library_dir",
-	Name: "dir",
+	Name: "library_dir",
 	Checks: []vts.TargetRef{
 		{Target: DirPresentChecker},
 	},
@@ -58,4 +58,12 @@ var JSONResourceClass = &vts.ResourceClass{
 var VirtualResourceClass = &vts.ResourceClass{
 	Path: "common://resources:virtual",
 	Name: "virtual",
+}
+
+var CHeadersResourceClass = &vts.ResourceClass{
+	Path:   "common://resources:c_headers",
+	Name:   "c_headers",
+	Checks: []vts.TargetRef{
+		// {Target: DirPresentChecker},
+	},
 }

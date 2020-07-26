@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 )
 
@@ -73,5 +74,37 @@ func TestFileset(t *testing.T) {
 	}
 	if err := closer.Close(); err != nil {
 		t.Fatalf("failed to close: %v", err)
+	}
+
+	// Check the FilesetReader as well.
+	fr, err := c.FilesetReader(createHash[:])
+	if err != nil {
+		t.Fatalf("FilesetReader(%X) failed: %v", createHash, err)
+	}
+	defer func() {
+		if err := fr.Close(); err != nil {
+			t.Errorf("Failed to close FilesetReader: %v", err)
+		}
+	}()
+
+	foundFiles := map[string]int64{}
+	for {
+		path, _, err := fr.Next()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			t.Fatalf("fr.Next() returned unexpected error: %v", err)
+		}
+		var b bytes.Buffer
+		var n int64
+		if n, err = io.Copy(&b, fr); err != nil {
+			t.Errorf("Failed full read of %q: %v", path, err)
+		}
+		foundFiles[path] = n
+	}
+
+	if want := (map[string]int64{"something.txt": int64(len("something"))}); !reflect.DeepEqual(foundFiles, want) {
+		t.Errorf("FilesetReader found files %+v, want %+v", foundFiles, want)
 	}
 }

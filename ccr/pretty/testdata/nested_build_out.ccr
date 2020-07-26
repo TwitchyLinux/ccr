@@ -1,0 +1,20 @@
+resource(
+  name   = 'headers',
+  parent = 'common://resources:virtual',
+  path   = '/usr/include',
+  source = build(
+    steps = [
+      step.unpack_xz(sha256 = '62532fb257fe98a68601e4ca36bd3d34300b4f26f447bf495df4693442601ee8', url = 'https://mirrors.edge.kernel.org/pub/linux/kernel/v5.x/linux-5.6.19.tar.xz'),
+      step.shell_cmd('make -C /linux-5.6.19 mrproper'),
+      step.shell_cmd('make -C /linux-5.6.19 headers'),
+    ],
+    output = {
+      'linux-5.6.19/usr/include/**.h': strip_prefix('linux-5.6.19/usr/include/'),
+    },
+    host_deps = [
+      "common://toolchains:bash" >> semver("3.2"),
+      "common://toolchains:gcc" >> semver("6.2"),
+      "common://toolchains:make" >> semver("4.0"),
+    ],
+  ),
+)
