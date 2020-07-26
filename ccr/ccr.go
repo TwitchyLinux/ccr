@@ -43,7 +43,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if time.Now().Unix()%64 == 0 {
+	if time.Now().Unix()%16 == 0 {
 		if err := resCache.Clean(); err != nil {
 			fmt.Fprintf(os.Stderr, "Error cleaning cache: %v\n", err)
 			os.Exit(1)

@@ -76,4 +76,10 @@ var commonTargets = map[string]vts.Target{
 	"common://toolchains/version:make":      MakeVersion,
 	"common://toolchains:coreutils":         CoreutilsToolchain,
 	"common://toolchains/version:coreutils": CoreutilsVersion,
+	"common://toolchains:binutils":          BinutilsToolchain,
+	"common://toolchains/version:binutils":  BinutilsVersion,
+	"common://toolchains:diffutils":         DiffutilsToolchain,
+	"common://toolchains/version:diffutils": DiffutilsVersion,
+	"common://toolchains:findutils":         FindutilsToolchain,
+	"common://toolchains/version:findutils": FindutilsVersion,
 }

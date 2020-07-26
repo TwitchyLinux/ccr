@@ -252,3 +252,133 @@ return spl[len(spl)-1]
 		},
 	}
 )
+
+var (
+	BinutilsToolchain = &vts.Toolchain{
+		Path: "common://toolchains:binutils",
+		Name: "binutils",
+		BinaryMappings: map[string]string{
+			"ld":        "/bin/ld",
+			"as":        "/bin/as",
+			"addr2line": "/bin/addr2line",
+			"ar":        "/bin/ar",
+			"c++filt":   "/bin/c++filt",
+			"gold":      "/bin/gold",
+			"gprof":     "/bin/gprof",
+			"objcopy":   "/bin/objcopy",
+			"objdump":   "/bin/objdump",
+			"ranlib":    "/bin/ranlib",
+			"readelf":   "/bin/readelf",
+			"size":      "/bin/size",
+			"strings":   "/bin/strings",
+			"strip":     "/bin/strip",
+			// "dlltool":   "/bin/dlltool",
+			// "nlmconv":   "/bin/nlmconv",
+			// "nm":        "/bin/nm",
+			// "windmc":    "/bin/windmc",
+			// "windres":   "/bin/windres",
+		},
+		Details: []vts.TargetRef{
+			{Target: BinutilsVersion},
+		},
+	}
+
+	BinutilsVersion = &vts.Attr{
+		Path:   "common://toolchains/version:binutils",
+		Name:   "binutils",
+		Parent: vts.TargetRef{Target: SemverClass},
+		Val: &vts.ComputedValue{
+			InlineScript: []byte(`
+inv = run("ld", "--version")
+lines = inv.output.split('\n')
+if len(lines) < 2:
+  broken_assumption("ld --version output format may have changed")
+
+if not lines[0].startswith('GNU ld '):
+  broken_assumption("ld --version output format may have changed")
+
+spl = lines[0].split(' ')
+if len(spl) < 3:
+  broken_assumption("ld --version output format may have changed")
+return spl[len(spl)-1]
+	`),
+		},
+	}
+)
+
+var (
+	DiffutilsToolchain = &vts.Toolchain{
+		Path: "common://toolchains:diffutils",
+		Name: "diffutils",
+		BinaryMappings: map[string]string{
+			"cmp":   "/bin/cmp",
+			"diff":  "/bin/diff",
+			"diff3": "/bin/diff3",
+			"sdiff": "/bin/sdiff",
+		},
+		Details: []vts.TargetRef{
+			{Target: DiffutilsVersion},
+		},
+	}
+
+	DiffutilsVersion = &vts.Attr{
+		Path:   "common://toolchains/version:diffutils",
+		Name:   "diffutils",
+		Parent: vts.TargetRef{Target: SemverClass},
+		Val: &vts.ComputedValue{
+			InlineScript: []byte(`
+inv = run("diff", "--version")
+lines = inv.output.split('\n')
+if len(lines) < 2:
+  broken_assumption("diff --version output format may have changed")
+
+if (not lines[0].startswith('GNU diff ')) and (not lines[0].startswith('diff ')):
+  broken_assumption("diff --version output format may have changed")
+
+spl = lines[0].split(' ')
+if len(spl) < 3:
+  broken_assumption("diff --version output format may have changed")
+return spl[len(spl)-1]
+	`),
+		},
+	}
+)
+
+var (
+	FindutilsToolchain = &vts.Toolchain{
+		Path: "common://toolchains:findutils",
+		Name: "findutils",
+		BinaryMappings: map[string]string{
+			"find":  "/bin/find",
+			"xargs": "/bin/xargs",
+			// "locate":   "/bin/locate",
+			// "updatedb": "/bin/updatedb",
+		},
+		Details: []vts.TargetRef{
+			{Target: FindutilsVersion},
+		},
+	}
+
+	FindutilsVersion = &vts.Attr{
+		Path:   "common://toolchains/version:findutils",
+		Name:   "findutils",
+		Parent: vts.TargetRef{Target: SemverClass},
+		Val: &vts.ComputedValue{
+			InlineScript: []byte(`
+inv = run("find", "--version")
+lines = inv.output.split('\n')
+if len(lines) < 2:
+  broken_assumption("find --version output format may have changed")
+
+if (not lines[0].startswith('GNU find ')) and (not lines[0].startswith('find ')):
+  broken_assumption("find --version output format may have changed")
+
+spl = lines[0].split(' ')
+if len(spl) < 3:
+  broken_assumption("find --version output format may have changed")
+long_vers = spl[len(spl)-1]
+return '.'.join(long_vers.split('.')[:3])
+	`),
+		},
+	}
+)
