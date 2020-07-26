@@ -135,3 +135,120 @@ return spl[2]
 		},
 	}
 )
+
+var (
+	CoreutilsToolchain = &vts.Toolchain{
+		Path: "common://toolchains:coreutils",
+		Name: "coreutils",
+		BinaryMappings: map[string]string{
+			"echo":  "/bin/echo",
+			"env":   "/bin/env",
+			"false": "/bin/false",
+			"true":  "/bin/true",
+			"sleep": "/bin/sleep",
+			"pwd":   "/bin/pwd",
+
+			"chgrp":    "/bin/chgrp",
+			"chown":    "/bin/chown",
+			"chmod":    "/bin/chmod",
+			"cp":       "/bin/cp",
+			"dd":       "/bin/dd",
+			"df":       "/bin/df",
+			"install":  "/bin/install",
+			"ln":       "/bin/ln",
+			"ls":       "/bin/ls",
+			"cat":      "/bin/cat",
+			"readlink": "/bin/readlink",
+			"stat":     "/bin/stat",
+			"dir":      "/bin/dir",
+			// "dircolors":   "/bin/dircolors",
+			"mkdir":    "/bin/mkdir",
+			"mkfifo":   "/bin/mkfifo",
+			"mknod":    "/bin/mknod",
+			"mktemp":   "/bin/mktemp",
+			"mv":       "/bin/mv",
+			"realpath": "/bin/realpath",
+			"rm":       "/bin/rm",
+			"rmdir":    "/bin/rmdir",
+			"shred":    "/bin/shred",
+			"sync":     "/bin/sync",
+			"touch":    "/bin/touch",
+			"truncate": "/bin/truncate",
+			"vdir":     "/bin/vdir",
+
+			// "b2sum":     "/bin/b2sum",
+			"base32":    "/bin/base32",
+			"base64":    "/bin/base64",
+			"cksum":     "/bin/cksum",
+			"comm":      "/bin/comm",
+			"csplit":    "/bin/csplit",
+			"cut":       "/bin/cut",
+			"expand":    "/bin/expand",
+			"unexpand":  "/bin/unexpand",
+			"fold":      "/bin/fold",
+			"md5sum":    "/bin/md5sum",
+			"sha1sum":   "/bin/sha1sum",
+			"sha256sum": "/bin/sha256sum",
+			"sha512sum": "/bin/sha512sum",
+			"sort":      "/bin/sort",
+			"split":     "/bin/split",
+			"sum":       "/bin/sum",
+			"tail":      "/bin/tail",
+			"head":      "/bin/head",
+			"tr":        "/bin/tr",
+			"wc":        "/bin/wc",
+			"uniq":      "/bin/uniq",
+			"arch":      "/bin/arch",
+			"basename":  "/bin/basename",
+			"chroot":    "/sbin/chroot",
+			"date":      "/bin/date",
+			"dirname":   "/bin/dirname",
+			"du":        "/bin/du",
+			"logname":   "/bin/logname",
+			"nice":      "/bin/nice",
+			"nohup":     "/bin/nohup",
+			"pathchk":   "/bin/pathchk",
+			"printenv":  "/bin/printenv",
+			"printf":    "/bin/printf",
+			"stdbuf":    "/bin/stdbuf",
+			"stty":      "/bin/stty",
+			"tee":       "/bin/tee",
+			"test":      "/bin/test",
+			"timeout":   "/bin/timeout",
+			"tty":       "/bin/tty",
+			"uname":     "/bin/uname",
+			"unlink":    "/bin/unlink",
+			"uptime":    "/bin/uptime",
+			"users":     "/bin/users",
+			"who":       "/bin/who",
+			"whoami":    "/bin/whoami",
+			"yes":       "/bin/yes",
+			"[":         "/bin/[",
+		},
+		Details: []vts.TargetRef{
+			{Target: CoreutilsVersion},
+		},
+	}
+
+	CoreutilsVersion = &vts.Attr{
+		Path:   "common://toolchains/version:coreutils",
+		Name:   "coreutils",
+		Parent: vts.TargetRef{Target: SemverClass},
+		Val: &vts.ComputedValue{
+			InlineScript: []byte(`
+inv = run("chown", "--version")
+lines = inv.output.split('\n')
+if len(lines) < 2:
+  broken_assumption("chown --version output format may have changed")
+
+if not lines[0].startswith('chown (GNU coreutils) '):
+  broken_assumption("chown --version output format may have changed")
+
+spl = lines[0].split(' ')
+if len(spl) < 3:
+  broken_assumption("chown --version output format may have changed")
+return spl[len(spl)-1]
+	`),
+		},
+	}
+)
