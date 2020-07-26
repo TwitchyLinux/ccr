@@ -13,6 +13,7 @@ type StepKind string
 // Valid BuildStep StepKind values.
 const (
 	StepUnpackGz = "unpack_gz"
+	StepUnpackXz = "unpack_xz"
 	StepShellCmd = "bash_cmd"
 )
 

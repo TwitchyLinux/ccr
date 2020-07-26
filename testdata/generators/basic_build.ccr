@@ -1,10 +1,23 @@
 build(
-  name      = "simple_build",
+  name      = "gz_build",
   steps     = [
     step.unpack_gz(to = 'src', path = 'cool.tar.gz'),
   ],
   output    = {
     'src/cool.txt': 'cool.txt',
+  },
+  host_deps = [
+    ":binutils",
+  ],
+)
+
+build(
+  name      = "xz_build",
+  steps     = [
+    step.unpack_xz(to = 'src', path = 'archive.tar.xz'),
+  ],
+  output    = {
+    'src/fake.txt': 'cool.txt',
   },
   host_deps = [
     ":binutils",
@@ -50,10 +63,17 @@ toolchain(
 )
 
 resource(
-  name   = "output",
+  name   = "gz_output",
   parent = "common://resources:file",
   path   = "cool.txt",
-  source = ":simple_build",
+  source = ":gz_build",
+)
+
+resource(
+  name   = "xz_output",
+  parent = "common://resources:file",
+  path   = "cool.txt",
+  source = ":xz_build",
 )
 
 resource(
@@ -67,7 +87,7 @@ resource(
   name   = "output_missing_in_build",
   parent = "common://resources:file",
   path   = "missing.txt",
-  source = ":simple_build",
+  source = ":gz_build",
 )
 
 resource(

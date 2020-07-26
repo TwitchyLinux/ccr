@@ -52,11 +52,11 @@ func (rb *RunningBuild) ExecBlocking(args []string, stdout, stderr io.Writer) er
 	return rb.env.WaitStreaming(id)
 }
 
-func (rb *RunningBuild) Generate() error {
+func (rb *RunningBuild) Generate(c *cache.Cache) error {
 	for i, step := range rb.steps {
 		switch step.Kind {
-		case vts.StepUnpackGz:
-			if err := buildstep.RunUnpackGz(rb, step); err != nil {
+		case vts.StepUnpackGz, vts.StepUnpackXz:
+			if err := buildstep.RunUnpack(c, rb, step); err != nil {
 				return fmt.Errorf("step %d (%s) failed: %v", i+1, step.Kind, err)
 			}
 		case vts.StepShellCmd:
@@ -165,7 +165,7 @@ func GenerateBuildSource(gc GenerationContext, resource *vts.Resource, b *vts.Bu
 		return vts.WrapWithTarget(fmt.Errorf("creating build environment: %v", err), b)
 	}
 	rb := RunningBuild{env: env, steps: b.Steps, fs: osfs.New("/"), contractDir: b.ContractDir}
-	if err := rb.Generate(); err != nil {
+	if err := rb.Generate(gc.Cache); err != nil {
 		rb.Close()
 		return vts.WrapWithTarget(fmt.Errorf("build failed: %v", err), b)
 	}

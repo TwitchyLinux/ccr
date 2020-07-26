@@ -71,6 +71,7 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 		}),
 		"step": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
 			"unpack_gz": makeBuildStep(s, vts.StepUnpackGz),
+			"unpack_xz": makeBuildStep(s, vts.StepUnpackXz),
 			"shell_cmd": makeBuildStep(s, vts.StepShellCmd),
 		}),
 		"file":   makePuesdotarget(s, vts.FileRef),
@@ -84,7 +85,7 @@ func makeBuildStep(s *Script, kind vts.StepKind) *starlark.Builtin {
 		var to, path, sha256, url string
 		var argsOutput []string
 		switch kind {
-		case vts.StepUnpackGz:
+		case vts.StepUnpackGz, vts.StepUnpackXz:
 			if err := starlark.UnpackArgs(string(kind), args, kwargs,
 				"to?", &to, "path?", &path, "sha256?", &sha256, "url?", &url); err != nil {
 				return starlark.None, err

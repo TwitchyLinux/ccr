@@ -221,6 +221,7 @@ var newScriptTestcases = []struct {
 				},
 				Steps: []*vts.BuildStep{
 					{Kind: vts.StepUnpackGz, Path: "go1.11.4.tar.gz", ToPath: "src"},
+					{Kind: vts.StepUnpackXz, Path: "something.tar.xz", ToPath: "src2"},
 					{Kind: vts.StepShellCmd, Args: []string{"echo mate"}},
 				},
 			},

@@ -8,22 +8,58 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/twitchylinux/ccr/cache"
 	"github.com/twitchylinux/ccr/vts"
+	"github.com/ulikunitz/xz"
 )
 
-// RunUnpackGz unpacks a .tar.gz file referenced in the build step, into the
-// specified directory.
-func RunUnpackGz(rb RunningBuild, step *vts.BuildStep) error {
-	gz, err := rb.SourceFS().Open(step.Path)
-	if err != nil {
-		return err
+// RunUnpack unpacks a .tar.gz or .tar.xz file referenced in the build step,
+// into the specified directory.
+func RunUnpack(c *cache.Cache, rb RunningBuild, step *vts.BuildStep) error {
+	var (
+		compressedStream io.ReadCloser
+		err              error
+	)
+	switch {
+	case step.Path != "":
+		if compressedStream, err = rb.SourceFS().Open(step.Path); err != nil {
+			return err
+		}
+		defer compressedStream.Close()
+
+	case step.URL != "" && step.SHA256 != "":
+		if compressedStream, err = download(c, step.SHA256, step.URL); err != nil {
+			return err
+		}
+		defer compressedStream.Close()
+
+	default:
+		return fmt.Errorf("cannot handle non-path and non-url unpack_gz step invariant (%v)", step)
 	}
-	defer gz.Close()
+
+	if step.Kind == vts.StepUnpackXz {
+		return unpackXzReader(compressedStream, rb, step)
+	}
+	return unpackGzReader(compressedStream, rb, step)
+}
+
+func unpackGzReader(gz io.Reader, rb RunningBuild, step *vts.BuildStep) error {
 	tape, err := gzip.NewReader(gz)
 	if err != nil {
 		return fmt.Errorf("reading gzip: %v", err)
 	}
+	return unpackTarReader(tape, rb, step)
+}
 
+func unpackXzReader(gz io.Reader, rb RunningBuild, step *vts.BuildStep) error {
+	tape, err := xz.NewReader(gz)
+	if err != nil {
+		return fmt.Errorf("reading xz: %v", err)
+	}
+	return unpackTarReader(tape, rb, step)
+}
+
+func unpackTarReader(tape io.Reader, rb RunningBuild, step *vts.BuildStep) error {
 	fs := rb.RootFS()
 	if err := fs.MkdirAll(filepath.Join(rb.OverlayUpperPath(), step.ToPath), 0755); err != nil && !os.IsExist(err) {
 		return fmt.Errorf("mkdir to %q: %v", step.ToPath, err)

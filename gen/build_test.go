@@ -15,9 +15,16 @@ import (
 	"gopkg.in/src-d/go-billy.v4/osfs"
 )
 
-func makeEnv(t *testing.T, copySrc ...string) (*RunningBuild, string) {
+func makeEnv(t *testing.T, copySrc ...string) (*RunningBuild, *cache.Cache, string) {
 	t.Helper()
 	d, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(filepath.Join(d, ".__cache"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	c, err := cache.NewCache(filepath.Join(d, ".__cache"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,21 +39,11 @@ func makeEnv(t *testing.T, copySrc ...string) (*RunningBuild, string) {
 	if err != nil {
 		t.Fatalf("creating new environment: %v", err)
 	}
-	return &RunningBuild{env: env, fs: osfs.New("/"), contractDir: d}, d
+	return &RunningBuild{env: env, fs: osfs.New("/"), contractDir: d}, c, d
 }
 
 func TestBuildWriteToCache(t *testing.T) {
-	cd, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(cd)
-	c, err := cache.NewCache(cd)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	rb, d := makeEnv(t, "testdata/cool.tar.gz")
+	rb, c, d := makeEnv(t, "testdata/cool.tar.gz")
 	defer os.RemoveAll(d)
 	defer rb.Close()
 
@@ -80,7 +77,7 @@ func TestBuildWriteToCache(t *testing.T) {
 }
 
 func TestStepUnpackGz(t *testing.T) {
-	rb, d := makeEnv(t, "testdata/cool.tar.gz")
+	rb, c, d := makeEnv(t, "testdata/cool.tar.gz")
 	defer os.RemoveAll(d)
 	defer rb.Close()
 	rb.steps = []*vts.BuildStep{
@@ -91,7 +88,7 @@ func TestStepUnpackGz(t *testing.T) {
 		},
 	}
 
-	if err := rb.Generate(); err != nil {
+	if err := rb.Generate(c); err != nil {
 		t.Errorf("Generate() failed: %v", err)
 	}
 
@@ -112,8 +109,33 @@ func TestStepUnpackGz(t *testing.T) {
 	}
 }
 
+func TestStepUnpackXz(t *testing.T) {
+	rb, c, d := makeEnv(t, "testdata/archive.tar.xz")
+	defer os.RemoveAll(d)
+	defer rb.Close()
+	rb.steps = []*vts.BuildStep{
+		{
+			Kind:   vts.StepUnpackXz,
+			ToPath: "output",
+			Path:   "archive.tar.xz",
+		},
+	}
+
+	if err := rb.Generate(c); err != nil {
+		t.Errorf("Generate() failed: %v", err)
+	}
+
+	data, err := ioutil.ReadFile(filepath.Join(rb.OverlayUpperPath(), "output/fake.txt"))
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+	if want := []byte("Fake contents!!\n"); !bytes.Equal(data, want) {
+		t.Errorf("file content = %q, want %q", data, want)
+	}
+}
+
 func TestStepShellCmd(t *testing.T) {
-	rb, d := makeEnv(t)
+	rb, c, d := makeEnv(t)
 	defer os.RemoveAll(d)
 	defer rb.Close()
 	rb.steps = []*vts.BuildStep{
@@ -123,7 +145,7 @@ func TestStepShellCmd(t *testing.T) {
 		},
 	}
 
-	if err := rb.Generate(); err != nil {
+	if err := rb.Generate(c); err != nil {
 		t.Errorf("Generate() failed: %v", err)
 	}
 

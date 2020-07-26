@@ -598,8 +598,13 @@ Class: //basic:whelp
 			config: GenerateConfig{},
 		},
 		{
-			name:   "basic_build",
-			target: "//basic_build:output",
+			name:   "gz_build",
+			target: "//basic_build:gz_output",
+			config: GenerateConfig{},
+		},
+		{
+			name:   "xz_build",
+			target: "//basic_build:xz_output",
 			config: GenerateConfig{},
 		},
 		{
