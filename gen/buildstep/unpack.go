@@ -90,6 +90,16 @@ func unpackTarReader(tape io.Reader, rb RunningBuild, step *vts.BuildStep) error
 			}
 			outFile.Close()
 
+		case tar.TypeSymlink:
+			if err := fs.MkdirAll(filepath.Dir(filepath.Join(rb.OverlayUpperPath(), step.ToPath, header.Name)), 0755); err != nil && !os.IsExist(err) {
+				return fmt.Errorf("mkdir %q: %v", header.Name, err)
+			}
+			if err := fs.Symlink(header.Linkname, filepath.Join(rb.OverlayUpperPath(), step.ToPath, header.Name)); err != nil {
+				return fmt.Errorf("creating symlink for %q: %v", header.Name, err)
+			}
+
+		case tar.TypeXGlobalHeader:
+			// Ignore.
 		default:
 			return fmt.Errorf("unsupported tar resource: %x", header.Typeflag)
 		}

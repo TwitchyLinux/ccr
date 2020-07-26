@@ -29,6 +29,16 @@ func mkTargetConstraint(class *vts.AttrClass) *starlark.Builtin {
 	})
 }
 
+func mkStripPrefixOutputMapper(s *Script) *starlark.Builtin {
+	return starlark.NewBuiltin("strip_prefix", func(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, _ []starlark.Tuple) (starlark.Value, error) {
+		if len(args) != 1 {
+			return nil, errors.New("expected 1 argument")
+		}
+		s, _ := starlark.AsString(args[0])
+		return &vts.StripPrefixOutputMapper{Prefix: s}, nil
+	})
+}
+
 func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 	return starlark.StringDict{
 		"attr_class":     makeAttrClass(s),
@@ -74,9 +84,10 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 			"unpack_xz": makeBuildStep(s, vts.StepUnpackXz),
 			"shell_cmd": makeBuildStep(s, vts.StepShellCmd),
 		}),
-		"file":   makePuesdotarget(s, vts.FileRef),
-		"deb":    makePuesdotarget(s, vts.DebRef),
-		"semver": mkTargetConstraint(common.SemverClass),
+		"strip_prefix": mkStripPrefixOutputMapper(s),
+		"file":         makePuesdotarget(s, vts.FileRef),
+		"deb":          makePuesdotarget(s, vts.DebRef),
+		"semver":       mkTargetConstraint(common.SemverClass),
 	}, nil
 }
 

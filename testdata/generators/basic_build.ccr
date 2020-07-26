@@ -4,7 +4,7 @@ build(
     step.unpack_gz(to = 'src', path = 'cool.tar.gz'),
   ],
   output    = {
-    'src/cool.txt': 'cool.txt',
+    'src/cool.txt': strip_prefix('src/'),
   },
   host_deps = [
     ":binutils",

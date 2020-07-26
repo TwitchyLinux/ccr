@@ -583,7 +583,8 @@ func makeBuild(s *Script) *starlark.Builtin {
 				if _, err := glob.Compile(string(k)); err != nil {
 					return nil, fmt.Errorf("invalid build output match %q: %v", string(k), err)
 				}
-				if v[1].Type() != "string" {
+
+				if _, isMapper := v[1].(vts.BuildOutputMapper); !isMapper && v[1].Type() != "string" {
 					return nil, fmt.Errorf("invalid build output value: cannot use type %T", v[1])
 				}
 			}

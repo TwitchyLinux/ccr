@@ -114,7 +114,7 @@ func (t *Build) RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error) {
 
 type artifactMatch struct {
 	p   glob.Glob
-	out string
+	out BuildOutputMapper
 }
 
 type BuildArtifactMatcher struct {
@@ -124,7 +124,7 @@ type BuildArtifactMatcher struct {
 func (m *BuildArtifactMatcher) Match(artifactPath string) string {
 	for _, r := range m.rules {
 		if r.p.Match(artifactPath) {
-			return r.out
+			return r.out.Map(artifactPath)
 		}
 	}
 	return ""
@@ -140,10 +140,14 @@ func (t *Build) OutputMappings() BuildArtifactMatcher {
 
 	for i, k := range keys {
 		v, _, _ := t.Output.Get(starlark.String(k))
-		out.rules[i] = artifactMatch{
-			p:   glob.MustCompile(k),
-			out: string(v.(starlark.String)),
+		var mapper BuildOutputMapper
+		if s, isStr := v.(starlark.String); isStr {
+			mapper = LiteralOutputMapper(s)
+		} else {
+			mapper = v.(BuildOutputMapper)
 		}
+
+		out.rules[i] = artifactMatch{p: glob.MustCompile(k), out: mapper}
 	}
 	return out
 }
