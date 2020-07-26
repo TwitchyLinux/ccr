@@ -39,6 +39,25 @@ func (fs *overlayFS) Close() error {
 	return nil
 }
 
+func setupDefaultUpperLayout(u string) error {
+	if err := os.Mkdir(filepath.Join(u, "tmp"), 0755); err != nil {
+		return err
+	}
+	// Best effort to whiteout /tmp:
+	unix.Setxattr(filepath.Join(u, "tmp"), "user.overlay.opaque", []byte{'y'}, unix.XATTR_CREATE)
+	unix.Setxattr(filepath.Join(u, "tmp"), "user.fuseoverlayfs.opaque", []byte{'y'}, unix.XATTR_CREATE)
+	ioutil.WriteFile(filepath.Join(u, "tmp", ".wh..wh..opq"), nil, 0700)
+
+	if err := os.Mkdir(filepath.Join(u, "dev"), 0755); err != nil {
+		return err
+	}
+	if err := unix.Mknod(filepath.Join(u, "dev", "null"), 0666, (1<<8)|(3&0xff)|((3&0xfff00)<<12)); err != nil {
+		fmt.Println(err)
+	}
+
+	return nil
+}
+
 func setupWriteableFS(baseDir string) (fs, error) {
 	l, u, work, top := filepath.Join(baseDir, "l"), filepath.Join(baseDir, "u"), filepath.Join(baseDir, "work"), filepath.Join(baseDir, "top")
 	if err := os.Mkdir(l, 0755); err != nil {
@@ -47,16 +66,9 @@ func setupWriteableFS(baseDir string) (fs, error) {
 	if err := os.Mkdir(u, 0755); err != nil {
 		return nil, err
 	}
-	if err := os.Mkdir(filepath.Join(u, "tmp"), 0755); err != nil {
-		return nil, err
+	if err := setupDefaultUpperLayout(u); err != nil {
+		return nil, fmt.Errorf("upper: %v", err)
 	}
-	// Best effort to whiteout /tmp:
-	unix.Setxattr(filepath.Join(u, "tmp"), "user.overlay.opaque", []byte{'y'}, unix.XATTR_CREATE)
-	unix.Setxattr(filepath.Join(u, "tmp"), "user.fuseoverlayfs.opaque", []byte{'y'}, unix.XATTR_CREATE)
-	ioutil.WriteFile(filepath.Join(u, "tmp", ".wh..wh..opq"), nil, 0700)
-	// if err := unix.Mknod(filepath.Join(u, ".wh.tmp"), uint32(os.ModeCharDevice), 0); err != nil {
-	// 	fmt.Println(err)
-	// }
 
 	if err := os.Mkdir(work, 0755); err != nil {
 		return nil, err
