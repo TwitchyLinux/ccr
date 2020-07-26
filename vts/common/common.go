@@ -70,4 +70,6 @@ var commonTargets = map[string]vts.Target{
 	"common://toolchains/version:gcc":  GccVersion,
 	"common://toolchains:bash":         BashToolchain,
 	"common://toolchains/version:bash": BashVersion,
+	"common://toolchains:make":         MakeToolchain,
+	"common://toolchains/version:make": MakeVersion,
 }
