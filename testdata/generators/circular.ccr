@@ -53,3 +53,39 @@ generator(
     ":r2",
   ],
 )
+
+resource(
+  name   = "circ_build",
+  parent = "common://resources:virtual",
+  deps   = [
+    ":c4",
+  ],
+)
+
+component(
+  name = "c4",
+  deps = [
+    ":r3",
+  ],
+)
+
+resource(
+  name   = "r3",
+  parent = "common://resources:virtual",
+  deps   = [
+    ":c5",
+  ],
+)
+
+resource(
+  name   = "c5",
+  parent = "common://resources:virtual",
+  source = ":gen3",
+)
+
+build(
+  name         = "gen3",
+  patch_inputs = {
+    "/fake.txt": ":r3",
+  },
+)

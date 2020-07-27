@@ -157,6 +157,120 @@ func TestStepShellCmd(t *testing.T) {
 	}
 }
 
+func TestPatchingBuildEnv(t *testing.T) {
+	tcs := []struct {
+		name           string
+		r              *vts.Resource
+		expectFiles    map[string]os.FileMode
+		backingArchive string
+	}{
+		{
+			name: "file target",
+			r: &vts.Resource{
+				Path:   "//test:yeet",
+				Name:   "yeet",
+				Parent: vts.TargetRef{Target: common.FileResourceClass},
+				Source: &vts.TargetRef{
+					Target: &vts.Build{
+						Path: "//test:fake_file_build",
+						Name: "fake_file_build",
+						PatchIns: map[string]vts.TargetRef{
+							"/somefile.txt": {Target: &vts.Puesdo{
+								Kind:         vts.FileRef,
+								ContractPath: "testdata/something.ccr",
+								Path:         "file.txt",
+							}},
+						},
+					},
+				},
+			},
+			expectFiles: map[string]os.FileMode{"/somefile.txt": os.FileMode(0644)},
+		},
+		{
+			name: "build target",
+			r: &vts.Resource{
+				Path:   "//test:yeet",
+				Name:   "yeet",
+				Parent: vts.TargetRef{Target: common.FileResourceClass},
+				Source: &vts.TargetRef{
+					Target: &vts.Build{
+						Path: "//test:fake_file_build",
+						Name: "fake_file_build",
+						PatchIns: map[string]vts.TargetRef{
+							"/p": {Target: &vts.Build{}},
+						},
+					},
+				},
+			},
+			expectFiles:    map[string]os.FileMode{"/p/yeetfile": os.FileMode(0644)},
+			backingArchive: "testdata/fake_file_build_cache.tar.gz",
+		},
+	}
+
+	cd, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(cd)
+	c, err := cache.NewCache(cd)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			outDir, err := ioutil.TempDir("", "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer os.RemoveAll(outDir)
+
+			// This is not the correct way to write filesets into the cache (should
+			// use cache.PendingFileset etc), but because the fileset format is .tar.gz,
+			// this should work fine.
+			if tc.backingArchive != "" {
+				b := tc.r.Source.Target.(*vts.Build).PatchIns["/p"].Target.(*vts.Build)
+				h, err := b.RollupHash(nil, nil)
+				if err != nil {
+					t.Fatalf("RollupHash() failed: %v", err)
+				}
+
+				p := c.SHA256Path(hex.EncodeToString(h))
+				cmd := exec.Command("install", "-D", tc.backingArchive, p)
+				cmd.Stderr, cmd.Stdout = os.Stderr, os.Stdout
+				if err := cmd.Run(); err != nil {
+					t.Fatalf("Failed to yeet backing archive into cache: %v", err)
+				}
+			}
+
+			b := tc.r.Source.Target.(*vts.Build)
+			env, err := proc.NewEnv(false)
+			if err != nil {
+				t.Fatal(err)
+			}
+			rb := RunningBuild{env: env, fs: osfs.New("/"), contractDir: b.ContractDir}
+			defer rb.Close()
+			if err := rb.Patch(GenerationContext{
+				Cache: c,
+				RunnerEnv: &vts.RunnerEnv{
+					FS: osfs.New(outDir),
+				}}, b.PatchIns); err != nil {
+				t.Fatalf("Patch() failed: %v", err)
+			}
+
+			for p, m := range tc.expectFiles {
+				s, err := os.Stat(filepath.Join(env.OverlayUpperPath(), p))
+				if err != nil {
+					t.Errorf("failed to check expected file %q: %v", p, err)
+				}
+				if err == nil && m != s.Mode() {
+					t.Errorf("%q: mode = %v, want %v", p, s.Mode(), m)
+				}
+			}
+		})
+	}
+}
+
 func TestWriteResourceFromBuild(t *testing.T) {
 	tcs := []struct {
 		name           string

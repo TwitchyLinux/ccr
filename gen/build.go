@@ -54,6 +54,47 @@ func (rb *RunningBuild) ExecBlocking(args []string, stdout, stderr io.Writer) er
 	return rb.env.WaitStreaming(id)
 }
 
+func (rb *RunningBuild) Patch(gc GenerationContext, patches map[string]vts.TargetRef) error {
+	// TODO: Move most of this logic into the proc package.
+	for path, patch := range patches {
+		switch t := patch.Target.(type) {
+		case *vts.Build:
+			h, err := t.RollupHash(gc.RunnerEnv, proc.EvalComputedAttribute)
+			if err != nil {
+				return vts.WrapWithTarget(err, t)
+			}
+			if err := writeMultiFilesFromBuild(gc.Cache, rb.fs, filepath.Join(rb.OverlayUpperPath(), path), t, h); err != nil {
+				return err
+			}
+
+		case *vts.Puesdo:
+			switch t.Kind {
+			case vts.FileRef:
+				srcFilePath := filepath.Join(filepath.Dir(t.ContractPath), t.Path)
+				if t.Host {
+					srcFilePath = t.Path
+				}
+				s, err := os.Stat(srcFilePath)
+				if err != nil {
+					return vts.WrapWithPath(err, path)
+				}
+
+				oPath := filepath.Join(rb.OverlayUpperPath(), path)
+				if err := os.MkdirAll(filepath.Dir(oPath), 0755); err != nil && !os.IsExist(err) {
+					return vts.WrapWithPath(err, path)
+				}
+				if err := generateFile(rb.fs, srcFilePath, oPath, s.Mode()); err != nil {
+					return vts.WrapWithPath(err, path)
+				}
+
+			default:
+				return vts.WrapWithActionTarget(fmt.Errorf("cannot patch from puesdo-target of kind %v", t.Kind), t)
+			}
+		}
+	}
+	return nil
+}
+
 func (rb *RunningBuild) Generate(c *cache.Cache) error {
 	for i, step := range rb.steps {
 		switch step.Kind {
@@ -113,23 +154,25 @@ func writeResourceFromBuild(gc GenerationContext, resource *vts.Resource, b *vts
 	case common.FileResourceClass:
 		return writeFileResourceFromBuild(gc, resource, b, hash)
 	case common.CHeadersResourceClass:
-		return writeMultiFilesFromBuild(gc, resource, b, hash)
+		p, err := determinePath(resource, gc.RunnerEnv)
+		if err != nil {
+			return err
+		}
+		if err := writeMultiFilesFromBuild(gc.Cache, gc.RunnerEnv.FS, p, b, hash); err != nil {
+			return vts.WrapWithTarget(err, resource)
+		}
+		return nil
 	}
 	return fmt.Errorf("cannot populate from build for resources of class %q", parent.GlobalPath())
 }
 
-func writeMultiFilesFromBuild(gc GenerationContext, resource *vts.Resource, b *vts.Build, hash []byte) error {
-	p, err := determinePath(resource, gc.RunnerEnv)
-	if err != nil {
-		return err
-	}
-
-	fr, err := gc.Cache.FilesetReader(hash)
+func writeMultiFilesFromBuild(c *cache.Cache, fs billy.Filesystem, p string, b *vts.Build, hash []byte) error {
+	fr, err := c.FilesetReader(hash)
 	if err != nil {
 		if err == cache.ErrCacheMiss {
 			return err
 		}
-		return vts.WrapWithPath(vts.WrapWithTarget(fmt.Errorf("reading from build artifacts: %v", err), resource), p)
+		return vts.WrapWithPath(fmt.Errorf("reading from build artifacts: %v", err), p)
 	}
 	defer fr.Close()
 
@@ -139,17 +182,17 @@ func writeMultiFilesFromBuild(gc GenerationContext, resource *vts.Resource, b *v
 			if err == io.EOF {
 				break
 			}
-			return vts.WrapWithTarget(fmt.Errorf("iterating build fileset: %v", err), resource)
+			return fmt.Errorf("iterating build fileset: %v", err)
 		}
 
 		switch h.Typeflag {
 		case tar.TypeDir:
-			if err := gc.RunnerEnv.FS.MkdirAll(filepath.Join(p, path), 0755); err != nil {
+			if err := fs.MkdirAll(filepath.Join(p, path), 0755); err != nil {
 				return vts.WrapWithPath(fmt.Errorf("mkdir from fileset: %v", err), path)
 			}
 
 		case tar.TypeReg:
-			outFile, err := gc.RunnerEnv.FS.OpenFile(filepath.Join(p, path), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, h.FileInfo().Mode())
+			outFile, err := fs.OpenFile(filepath.Join(p, path), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, h.FileInfo().Mode())
 			if err != nil {
 				return vts.WrapWithPath(fmt.Errorf("open from fileset: %v", err), path)
 			}
@@ -224,6 +267,10 @@ func GenerateBuildSource(gc GenerationContext, resource *vts.Resource, b *vts.Bu
 		return vts.WrapWithTarget(fmt.Errorf("creating build environment: %v", err), b)
 	}
 	rb := RunningBuild{env: env, steps: b.Steps, fs: osfs.New("/"), contractDir: b.ContractDir}
+	if err := rb.Patch(gc, b.PatchIns); err != nil {
+		rb.Close()
+		return vts.WrapWithTarget(fmt.Errorf("failed to apply patch-ins: %v", err), b)
+	}
 	if err := rb.Generate(gc.Cache); err != nil {
 		rb.Close()
 		return vts.WrapWithTarget(fmt.Errorf("build failed: %v", err), b)

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/twitchylinux/ccr/vts"
+	"gopkg.in/src-d/go-billy.v4"
 )
 
 func fileSrcInfo(resource *vts.Resource, src *vts.Puesdo, env *vts.RunnerEnv) (string, string, os.FileMode, error) {
@@ -39,14 +40,17 @@ func GenerateFile(gc GenerationContext, resource *vts.Resource, src *vts.Puesdo)
 	if err != nil {
 		return err
 	}
+	return generateFile(gc.RunnerEnv.FS, srcPath, outPath, mode)
+}
 
+func generateFile(fs billy.Filesystem, srcPath, outPath string, mode os.FileMode) error {
 	r, err := os.OpenFile(srcPath, os.O_RDONLY, 0644)
 	if err != nil {
 		return vts.WrapWithPath(err, srcPath)
 	}
 	defer r.Close()
 
-	w, err := gc.RunnerEnv.FS.OpenFile(outPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
+	w, err := fs.OpenFile(outPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
 	if err != nil {
 		return vts.WrapWithPath(err, outPath)
 	}

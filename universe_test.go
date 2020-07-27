@@ -544,6 +544,12 @@ Class: //basic:whelp
 			err:    "circular dependency: //circular:r2 -> //circular:c3 -> //circular:gen2",
 		},
 		{
+			name:   "circular_build",
+			target: "//circular:circ_build",
+			config: GenerateConfig{},
+			err:    "circular dependency: //circular:r3 -> //circular:c5 -> //circular:gen3",
+		},
+		{
 			name:         "file",
 			target:       "//mk_file:test_file_puesdo",
 			config:       GenerateConfig{},

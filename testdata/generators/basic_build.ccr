@@ -27,7 +27,7 @@ build(
 build(
   name      = "exec_build",
   steps     = [
-    step.shell_cmd('echo "some data goes here" > /in.txt'),
+    step.shell_cmd('sha256sum /to_hash > /in.txt'),
     step.shell_cmd('chmod 0600 /in.txt'),
   ],
   output    = {
@@ -35,10 +35,11 @@ build(
   },
   host_deps = [
     "common://toolchains:bash" >> semver("4"),
+    "common://toolchains:coreutils" >> semver("5"),
     ":binutils",
   ],
   patch_inputs = {
-    "/fake.txt": file('fake.txt'),
+    "/to_hash": file('fake.txt'),
   },
 )
 
