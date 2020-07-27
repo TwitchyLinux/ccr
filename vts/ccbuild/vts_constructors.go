@@ -532,9 +532,10 @@ func makeBuild(s *Script) *starlark.Builtin {
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var name string
 		var deps, steps *starlark.List
-		var output *starlark.Dict
-		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name?", &name, "host_deps?", &deps, "steps?", &steps,
-			"output?", &output); err != nil {
+		var outputs, inputs *starlark.Dict
+		if err := starlark.UnpackArgs(t.String(), args, kwargs,
+			"name?", &name, "host_deps?", &deps, "steps?", &steps,
+			"patch_inputs?", &inputs, "output?", &outputs); err != nil {
 			return starlark.None, err
 		}
 
@@ -544,6 +545,7 @@ func makeBuild(s *Script) *starlark.Builtin {
 			ContractPath: s.fPath,
 			Path:         s.makePath(name),
 			Name:         name,
+			PatchIns:     map[string]vts.TargetRef{},
 			Pos: &vts.DefPosition{
 				Path:  s.fPath,
 				Frame: thread.CallFrame(1),
@@ -574,8 +576,8 @@ func makeBuild(s *Script) *starlark.Builtin {
 				b.Steps = append(b.Steps, v)
 			}
 		}
-		if output != nil {
-			for _, v := range output.Items() {
+		if outputs != nil {
+			for _, v := range outputs.Items() {
 				k, ok := v[0].(starlark.String)
 				if !ok {
 					return nil, fmt.Errorf("invalid build output key: cannot use type %T", v[0])
@@ -588,7 +590,20 @@ func makeBuild(s *Script) *starlark.Builtin {
 					return nil, fmt.Errorf("invalid build output value: cannot use type %T", v[1])
 				}
 			}
-			b.Output = output
+			b.Output = outputs
+		}
+		if inputs != nil {
+			for i, v := range inputs.Items() {
+				k, ok := v[0].(starlark.String)
+				if !ok {
+					return nil, fmt.Errorf("patch_inputs[%d] invalid: cannot use type %T as key", i, v[0])
+				}
+				src, err := toGeneratorTarget(s.path, v[1])
+				if err != nil {
+					return nil, fmt.Errorf("patch_inputs[%d] invalid: %v", i, err)
+				}
+				b.PatchIns[string(k)] = src
+			}
 		}
 
 		// If theres no name, it must be an anonymous build as part of

@@ -22,6 +22,7 @@ type Build struct {
 	HostDeps []TargetRef
 	Steps    []*BuildStep
 	Output   *starlark.Dict
+	PatchIns map[string]TargetRef
 }
 
 func (t *Build) DefinedAt() *DefPosition {
@@ -50,6 +51,14 @@ func (t *Build) Validate() error {
 
 func (t *Build) HostDependencies() []TargetRef {
 	return t.HostDeps
+}
+
+func (t *Build) NeedInputs() []TargetRef {
+	out := make([]TargetRef, 0, len(t.PatchIns))
+	for _, t := range t.PatchIns {
+		out = append(out, t)
+	}
+	return out
 }
 
 func (t *Build) String() string {
@@ -99,14 +108,33 @@ func (t *Build) RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error) {
 		hash.Write(h)
 	}
 
+	if t.PatchIns != nil {
+		fmt.Fprintln(hash, "Input patches:")
+		out := make([]string, 0, len(t.PatchIns))
+		for path, t := range t.PatchIns {
+			rt, isHashable := t.Target.(ReproducibleTarget)
+			if !isHashable {
+				return nil, WrapWithTarget(fmt.Errorf("cannot compute rollup hash on non-reproducible target of type %T", t.Target), t.Target)
+			}
+			h, err := rt.RollupHash(env, eval)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, fmt.Sprintf("%s: %X", path, h))
+		}
+		sort.Strings(out)
+		for _, kv := range out {
+			hash.Write([]byte(kv))
+		}
+	}
 	if t.Output != nil {
 		fmt.Fprintln(hash, "Output mappings:")
-		outKeyVals := make([]string, 0, t.Output.Len())
+		out := make([]string, 0, t.Output.Len())
 		for _, e := range t.Output.Items() {
-			outKeyVals = append(outKeyVals, fmt.Sprintf("%s: %s", e[0].String(), e[1].String()))
+			out = append(out, fmt.Sprintf("%s: %s", e[0].String(), e[1].String()))
 		}
-		sort.Strings(outKeyVals)
-		for _, kv := range outKeyVals {
+		sort.Strings(out)
+		for _, kv := range out {
 			hash.Write([]byte(kv))
 		}
 	}

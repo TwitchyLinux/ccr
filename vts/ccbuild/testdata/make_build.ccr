@@ -1,14 +1,18 @@
 build(
-  name      = "thingy",
-  host_deps = [
+  name         = "thingy",
+  host_deps    = [
     ":meow" >> semver("1.2.3"),
   ],
-  steps     = [
-  step.unpack_gz(to = 'src', path = 'go1.11.4.tar.gz'),
-  step.unpack_xz(to = 'src2', path = 'something.tar.xz'),
+  steps        = [
+    step.unpack_gz(to = 'src', path = 'go1.11.4.tar.gz'),
+    step.unpack_xz(to = 'src2', path = 'something.tar.xz'),
     step.shell_cmd('echo mate'),
   ],
-  output    = {
+  output       = {
     'cool.txt': 'cool.txt',
+  },
+  patch_inputs = {
+    '/cool.txt': file('uncool.txt'),
+    '/usr/inc': ":aaa",
   },
 )

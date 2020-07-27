@@ -37,6 +37,9 @@ build(
     "common://toolchains:bash" >> semver("4"),
     ":binutils",
   ],
+  patch_inputs = {
+    "/fake.txt": file('fake.txt'),
+  },
 )
 
 toolchain(

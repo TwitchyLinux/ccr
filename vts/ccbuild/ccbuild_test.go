@@ -224,6 +224,14 @@ var newScriptTestcases = []struct {
 					{Kind: vts.StepUnpackXz, Path: "something.tar.xz", ToPath: "src2"},
 					{Kind: vts.StepShellCmd, Args: []string{"echo mate"}},
 				},
+				PatchIns: map[string]vts.TargetRef{
+					"/cool.txt": {Target: &vts.Puesdo{
+						Kind:         vts.FileRef,
+						Path:         "uncool.txt",
+						ContractPath: "testdata/make_build.ccr",
+					}},
+					"/usr/inc": {Path: "//test:aaa"},
+				},
 			},
 		},
 	},
