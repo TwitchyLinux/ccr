@@ -46,7 +46,7 @@ func envMainloop(cmdW *gob.Encoder, cmdR *gob.Decoder, respW *gob.Encoder, readO
 	}
 
 	var fs fs
-	fs, err = setupWriteableFS(wd)
+	fs, err = setupEnvFS(wd)
 	if err != nil {
 		return err
 	}

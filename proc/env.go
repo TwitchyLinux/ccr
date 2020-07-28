@@ -148,7 +148,7 @@ func NewEnv(readOnly bool) (*Env, error) {
 	out.p.Stdin = os.Stdin
 	out.p.Dir = out.dir
 	out.p.SysProcAttr = &syscall.SysProcAttr{
-		Cloneflags: syscall.CLONE_NEWPID | syscall.CLONE_NEWNS | syscall.CLONE_NEWIPC | syscall.CLONE_NEWUTS | syscall.CLONE_NEWUSER,
+		Cloneflags: syscall.CLONE_NEWPID | syscall.CLONE_NEWNS | syscall.CLONE_NEWUTS | syscall.CLONE_NEWUSER,
 		UidMappings: []syscall.SysProcIDMap{
 			{
 				HostID: os.Getuid(),

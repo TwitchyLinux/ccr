@@ -1,145 +1,31 @@
 package proc
 
 import (
-	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
-	"strings"
 	"syscall"
-	"time"
-
-	"golang.org/x/sys/unix"
 )
 
-type fs interface {
-	Close() error
-	Root() string
-}
-
-type overlayFS struct {
-	base    string
-	overlay *exec.Cmd
-}
-
-func (fs *overlayFS) Root() string {
-	return filepath.Join(fs.base, "top")
-}
-
-func (fs *overlayFS) Close() error {
-	if err := fs.overlay.Process.Kill(); err != nil {
-		return err
-	}
-	if err := syscall.Unmount(filepath.Join(fs.base, "l"), syscall.MNT_DETACH); err != nil {
-		return fmt.Errorf("failed unmounting lower bind: %v", err)
-	}
-	return nil
-}
-
-func setupDefaultUpperLayout(u string) error {
-	if err := os.Mkdir(filepath.Join(u, "tmp"), 0755); err != nil {
-		return err
-	}
-	// Best effort to whiteout /tmp:
-	unix.Setxattr(filepath.Join(u, "tmp"), "user.overlay.opaque", []byte{'y'}, unix.XATTR_CREATE)
-	unix.Setxattr(filepath.Join(u, "tmp"), "user.fuseoverlayfs.opaque", []byte{'y'}, unix.XATTR_CREATE)
-	ioutil.WriteFile(filepath.Join(u, "tmp", ".wh..wh..opq"), nil, 0700)
-
-	if err := os.Mkdir(filepath.Join(u, "dev"), 0755); err != nil {
-		return err
-	}
-	if err := unix.Mknod(filepath.Join(u, "dev", "null"), 0666, (1<<8)|(3&0xff)|((3&0xfff00)<<12)); err != nil {
-		fmt.Println(err)
-	}
-
-	return nil
-}
-
-func setupWriteableFS(baseDir string) (fs, error) {
-	l, u, work, top := filepath.Join(baseDir, "l"), filepath.Join(baseDir, "u"), filepath.Join(baseDir, "work"), filepath.Join(baseDir, "top")
-	if err := os.Mkdir(l, 0755); err != nil {
-		return nil, err
-	}
-	if err := os.Mkdir(u, 0755); err != nil {
-		return nil, err
-	}
-	if err := setupDefaultUpperLayout(u); err != nil {
-		return nil, fmt.Errorf("upper: %v", err)
-	}
-
-	if err := os.Mkdir(work, 0755); err != nil {
-		return nil, err
-	}
-	if err := os.Mkdir(top, 0755); err != nil {
-		return nil, err
-	}
-
-	if err := syscall.Mount("/", l, "", syscall.MS_BIND|syscall.MS_REC|syscall.MS_SLAVE|syscall.MS_RDONLY, ""); err != nil {
-		return nil, err
-	}
-
-	out := &overlayFS{base: baseDir}
-	out.overlay = exec.Command("fuse-overlayfs", "-o", "upperdir="+u, "-o", "lowerdir="+l, "-o", "workdir="+work, top)
-	if err := out.overlay.Start(); err != nil {
-		syscall.Unmount(l, syscall.MNT_DETACH)
-		return nil, fmt.Errorf("overlay: %v", err)
-	}
-
-	for i := 0; i < 100; i++ {
-		time.Sleep(15 * time.Millisecond)
-		d, err := ioutil.ReadFile("/proc/mounts")
-		if err != nil {
-			out.overlay.Process.Kill()
-			syscall.Unmount(l, syscall.MNT_DETACH)
-			return nil, err
-		}
-		for _, line := range strings.Split(string(d), "\n") {
-			line = strings.TrimSpace(line)
-			if strings.HasPrefix(line, "fuse-overlayfs") && strings.Contains(line, top) {
-				return out, nil // Its ready to go!
-			}
-		}
-	}
-
-	// Timeout!
-	out.overlay.Process.Kill()
-	syscall.Unmount(l, syscall.MNT_DETACH)
-	return nil, errors.New("timeout while waiting for overlay to come up")
-}
-
-func setRootFS(newroot string, readOnly bool) error {
-	// Create a new directory which will be the root of our FS view.
-	base := filepath.Dir(newroot)
-	ourBase, err := ioutil.TempDir(base, "")
-	if err != nil {
-		return fmt.Errorf("creating base dir %s: %v", base, err)
-	}
-
-	// Bind mount our created root to the root path provided to this process.
-	// This will typically be an overlayfs mount.
-	if err := syscall.Mount(newroot, ourBase, "", syscall.MS_BIND|syscall.MS_REC|syscall.MS_SLAVE, ""); err != nil {
-		return fmt.Errorf("bind mount: %v", err)
-	}
-
-	putold := filepath.Join(ourBase, "/.temp_old")
+func setRootFS(newRoot string, readOnly bool) error {
+	putold := filepath.Join(newRoot, "/.temp_old")
 	// Mount proc as we are in our own fs/pid namespace.
-	os.Mkdir(path.Join(ourBase, "proc"), 0755)
-	if err := syscall.Mount("proc", path.Join(ourBase, "proc"), "proc", 0, ""); err != nil {
+	os.Mkdir(path.Join(newRoot, "proc"), 0755)
+	if err := syscall.Mount("proc", path.Join(newRoot, "proc"), "proc", 0, ""); err != nil {
 		return fmt.Errorf("mount proc: %v", err)
 	}
 
 	// Do the pivot_root dance to switch over to our FS view.
-	if err := syscall.Mount(ourBase, ourBase, "", syscall.MS_BIND|syscall.MS_REC, ""); err != nil {
+	if err := syscall.Mount(newRoot, newRoot, "", syscall.MS_BIND|syscall.MS_REC, ""); err != nil {
 		return fmt.Errorf("mount failed: %v", err)
 	}
 
 	if err := os.MkdirAll(putold, 0700); err != nil {
 		return fmt.Errorf("mkdir failed: %v", err)
 	}
-	if err := syscall.PivotRoot(ourBase, putold); err != nil {
+
+	if err := syscall.PivotRoot(newRoot, putold); err != nil {
 		return fmt.Errorf("pivot root failed: %v", err)
 	}
 	if err := os.Chdir("/"); err != nil {
@@ -155,6 +41,5 @@ func setRootFS(newroot string, readOnly bool) error {
 			return fmt.Errorf("bind ro-remount failed: %v", err)
 		}
 	}
-
 	return nil
 }
