@@ -14,6 +14,7 @@ const (
 	cmdRunBlocking
 	cmdRunStreaming
 	cmdPing
+	cmdEnsureTLDWired
 )
 
 type procCommand struct {

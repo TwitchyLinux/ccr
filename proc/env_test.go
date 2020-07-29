@@ -2,6 +2,7 @@ package proc
 
 import (
 	"bytes"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -193,5 +194,45 @@ func TestTmpMasked(t *testing.T) {
 	if strings.Count(string(out), "\n") > 5 {
 		t.Errorf("Far too many entries being listed in /tmp for the masking to have worked (#files = %d)", strings.Count(string(out), "\n"))
 		t.Logf("Output: \n%s", string(out))
+	}
+}
+
+func TestEnsurePatched(t *testing.T) {
+	t.Parallel()
+	e, err := NewEnv(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer e.Close()
+
+	if err := ioutil.WriteFile(filepath.Join(e.OverlayUpperPath(), "somefile"), []byte("ABC"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(filepath.Join(e.OverlayUpperPath(), "somedir"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := e.EnsurePatched("somefile"); err != nil {
+		t.Errorf("EnsurePatch(%q) failed: %v", "somefile", err)
+	}
+	o, s, _, err := e.RunBlocking("/tmp", "cat", "/somefile")
+	if err != nil {
+		t.Errorf("RunBlocking(%q) failed: %v", "cat", err)
+		t.Logf("stdout = %q\nstderr = %q", string(o), string(s))
+	}
+	if string(o) != "ABC" {
+		t.Errorf("file contents were not correct: got %q", string(o))
+	}
+
+	if err := e.EnsurePatched("somedir"); err != nil {
+		t.Errorf("EnsurePatch(%q) failed: %v", "somedir", err)
+	}
+	o, s, _, err = e.RunBlocking("/tmp", "touch", "/somedir/yeets")
+	if err != nil {
+		t.Errorf("RunBlocking(%q) failed: %v", "touch", err)
+		t.Logf("stdout = %q\nstderr = %q", string(o), string(s))
+	}
+	if _, err := os.Stat(filepath.Join(e.OverlayUpperPath(), "somedir", "yeets")); err != nil {
+		t.Error(err)
 	}
 }

@@ -19,6 +19,7 @@ const bindROFlags = syscall.MS_BIND | syscall.MS_REC | syscall.MS_SLAVE | syscal
 type fs interface {
 	Close() error
 	Root() string
+	EnsurePatched(cmd procCommand) procResp
 }
 
 // overlayLayout encapsulates the configuration of directories and bind mounts which
@@ -98,6 +99,7 @@ func (l overlayLayout) setupDevLayout() error {
 	if err := syscall.Mount("/dev/null", filepath.Join(l.DevPath(), "null"), "", syscall.MS_BIND|syscall.MS_REC|syscall.MS_SLAVE, ""); err != nil {
 		return fmt.Errorf("mounting /dev/null: %v", err)
 	}
+	l.binds = append(l.binds, filepath.Join(l.DevPath(), "null"))
 	return nil
 }
 
@@ -188,6 +190,37 @@ func (l overlayLayout) SetupRootBinds() (err error) {
 type overlayFS struct {
 	layout overlayLayout
 	proc   *exec.Cmd
+}
+
+// EnsurePatched makes sure a top-level directory or file is patched
+// through into the isolated environment.
+func (fs *overlayFS) EnsurePatched(cmd procCommand) procResp {
+	out := procResp{Code: cmd.Code}
+	src, dest := filepath.Join(fs.layout.OverlayUpperPath(), cmd.Dir), filepath.Join(fs.layout.RootPath(), cmd.Dir)
+	s, err := os.Stat(filepath.Join(fs.layout.OverlayUpperPath(), cmd.Dir))
+	if err != nil {
+		out.Error = err.Error()
+		return out
+	}
+
+	if s.IsDir() {
+		if err := os.Mkdir(dest, s.Mode()); err != nil {
+			out.Error = err.Error()
+			return out
+		}
+	} else {
+		if err := ioutil.WriteFile(dest, nil, s.Mode()); err != nil {
+			out.Error = err.Error()
+			return out
+		}
+	}
+
+	if err := syscall.Mount(src, dest, "", syscall.MS_BIND|syscall.MS_REC|syscall.MS_SLAVE, ""); err != nil {
+		out.Error = err.Error()
+		return out
+	}
+	fs.layout.binds = append(fs.layout.binds, dest)
+	return out
 }
 
 // Root returns the path that isolated processes should use as their

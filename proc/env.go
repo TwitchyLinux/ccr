@@ -83,6 +83,13 @@ func (e *Env) WaitStreaming(id string) error {
 	}
 }
 
+// EnsurePatched makes sure the top-level file or directory is mapped into the
+// filesystem of the isolated environment.
+func (e *Env) EnsurePatched(topLevelPathSegment string) error {
+	_, err := e.sendCommand(procCommand{Code: cmdEnsureTLDWired, Dir: topLevelPathSegment})
+	return err
+}
+
 // OverlayMountPath returns the path to the RW view of the system, within the isolated
 // environment.
 func (e *Env) OverlayMountPath() string {

@@ -71,6 +71,8 @@ func envMainloop(cmdW *gob.Encoder, cmdR *gob.Decoder, respW *gob.Encoder, readO
 			cmdW.Encode(runBlocking(cmd, fs.Root(), readOnly))
 		case cmdRunStreaming:
 			cmdW.Encode(em.RunStreaming(cmd, fs.Root(), readOnly))
+		case cmdEnsureTLDWired:
+			cmdW.Encode(fs.EnsurePatched(cmd))
 		case cmdShutdown:
 			// em.Close() can be called multiple times, so we close here as well as
 			// in the defer to make sure things shut down before our invoker recieves
