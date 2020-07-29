@@ -93,13 +93,31 @@ func (l overlayLayout) setupDevLayout() error {
 	}
 	l.binds = append(l.binds, l.DevPath())
 
-	if err := ioutil.WriteFile(filepath.Join(l.DevPath(), "null"), nil, 0666); err != nil {
-		return err
+	for _, p := range []string{"null", "zero", "random", "urandom", "tty"} {
+		if err := ioutil.WriteFile(filepath.Join(l.DevPath(), p), nil, 0666); err != nil {
+			return fmt.Errorf("creating stand-in /dev/%s: %v", p, err)
+		}
+		if err := syscall.Mount("/dev/"+p, filepath.Join(l.DevPath(), p), "", syscall.MS_BIND|syscall.MS_REC|syscall.MS_SLAVE, ""); err != nil {
+			return fmt.Errorf("mounting /dev/%s: %v", p, err)
+		}
+		l.binds = append(l.binds, filepath.Join(l.DevPath(), p))
 	}
-	if err := syscall.Mount("/dev/null", filepath.Join(l.DevPath(), "null"), "", syscall.MS_BIND|syscall.MS_REC|syscall.MS_SLAVE, ""); err != nil {
-		return fmt.Errorf("mounting /dev/null: %v", err)
+
+	if err := os.Mkdir(filepath.Join(l.DevPath(), "pts"), 0755); err != nil {
+		return fmt.Errorf("creating dir /dev/pts: %v", err)
 	}
-	l.binds = append(l.binds, filepath.Join(l.DevPath(), "null"))
+	if err := syscall.Mount("devpts", filepath.Join(l.DevPath(), "pts"), "devpts", syscall.MS_NOSUID|syscall.MS_NOEXEC, "newinstance,mode=0620,ptmxmode=0666"); err != nil {
+		return fmt.Errorf("mounting /dev/pts: %v", err)
+	}
+	l.binds = append(l.binds, filepath.Join(l.DevPath(), "pts"))
+
+	if err := os.Mkdir(filepath.Join(l.DevPath(), "shm"), 0755); err != nil {
+		return fmt.Errorf("creating dir /dev/shm: %v", err)
+	}
+	if err := syscall.Mount("", filepath.Join(l.DevPath(), "shm"), "tmpfs", syscall.MS_NOSUID|syscall.MS_NOEXEC|syscall.MS_NODEV, "mode=1777"); err != nil {
+		return fmt.Errorf("mounting /dev/shm: %v", err)
+	}
+	l.binds = append(l.binds, filepath.Join(l.DevPath(), "shm"))
 	return nil
 }
 

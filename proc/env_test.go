@@ -151,7 +151,7 @@ func TestFilePersistance(t *testing.T) {
 	}
 }
 
-func TestDevNull(t *testing.T) {
+func TestDevSetup(t *testing.T) {
 	e, err := NewEnv(false)
 	if err != nil {
 		t.Fatal(err)
@@ -159,6 +159,9 @@ func TestDevNull(t *testing.T) {
 	defer e.Close()
 
 	o, s, _, err := e.RunBlocking("/tmp", "ls", "-l", "/dev/null")
+	if err != nil {
+		t.Fatal(err)
+	}
 	spl := strings.Split(string(o), " ")
 	perms := strings.Join([]string{spl[0], spl[4], spl[5]}, " ")
 	if perms != "crw-rw-rw- 1, 3" {
