@@ -46,8 +46,8 @@ func (t *BuildStep) Validate() error {
 		} else if t.Path == "" {
 			return errors.New("path or url must be specified")
 		}
-		if t.ToPath == "" {
-			return errors.New("to path must be specified")
+		if t.ToPath == "" || t.ToPath == "/" {
+			return errors.New("to path must specify a destination path")
 		}
 	case StepShellCmd:
 		if len(t.Args) != 1 {

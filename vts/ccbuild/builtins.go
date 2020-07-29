@@ -3,6 +3,7 @@ package ccbuild
 import (
 	"errors"
 	"fmt"
+	"runtime"
 	"strings"
 
 	"github.com/twitchylinux/ccr/vts"
@@ -38,6 +39,22 @@ func mkStripPrefixOutputMapper(s *Script) *starlark.Builtin {
 		s, _ := starlark.AsString(args[0])
 		return &vts.StripPrefixOutputMapper{Prefix: strings.TrimPrefix(s, "/")}, nil
 	})
+}
+
+func recommendedCPUs() int {
+	n := runtime.NumCPU()
+	switch {
+	case n == 2:
+		return 1
+	case n < 5:
+		return 2
+	case n <= 8:
+		return n - 2
+	case n <= 16:
+		return n - 3
+	}
+
+	return n - 4
 }
 
 func (s *Script) makeBuiltins() (starlark.StringDict, error) {
@@ -84,6 +101,9 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 			"unpack_gz": makeBuildStep(s, vts.StepUnpackGz),
 			"unpack_xz": makeBuildStep(s, vts.StepUnpackXz),
 			"shell_cmd": makeBuildStep(s, vts.StepShellCmd),
+		}),
+		"host": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
+			"recommended_cpus": starlark.MakeInt(recommendedCPUs()),
 		}),
 		"strip_prefix": mkStripPrefixOutputMapper(s),
 		"file":         makePuesdotarget(s, vts.FileRef),
