@@ -2,11 +2,13 @@ package gen
 
 import (
 	"archive/tar"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/twitchylinux/ccr/cache"
 	"github.com/twitchylinux/ccr/gen/buildstep"
@@ -54,6 +56,11 @@ func (rb *RunningBuild) ExecBlocking(args []string, stdout, stderr io.Writer) er
 	return rb.env.WaitStreaming(id)
 }
 
+func (rb *RunningBuild) EnsurePatched(path string) error {
+	pathSegments := strings.Split(strings.TrimPrefix(path, "/"), string(filepath.Separator))
+	return rb.env.EnsurePatched(pathSegments[0])
+}
+
 func (rb *RunningBuild) Patch(gc GenerationContext, patches map[string]vts.TargetRef) error {
 	// TODO: Move most of this logic into the proc package.
 	for path, patch := range patches {
@@ -91,6 +98,10 @@ func (rb *RunningBuild) Patch(gc GenerationContext, patches map[string]vts.Targe
 				return vts.WrapWithActionTarget(fmt.Errorf("cannot patch from puesdo-target of kind %v", t.Kind), t)
 			}
 		}
+
+		if err := rb.EnsurePatched(path); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -101,6 +112,9 @@ func (rb *RunningBuild) Generate(c *cache.Cache) error {
 		case vts.StepUnpackGz, vts.StepUnpackXz:
 			if err := buildstep.RunUnpack(c, rb, step); err != nil {
 				return fmt.Errorf("step %d (%s) failed: %v", i+1, step.Kind, err)
+			}
+			if err := rb.EnsurePatched(step.ToPath); err != nil {
+				return fmt.Errorf("step %d (%s) failed wiring into filesystem: %v", i+1, step.Kind, err)
 			}
 		case vts.StepShellCmd:
 			if err := buildstep.RunShellCmd(rb, step); err != nil {
@@ -243,22 +257,15 @@ func writeFileResourceFromBuild(gc GenerationContext, resource *vts.Resource, b 
 	return nil
 }
 
-// GenerateBuildSource implements generation of a resource target, based
-// on a reference to a build target.
-func GenerateBuildSource(gc GenerationContext, resource *vts.Resource, b *vts.Build) error {
+// GenerateBuild executes a build if the result is not already cached.
+func GenerateBuild(gc GenerationContext, b *vts.Build) error {
 	bh, err := b.RollupHash(gc.RunnerEnv, proc.EvalComputedAttribute)
 	if err != nil {
 		return vts.WrapWithTarget(err, b)
 	}
-
-	// Try to read the necessary resource sources from the cache. If that
-	// succeeds, theres nothing left to do.
-	switch err = writeResourceFromBuild(gc, resource, b, bh); err {
-	case nil:
+	// See if its already cached.
+	if _, err := os.Stat(gc.Cache.SHA256Path(hex.EncodeToString(bh))); err == nil {
 		return nil
-	case cache.ErrCacheMiss: // Fallthrough to execute the build.
-	default:
-		return err
 	}
 
 	// If we got this far, the build output is not cached, we need to complete the build manually.
@@ -279,9 +286,30 @@ func GenerateBuildSource(gc GenerationContext, resource *vts.Resource, b *vts.Bu
 		rb.Close()
 		return vts.WrapWithTarget(fmt.Errorf("gathering output: %v", err), b)
 	}
-	if err := rb.Close(); err != nil {
+	return rb.Close()
+}
+
+// GenerateBuildSource implements generation of a resource target, based
+// on a reference to a build target.
+func GenerateBuildSource(gc GenerationContext, resource *vts.Resource, b *vts.Build) error {
+	bh, err := b.RollupHash(gc.RunnerEnv, proc.EvalComputedAttribute)
+	if err != nil {
+		return vts.WrapWithTarget(err, b)
+	}
+
+	// Try to read the necessary resource sources from the cache. If that
+	// succeeds, theres nothing left to do.
+	switch err = writeResourceFromBuild(gc, resource, b, bh); err {
+	case nil:
+		return nil
+	case cache.ErrCacheMiss: // Fallthrough to execute the build.
+	default:
 		return err
 	}
 
+	// If we got this far, the build output is not cached, we need to complete the build manually.
+	if err := GenerateBuild(gc, b); err != nil {
+		return err
+	}
 	return writeResourceFromBuild(gc, resource, b, bh)
 }

@@ -58,6 +58,7 @@ func TestBuildWriteToCache(t *testing.T) {
 		t.Fatal(err)
 	}
 	outMapping := starlark.NewDict(12)
+	// Leading / should have been removed by (*vts.Build).OutputMappings().
 	outMapping.SetKey(starlark.String("a.txt"), starlark.String("b.txt"))
 
 	if err := rb.WriteToCache(c, &vts.Build{Output: outMapping}, bytes.Repeat([]byte{0}, 32)); err != nil {
@@ -85,7 +86,7 @@ func TestStepUnpackGz(t *testing.T) {
 	rb.steps = []*vts.BuildStep{
 		{
 			Kind:   vts.StepUnpackGz,
-			ToPath: "output",
+			ToPath: "/output",
 			Path:   "cool.tar.gz",
 		},
 	}

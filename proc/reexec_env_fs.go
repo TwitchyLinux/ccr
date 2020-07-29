@@ -202,6 +202,9 @@ func (fs *overlayFS) EnsurePatched(cmd procCommand) procResp {
 		out.Error = err.Error()
 		return out
 	}
+	if _, err := os.Stat(filepath.Join(fs.layout.RootPath(), cmd.Dir)); err == nil {
+		return out // already mapped
+	}
 
 	if s.IsDir() {
 		if err := os.Mkdir(dest, s.Mode()); err != nil {

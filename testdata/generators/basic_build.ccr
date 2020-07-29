@@ -27,11 +27,11 @@ build(
 build(
   name      = "exec_build",
   steps     = [
-    step.shell_cmd('sha256sum /to_hash > /in.txt'),
-    step.shell_cmd('chmod 0600 /in.txt'),
+    step.shell_cmd('sha256sum /to_hash > /tmp/in.txt'),
+    step.shell_cmd('chmod 0600 /tmp/in.txt'),
   ],
   output    = {
-    'in.txt': 'out.txt',
+    '/tmp/in.txt': 'out.txt',
   },
   host_deps = [
     "common://toolchains:bash" >> semver("4"),

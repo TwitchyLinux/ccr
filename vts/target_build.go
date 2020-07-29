@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/gobwas/glob"
 	"go.starlark.net/starlark"
@@ -161,6 +162,9 @@ func (m *BuildArtifactMatcher) Match(artifactPath string) string {
 }
 
 func (t *Build) OutputMappings() BuildArtifactMatcher {
+	if t.Output == nil {
+		return BuildArtifactMatcher{}
+	}
 	out := BuildArtifactMatcher{rules: make([]artifactMatch, t.Output.Len())}
 	keys := make([]string, 0, t.Output.Len())
 	for _, e := range t.Output.Keys() {
@@ -177,7 +181,7 @@ func (t *Build) OutputMappings() BuildArtifactMatcher {
 			mapper = v.(BuildOutputMapper)
 		}
 
-		out.rules[i] = artifactMatch{p: glob.MustCompile(k), out: mapper}
+		out.rules[i] = artifactMatch{p: glob.MustCompile(strings.TrimPrefix(k, "/")), out: mapper}
 	}
 	return out
 }

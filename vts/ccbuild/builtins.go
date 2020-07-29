@@ -3,6 +3,7 @@ package ccbuild
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/ccbuild/runners"
@@ -35,7 +36,7 @@ func mkStripPrefixOutputMapper(s *Script) *starlark.Builtin {
 			return nil, errors.New("expected 1 argument")
 		}
 		s, _ := starlark.AsString(args[0])
-		return &vts.StripPrefixOutputMapper{Prefix: s}, nil
+		return &vts.StripPrefixOutputMapper{Prefix: strings.TrimPrefix(s, "/")}, nil
 	})
 }
 

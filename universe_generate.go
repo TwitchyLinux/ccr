@@ -216,6 +216,14 @@ func (u *Universe) generateTarget(s generationState, t vts.Target) error {
 			}
 		}
 	}
+	if b, isBuild := t.(*vts.Build); isBuild {
+		if err := gen.GenerateBuild(gen.GenerationContext{
+			Cache:     u.cache,
+			RunnerEnv: s.runnerEnv,
+		}, b); err != nil {
+			return err
+		}
+	}
 
 	s.haveGenerated[t] = struct{}{}
 	return nil

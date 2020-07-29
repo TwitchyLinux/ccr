@@ -2,10 +2,12 @@
 package buildstep
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/twitchylinux/ccr/cache"
 	"gopkg.in/src-d/go-billy.v4"
@@ -21,8 +23,8 @@ type RunningBuild interface {
 
 // download returns a reader to the file referenced by url, downloading
 // and caching it if necessary.
-func download(c *cache.Cache, sha256, url string) (cache.ReadSeekCloser, error) {
-	f, err := c.BySHA256(sha256)
+func download(c *cache.Cache, s256, url string) (cache.ReadSeekCloser, error) {
+	f, err := c.BySHA256(s256)
 	switch {
 	case err == cache.ErrCacheMiss:
 	case err == nil:
@@ -47,7 +49,7 @@ func download(c *cache.Cache, sha256, url string) (cache.ReadSeekCloser, error) 
 	default:
 		return nil, fmt.Errorf("unexpected response code '%d' (%s)", r.StatusCode, r.Status)
 	}
-	w, err := os.OpenFile(c.SHA256Path(sha256), os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
+	w, err := os.OpenFile(c.SHA256Path(s256), os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
 	if err != nil {
 		return nil, err
 	}
@@ -55,6 +57,26 @@ func download(c *cache.Cache, sha256, url string) (cache.ReadSeekCloser, error) 
 		w.Close()
 		return nil, err
 	}
-	w.Seek(0, os.SEEK_SET)
+
+	// Check hash is good.
+	if _, err := w.Seek(0, os.SEEK_SET); err != nil {
+		w.Close()
+		return nil, err
+	}
+	h := sha256.New()
+	if _, err := io.Copy(h, w); err != nil {
+		w.Close()
+		return nil, err
+	}
+	if got, want := fmt.Sprintf("%x", h.Sum(nil)), strings.ToLower(s256); got != want {
+		w.Close()
+		os.Remove(c.SHA256Path(s256))
+		return nil, fmt.Errorf("incorrect hash: %q != %q", got, want)
+	}
+
+	if _, err := w.Seek(0, os.SEEK_SET); err != nil {
+		w.Close()
+		return nil, err
+	}
 	return w, nil
 }

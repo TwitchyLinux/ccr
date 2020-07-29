@@ -40,11 +40,14 @@ func (t *BuildStep) IsClassTarget() bool {
 
 func (t *BuildStep) Validate() error {
 	switch t.Kind {
-	case StepUnpackGz:
+	case StepUnpackGz, StepUnpackXz:
 		if t.URL != "" && t.SHA256 == "" {
 			return errors.New("sha256 must be specified for all URLs")
 		} else if t.Path == "" {
 			return errors.New("path or url must be specified")
+		}
+		if t.ToPath == "" {
+			return errors.New("to path must be specified")
 		}
 	case StepShellCmd:
 		if len(t.Args) != 1 {
