@@ -9,8 +9,12 @@ import (
 
 // RunShellCmd runs a shell command in the build environment.
 func RunShellCmd(rb RunningBuild, step *vts.BuildStep) error {
-	if err := rb.ExecBlocking(append([]string{"/bin/bash", "-c"}, step.Args...), os.Stdout, os.Stderr); err != nil {
+	ec, err := rb.ExecBlocking(append([]string{"/bin/bash", "-c"}, step.Args...), os.Stdout, os.Stderr)
+	if err != nil {
 		return fmt.Errorf("shell execution failed: %v", err)
+	}
+	if ec != 0 {
+		return fmt.Errorf("exit status %d", ec)
 	}
 	return nil
 }

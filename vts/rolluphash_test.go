@@ -116,7 +116,7 @@ func TestRollupHash(t *testing.T) {
 				Output:   outputFiles,
 				PatchIns: map[string]TargetRef{"/cool.txt": TargetRef{Target: &Puesdo{Kind: FileRef, Path: "cool.txt"}}},
 			},
-			mustDecodeHex(t, "A943B9120F50C623F6536CDC0DA201D202621B022DB4049AE6837F844FB3E2C2"),
+			mustDecodeHex(t, "EB18ECE9C076BDB4F0F4C2807AD709E1386C3A12EAB07F4277DC41F97623536D"),
 			"",
 		},
 	}

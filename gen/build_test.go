@@ -158,6 +158,26 @@ func TestStepShellCmd(t *testing.T) {
 	}
 }
 
+func TestStepShellCmdErrors(t *testing.T) {
+	rb, c, d := makeEnv(t)
+	defer os.RemoveAll(d)
+	defer rb.Close()
+	rb.steps = []*vts.BuildStep{
+		{
+			Kind: vts.StepShellCmd,
+			Args: []string{"exit 14"},
+		},
+	}
+
+	err := rb.Generate(c)
+	switch {
+	case err == nil:
+		t.Error("Generate() = nil, want non-nil error")
+	case err != nil && err.Error() != "step 1 (bash_cmd) failed: exit status 14":
+		t.Errorf("Generate() returned %q, want %q", err.Error(), "step 1 (bash_cmd) failed: exit status 14")
+	}
+}
+
 func TestPatchingBuildEnv(t *testing.T) {
 	tcs := []struct {
 		name           string

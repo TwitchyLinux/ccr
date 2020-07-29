@@ -27,6 +27,7 @@ type Env struct {
 
 	l                  sync.Mutex
 	streamingProcesses map[string]envProc
+	streamingExitCodes map[string]int
 
 	p            *exec.Cmd
 	cmdW, cmdR   *os.File
@@ -83,6 +84,18 @@ func (e *Env) WaitStreaming(id string) error {
 	}
 }
 
+// StreamingExitCode returns the exit code of the specified streaming command,
+// or -1 if it does not exist.
+func (e *Env) StreamingExitCode(id string) int {
+	e.l.Lock()
+	defer e.l.Unlock()
+	code, ok := e.streamingExitCodes[id]
+	if !ok {
+		return -1
+	}
+	return code
+}
+
 // EnsurePatched makes sure the top-level file or directory is mapped into the
 // filesystem of the isolated environment.
 func (e *Env) EnsurePatched(topLevelPathSegment string) error {
@@ -128,7 +141,7 @@ func NewEnv(readOnly bool) (*Env, error) {
 		return nil, err
 	}
 
-	out := Env{dir: tmp, streamingProcesses: map[string]envProc{}}
+	out := Env{dir: tmp, streamingProcesses: map[string]envProc{}, streamingExitCodes: map[string]int{}}
 
 	if out.cmdR, out.cmdW, err = os.Pipe(); err != nil {
 		os.RemoveAll(tmp)
@@ -206,6 +219,7 @@ func (e *Env) streamToConsole() {
 
 		if resp.Complete {
 			e.l.Lock()
+			e.streamingExitCodes[resp.ProcID] = resp.ExitCode
 			delete(e.streamingProcesses, resp.ProcID)
 			e.l.Unlock()
 		} else {

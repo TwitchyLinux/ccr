@@ -48,12 +48,15 @@ func (rb *RunningBuild) Close() error {
 	return rb.env.Close()
 }
 
-func (rb *RunningBuild) ExecBlocking(args []string, stdout, stderr io.Writer) error {
+func (rb *RunningBuild) ExecBlocking(args []string, stdout, stderr io.Writer) (int, error) {
 	id, err := rb.env.RunStreaming("/tmp", stdout, stderr, args...)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return rb.env.WaitStreaming(id)
+	if err := rb.env.WaitStreaming(id); err != nil {
+		return 0, err
+	}
+	return rb.env.StreamingExitCode(id), nil
 }
 
 func (rb *RunningBuild) EnsurePatched(path string) error {
@@ -142,6 +145,9 @@ func (rb *RunningBuild) WriteToCache(c *cache.Cache, b *vts.Build, hash []byte) 
 		if info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
 			// For symlinks: safest thing to do - what if it points outside of the env?
 			return nil
+		}
+		if strings.HasPrefix(filepath.Base(path), ".wh.") {
+			return nil // ignore whiteout markers from fuse-overlayfs.
 		}
 
 		relPath, err := filepath.Rel(buildDir, path)
