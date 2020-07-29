@@ -21,9 +21,11 @@ type RunningBuild interface {
 	ExecBlocking(args []string, stdout, stderr io.Writer) error
 }
 
-// download returns a reader to the file referenced by url, downloading
-// and caching it if necessary.
-func download(c *cache.Cache, s256, url string) (cache.ReadSeekCloser, error) {
+type httpClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+func downloadWithClient(client httpClient, c *cache.Cache, s256, url string) (cache.ReadSeekCloser, error) {
 	f, err := c.BySHA256(s256)
 	switch {
 	case err == cache.ErrCacheMiss:
@@ -38,7 +40,7 @@ func download(c *cache.Cache, s256, url string) (cache.ReadSeekCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	r, err := http.DefaultClient.Do(req)
+	r, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -79,4 +81,10 @@ func download(c *cache.Cache, s256, url string) (cache.ReadSeekCloser, error) {
 		return nil, err
 	}
 	return w, nil
+}
+
+// download returns a reader to the file referenced by url, downloading
+// and caching it if necessary.
+func download(c *cache.Cache, s256, url string) (cache.ReadSeekCloser, error) {
+	return downloadWithClient(http.DefaultClient, c, s256, url)
 }
