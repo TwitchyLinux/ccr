@@ -82,4 +82,10 @@ var commonTargets = map[string]vts.Target{
 	"common://toolchains/version:diffutils": DiffutilsVersion,
 	"common://toolchains:findutils":         FindutilsToolchain,
 	"common://toolchains/version:findutils": FindutilsVersion,
+	"common://toolchains:patch":             PatchToolchain,
+	"common://toolchains/version:patch":     PatchVersion,
+	"common://toolchains:sed":               SedToolchain,
+	"common://toolchains/version:sed":       SedVersion,
+	"common://toolchains:grep":              GrepToolchain,
+	"common://toolchains/version:grep":      GrepVersion,
 }

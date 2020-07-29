@@ -382,3 +382,108 @@ return '.'.join(long_vers.split('.')[:3])
 		},
 	}
 )
+
+var (
+	PatchToolchain = &vts.Toolchain{
+		Path: "common://toolchains:patch",
+		Name: "patch",
+		BinaryMappings: map[string]string{
+			"patch": "/bin/patch",
+		},
+		Details: []vts.TargetRef{
+			{Target: PatchVersion},
+		},
+	}
+
+	PatchVersion = &vts.Attr{
+		Path:   "common://toolchains/version:patch",
+		Name:   "patch",
+		Parent: vts.TargetRef{Target: SemverClass},
+		Val: &vts.ComputedValue{
+			InlineScript: []byte(`
+inv = run("patch", "--version")
+lines = inv.output.split('\n')
+if len(lines) < 2:
+  broken_assumption("patch --version output format may have changed")
+
+if (not lines[0].startswith('GNU patch ')) and (not lines[0].startswith('patch ')):
+  broken_assumption("patch --version output format may have changed")
+
+spl = lines[0].split(' ')
+if len(spl) < 3:
+  broken_assumption("patch --version output format may have changed")
+return spl[len(spl)-1]
+	`),
+		},
+	}
+)
+
+var (
+	SedToolchain = &vts.Toolchain{
+		Path: "common://toolchains:sed",
+		Name: "sed",
+		BinaryMappings: map[string]string{
+			"sed": "/bin/sed",
+		},
+		Details: []vts.TargetRef{
+			{Target: SedVersion},
+		},
+	}
+
+	SedVersion = &vts.Attr{
+		Path:   "common://toolchains/version:sed",
+		Name:   "sed",
+		Parent: vts.TargetRef{Target: SemverClass},
+		Val: &vts.ComputedValue{
+			InlineScript: []byte(`
+inv = run("sed", "--version")
+lines = inv.output.split('\n')
+if len(lines) < 2:
+  broken_assumption("sed --version output format may have changed")
+
+if not lines[0].startswith('sed '):
+  broken_assumption("sed --version output format may have changed")
+
+spl = lines[0].split(' ')
+if len(spl) < 3:
+  broken_assumption("sed --version output format may have changed")
+return spl[len(spl)-1]
+	`),
+		},
+	}
+)
+
+var (
+	GrepToolchain = &vts.Toolchain{
+		Path: "common://toolchains:grep",
+		Name: "grep",
+		BinaryMappings: map[string]string{
+			"grep": "/bin/grep",
+		},
+		Details: []vts.TargetRef{
+			{Target: GrepVersion},
+		},
+	}
+
+	GrepVersion = &vts.Attr{
+		Path:   "common://toolchains/version:grep",
+		Name:   "grep",
+		Parent: vts.TargetRef{Target: SemverClass},
+		Val: &vts.ComputedValue{
+			InlineScript: []byte(`
+inv = run("grep", "--version")
+lines = inv.output.split('\n')
+if len(lines) < 2:
+  broken_assumption("grep --version output format may have changed")
+
+if not lines[0].startswith('grep '):
+  broken_assumption("grep --version output format may have changed")
+
+spl = lines[0].split(' ')
+if len(spl) < 3:
+  broken_assumption("grep --version output format may have changed")
+return spl[len(spl)-1]
+	`),
+		},
+	}
+)
