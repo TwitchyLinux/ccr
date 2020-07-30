@@ -9,7 +9,7 @@ import (
 	"go.starlark.net/starlark"
 )
 
-const buildOutputHashCacheBuster = 2
+const buildOutputHashCacheBuster = 3
 
 // Build is a target representing a build.
 type Build struct {
