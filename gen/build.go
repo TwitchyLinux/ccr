@@ -93,7 +93,7 @@ func (rb *RunningBuild) Patch(gc GenerationContext, patches map[string]vts.Targe
 				if err := os.MkdirAll(filepath.Dir(oPath), 0755); err != nil && !os.IsExist(err) {
 					return vts.WrapWithPath(err, path)
 				}
-				if err := generateFile(rb.fs, srcFilePath, oPath, s.Mode()); err != nil {
+				if err := populateFileToPath(rb.fs, srcFilePath, oPath, s.Mode()); err != nil {
 					return vts.WrapWithPath(err, path)
 				}
 
@@ -233,7 +233,7 @@ func writeFileResourceFromBuild(gc GenerationContext, resource *vts.Resource, b 
 		return err
 	}
 	m, err := determineMode(resource, gc.RunnerEnv)
-	if err != nil && err != errNoAttr {
+	if err != nil && !errors.Is(err, errNoAttr) {
 		return err
 	}
 

@@ -1,6 +1,7 @@
 package gen
 
 import (
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -21,7 +22,7 @@ func fileSrcInfo(resource *vts.Resource, src *vts.Puesdo, env *vts.RunnerEnv) (s
 
 	mode, err := determineMode(resource, env)
 	switch {
-	case err == errNoAttr:
+	case errors.Is(err, errNoAttr):
 		st, err := os.Stat(srcFilePath)
 		if err != nil {
 			return "", "", 0, vts.WrapWithPath(err, srcFilePath)
@@ -40,10 +41,10 @@ func populateFile(gc GenerationContext, resource *vts.Resource, src *vts.Puesdo)
 	if err != nil {
 		return err
 	}
-	return generateFile(gc.RunnerEnv.FS, srcPath, outPath, mode)
+	return populateFileToPath(gc.RunnerEnv.FS, srcPath, outPath, mode)
 }
 
-func generateFile(fs billy.Filesystem, srcPath, outPath string, mode os.FileMode) error {
+func populateFileToPath(fs billy.Filesystem, srcPath, outPath string, mode os.FileMode) error {
 	r, err := os.OpenFile(srcPath, os.O_RDONLY, 0644)
 	if err != nil {
 		return vts.WrapWithPath(err, srcPath)

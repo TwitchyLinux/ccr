@@ -39,7 +39,7 @@ func determineAttrValue(t vts.Target, cls *vts.AttrClass, env *vts.RunnerEnv) (s
 func determinePath(t vts.Target, env *vts.RunnerEnv) (string, error) {
 	v, err := determineAttrValue(t, common.PathClass, env)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("path: %w", err)
 	}
 	if s, ok := v.(starlark.String); ok {
 		return filepath.Clean(string(s)), nil
@@ -50,7 +50,7 @@ func determinePath(t vts.Target, env *vts.RunnerEnv) (string, error) {
 func determineMode(t vts.Target, env *vts.RunnerEnv) (os.FileMode, error) {
 	v, err := determineAttrValue(t, common.ModeClass, env)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("mode: %w", err)
 	}
 	if s, ok := v.(starlark.String); ok {
 		mode, err := strconv.ParseInt(string(s), 8, 64)
