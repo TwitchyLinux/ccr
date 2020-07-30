@@ -109,6 +109,7 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 		"strip_prefix": mkStripPrefixOutputMapper(s),
 		"file":         makePuesdotarget(s, vts.FileRef),
 		"deb":          makePuesdotarget(s, vts.DebRef),
+		"sieve":        makeSieve(s),
 		"semver":       mkTargetConstraint(common.SemverClass),
 	}, nil
 }

@@ -76,6 +76,62 @@ func makeToolchain(s *Script) *starlark.Builtin {
 	})
 }
 
+func makeSieve(s *Script) *starlark.Builtin {
+	t := vts.TargetSieve
+
+	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+		var name string
+		var inputs, exGlobs *starlark.List
+		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name?", &name, "inputs?", &inputs,
+			"exclude?", &exGlobs); err != nil {
+			return starlark.None, err
+		}
+
+		st := &vts.Sieve{
+			Name:         name,
+			TargetPath:   s.makePath(name),
+			ContractPath: s.fPath,
+			Pos: &vts.DefPosition{
+				Path:  s.fPath,
+				Frame: thread.CallFrame(1),
+			},
+		}
+
+		if inputs != nil {
+			i := inputs.Iterate()
+			defer i.Done()
+			var x starlark.Value
+			for i.Next(&x) {
+				v, err := toDepTarget(s.path, x)
+				if err != nil {
+					return nil, fmt.Errorf("invalid input: %v", err)
+				}
+				st.Inputs = append(st.Inputs, v)
+			}
+		}
+		if exGlobs != nil {
+			i := exGlobs.Iterate()
+			defer i.Done()
+			var x starlark.Value
+			for i.Next(&x) {
+				v, ok := x.(starlark.String)
+				if !ok {
+					return nil, fmt.Errorf("invalid exclude pattern: %T", x)
+				}
+				st.ExcludeGlobs = append(st.ExcludeGlobs, string(v))
+			}
+		}
+
+		// If theres no name, it must be an anonymous target as part of another
+		// target. We don't add it to the targets list.
+		if name == "" {
+			return st, nil
+		}
+		s.targets = append(s.targets, st)
+		return starlark.None, nil
+	})
+}
+
 func makeComputedValue(s *Script) *starlark.Builtin {
 	return starlark.NewBuiltin("compute", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var fname, fun, code string

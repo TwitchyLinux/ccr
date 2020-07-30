@@ -34,6 +34,8 @@ const (
 	TargetPuesdo
 	// TargetBuild represents a build target.
 	TargetBuild
+	// TargetSieve represents a union/filter of other generator targets.
+	TargetSieve
 )
 
 func (t TargetType) String() string {
@@ -58,6 +60,8 @@ func (t TargetType) String() string {
 		return "puesdo"
 	case TargetBuild:
 		return "build"
+	case TargetSieve:
+		return "sieve"
 	default:
 		return fmt.Sprintf("TargetType<%d>", int(t))
 	}
@@ -196,6 +200,7 @@ func validateSource(src TargetRef, parent Target) error {
 		switch n := src.Target.(type) {
 		case *Build:
 		case *Generator:
+		case *Sieve:
 		case *Puesdo:
 			switch n.Kind {
 			case FileRef:

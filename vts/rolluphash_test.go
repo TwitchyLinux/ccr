@@ -92,6 +92,13 @@ func TestRollupHash(t *testing.T) {
 			"",
 		},
 		{
+			"sieve",
+			&Sieve{Name: "users", TargetPath: "//systems:users_list", ExcludeGlobs: []string{"*.txt", "*.ccr"},
+				Inputs: []TargetRef{{Target: &Generator{Name: "users", Path: "//systems:users_list"}}}},
+			mustDecodeHex(t, "147A460E82AA181FD5E35E60578A9DA7BEC40DB75D7B6E60CE2BAE439B8CC1D0"),
+			"",
+		},
+		{
 			"puesdo with attr",
 			&Puesdo{Name: "something", Path: "//waht:something", Details: []TargetRef{
 				{Target: &Attr{Name: "val", Val: starlark.String("abc"), Parent: TargetRef{Target: &AttrClass{}}}},

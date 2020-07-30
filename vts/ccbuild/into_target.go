@@ -63,6 +63,9 @@ func toGeneratorTarget(currentPath string, v starlark.Value) (vts.TargetRef, err
 	if a, ok := v.(*vts.Build); ok {
 		return vts.TargetRef{Target: a}, nil
 	}
+	if a, ok := v.(*vts.Sieve); ok {
+		return vts.TargetRef{Target: a}, nil
+	}
 	if a, ok := v.(*vts.Puesdo); ok && (a.Kind == vts.FileRef || a.Kind == vts.DebRef) {
 		return vts.TargetRef{Target: a}, nil
 	}

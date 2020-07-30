@@ -168,6 +168,23 @@ var newScriptTestcases = []struct {
 		},
 	},
 	{
+		name:     "resource with sieve source",
+		filename: "testdata/resource_with_sieve_source.ccr",
+		want: []vts.Target{
+			&vts.Resource{
+				Path:   "//test:yeet",
+				Name:   "yeet",
+				Parent: vts.TargetRef{Path: "common://resource/file"},
+				Source: &vts.TargetRef{Target: &vts.Sieve{
+					ContractPath: "testdata/resource_with_sieve_source.ccr",
+					Inputs:       []vts.TargetRef{{Path: "//test:something"}},
+					ExcludeGlobs: []string{"*.txt"},
+				},
+				},
+			},
+		},
+	},
+	{
 		name:     "attr with computed value",
 		filename: "testdata/attr_with_computed_value.ccr",
 		want: []vts.Target{
