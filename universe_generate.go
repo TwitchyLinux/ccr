@@ -211,25 +211,25 @@ func (u *Universe) generateTarget(s generationState, t vts.Target) error {
 			if err := u.generateTarget(s, src.Target); err != nil {
 				return vts.WrapWithTarget(err, src.Target)
 			}
-			if err := u.generateResourceUsingSource(s, st.(*vts.Resource), src.Target); err != nil {
+			if err := u.populateResourceFromSource(s, st.(*vts.Resource), src.Target); err != nil {
 				return vts.WrapWithTarget(err, src.Target)
 			}
 		}
 	}
-	if b, isBuild := t.(*vts.Build); isBuild {
-		if err := gen.GenerateBuild(gen.GenerationContext{
-			Cache:     u.cache,
-			RunnerEnv: s.runnerEnv,
-		}, b); err != nil {
-			return err
-		}
+	// Generate() does nothing if the target type doesnt make
+	// sense for generation.
+	if err := gen.Generate(gen.GenerationContext{
+		Cache:     u.cache,
+		RunnerEnv: s.runnerEnv,
+	}, t); err != nil {
+		return err
 	}
 
 	s.haveGenerated[t] = struct{}{}
 	return nil
 }
 
-func (u *Universe) generateResourceUsingSource(s generationState, resource *vts.Resource, source vts.Target) error {
+func (u *Universe) populateResourceFromSource(s generationState, resource *vts.Resource, source vts.Target) error {
 	info := vts.InputSet{
 		Resource: resource,
 		Directs:  make([]vts.Target, len(resource.Deps)),
@@ -238,24 +238,11 @@ func (u *Universe) generateResourceUsingSource(s generationState, resource *vts.
 		info.Directs[i] = resource.Deps[i].Target
 	}
 
-	gc := gen.GenerationContext{
-		Cache:     u.cache,
-		RunnerEnv: s.runnerEnv,
-		Inputs:    &info,
-	}
-	switch src := source.(type) {
-	case *vts.Puesdo:
-		switch src.Kind {
-		case vts.FileRef:
-			return gen.GenerateFile(gc, resource, src)
-		case vts.DebRef:
-			return gen.GenerateDebSource(gc, resource, src)
-		}
-		return fmt.Errorf("cannot generate using puesdo source %v", src.Kind)
-
-	case *vts.Generator:
+	// As a special case, generators get told about all the resources that are
+	// part of their input set.
+	if gen, isGenerator := source.(*vts.Generator); isGenerator {
 		info.ClassedResources = map[*vts.ResourceClass][]*vts.Resource{}
-		for i, inp := range src.Inputs {
+		for i, inp := range gen.NeedInputs() {
 			switch input := inp.Target.(type) {
 			case *vts.Resource, *vts.Component:
 				info.Directs = append(info.Directs, input)
@@ -269,11 +256,12 @@ func (u *Universe) generateResourceUsingSource(s generationState, resource *vts.
 				return fmt.Errorf("input[%d] references unsupported target type %T", i, inp.Target)
 			}
 		}
-		return src.Run(resource, &info, s.runnerEnv)
-
-	case *vts.Build:
-		return gen.GenerateBuildSource(gc, resource, src)
 	}
 
-	return fmt.Errorf("cannot generate using source %T for resource %v", source, resource)
+	gc := gen.GenerationContext{
+		Cache:     u.cache,
+		RunnerEnv: s.runnerEnv,
+		Inputs:    &info,
+	}
+	return gen.PopulateResource(gc, resource, source)
 }

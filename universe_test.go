@@ -715,7 +715,7 @@ Class: //basic:whelp
 			if mfPath := filepath.Join(td, "test_manifest.txt"); tc.testManifest != "" {
 				st, err := os.Stat(mfPath)
 				if err != nil {
-					t.Errorf("Failed to stat test manifest: %v", err)
+					t.Fatalf("Failed to stat test manifest: %v", err)
 				}
 				man, err := ioutil.ReadFile(mfPath)
 				if err != nil {

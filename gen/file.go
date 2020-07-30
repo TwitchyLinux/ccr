@@ -33,9 +33,9 @@ func fileSrcInfo(resource *vts.Resource, src *vts.Puesdo, env *vts.RunnerEnv) (s
 	return srcFilePath, outFilePath, mode, nil
 }
 
-// GenerateFile implements generation of a resource target, for resources
+// populateFile implements generation of a resource target, for resources
 // backed by a file source.
-func GenerateFile(gc GenerationContext, resource *vts.Resource, src *vts.Puesdo) error {
+func populateFile(gc GenerationContext, resource *vts.Resource, src *vts.Puesdo) error {
 	srcPath, outPath, mode, err := fileSrcInfo(resource, src, gc.RunnerEnv)
 	if err != nil {
 		return err

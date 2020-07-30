@@ -3,6 +3,7 @@ package gen
 import (
 	"bytes"
 	"encoding/hex"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -292,7 +293,7 @@ func TestPatchingBuildEnv(t *testing.T) {
 	}
 }
 
-func TestWriteResourceFromBuild(t *testing.T) {
+func TestPopulateBuild(t *testing.T) {
 	tcs := []struct {
 		name           string
 		r              *vts.Resource
@@ -396,12 +397,12 @@ func TestWriteResourceFromBuild(t *testing.T) {
 				}
 			}
 
-			if err := writeResourceFromBuild(GenerationContext{
+			if err := populateBuild(GenerationContext{
 				Cache: c,
 				RunnerEnv: &vts.RunnerEnv{
 					FS: osfs.New(outDir),
-				}}, tc.r, b, h); err != nil {
-				t.Errorf("writeResourceFromBuild(%v, %v, %X) failed: %v", tc.r, b, h, err)
+				}}, tc.r, b); err != nil {
+				t.Errorf("populateBuild(%v, %v) failed: %v", tc.r, b, err)
 			}
 
 			for p, m := range tc.expectFiles {
@@ -412,6 +413,98 @@ func TestWriteResourceFromBuild(t *testing.T) {
 				if err == nil && m != s.Mode() {
 					t.Errorf("%q: mode = %v, want %v", p, s.Mode(), m)
 				}
+			}
+		})
+	}
+}
+
+func TestGenerateBuild(t *testing.T) {
+	outTxtOnly := starlark.NewDict(3)
+	outTxtOnly.SetKey(starlark.String("*.txt"), &vts.StripPrefixOutputMapper{Prefix: "/"})
+
+	tcs := []struct {
+		name        string
+		b           *vts.Build
+		expectFiles map[string]os.FileMode
+	}{
+		{
+			name: "file",
+			b: &vts.Build{
+				Path: "//test:fake_file_build",
+				Name: "fake_file_build",
+				PatchIns: map[string]vts.TargetRef{
+					"/somefile.txt": {Target: &vts.Puesdo{
+						Kind:         vts.FileRef,
+						ContractPath: "testdata/something.ccr",
+						Path:         "file.txt",
+					}},
+					"/should_get_output.o": {Target: &vts.Puesdo{
+						Kind:         vts.FileRef,
+						ContractPath: "testdata/something.ccr",
+						Path:         "file.txt",
+					}},
+				},
+				Output: outTxtOnly,
+			},
+			expectFiles: map[string]os.FileMode{"somefile.txt": os.FileMode(0644)},
+		},
+	}
+
+	cd, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(cd)
+	c, err := cache.NewCache(cd)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			outDir, err := ioutil.TempDir("", "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer os.RemoveAll(outDir)
+
+			h, err := tc.b.RollupHash(nil, nil)
+			if err != nil {
+				t.Fatalf("RollupHash() failed: %v", err)
+			}
+
+			if err := Generate(GenerationContext{
+				Cache: c,
+				RunnerEnv: &vts.RunnerEnv{
+					FS: osfs.New(outDir),
+				}}, tc.b); err != nil {
+				t.Errorf("Generate(%v) failed: %v", tc.b, err)
+			}
+
+			fr, err := c.FilesetReader(h)
+			defer fr.Close()
+
+			for {
+				path, h, err := fr.Next()
+				if err != nil {
+					if err == io.EOF {
+						break
+					}
+					t.Fatalf("iterating buildset: %v", err)
+				}
+
+				if m, ok := tc.expectFiles[path]; ok {
+					if got := os.FileMode(h.Mode); m != got {
+						t.Errorf("%q: mode = %v, want %v", path, os.FileMode(h.Mode), m)
+					}
+				} else {
+					t.Errorf("Unexpected file in buildset: %q", path)
+				}
+				delete(tc.expectFiles, path)
+			}
+
+			for p, _ := range tc.expectFiles {
+				t.Errorf("file %q missing from buildset", p)
 			}
 		})
 	}

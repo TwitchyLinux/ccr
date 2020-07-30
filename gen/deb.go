@@ -57,9 +57,9 @@ func unpackedDeb(gc GenerationContext, src *vts.Puesdo) (*dpkg.Deb, error) {
 	return d, nil
 }
 
-// GenerateDebSource implements generation of a resource target, based
+// populateDebSource implements generation of a resource target, based
 // on a reference to a debian package as its source.
-func GenerateDebSource(gc GenerationContext, resource *vts.Resource, src *vts.Puesdo) error {
+func populateDebSource(gc GenerationContext, resource *vts.Resource, src *vts.Puesdo) error {
 	p, err := determinePath(resource, gc.RunnerEnv)
 	if err != nil {
 		return vts.WrapWithTarget(err, resource)

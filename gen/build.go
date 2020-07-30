@@ -263,8 +263,8 @@ func writeFileResourceFromBuild(gc GenerationContext, resource *vts.Resource, b 
 	return nil
 }
 
-// GenerateBuild executes a build if the result is not already cached.
-func GenerateBuild(gc GenerationContext, b *vts.Build) error {
+// generateBuild executes a build if the result is not already cached.
+func generateBuild(gc GenerationContext, b *vts.Build) error {
 	bh, err := b.RollupHash(gc.RunnerEnv, proc.EvalComputedAttribute)
 	if err != nil {
 		return vts.WrapWithTarget(err, b)
@@ -295,27 +295,12 @@ func GenerateBuild(gc GenerationContext, b *vts.Build) error {
 	return rb.Close()
 }
 
-// GenerateBuildSource implements generation of a resource target, based
+// populateBuild implements generation of a resource target, based
 // on a reference to a build target.
-func GenerateBuildSource(gc GenerationContext, resource *vts.Resource, b *vts.Build) error {
+func populateBuild(gc GenerationContext, resource *vts.Resource, b *vts.Build) error {
 	bh, err := b.RollupHash(gc.RunnerEnv, proc.EvalComputedAttribute)
 	if err != nil {
 		return vts.WrapWithTarget(err, b)
-	}
-
-	// Try to read the necessary resource sources from the cache. If that
-	// succeeds, theres nothing left to do.
-	switch err = writeResourceFromBuild(gc, resource, b, bh); err {
-	case nil:
-		return nil
-	case cache.ErrCacheMiss: // Fallthrough to execute the build.
-	default:
-		return err
-	}
-
-	// If we got this far, the build output is not cached, we need to complete the build manually.
-	if err := GenerateBuild(gc, b); err != nil {
-		return err
 	}
 	return writeResourceFromBuild(gc, resource, b, bh)
 }
