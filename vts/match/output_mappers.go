@@ -1,4 +1,4 @@
-package vts
+package match
 
 import (
 	"crypto/sha256"
@@ -8,9 +8,8 @@ import (
 	"go.starlark.net/starlark"
 )
 
-// BuildOutputMapper types can map an input filename into the output filename
-// for a build.
-type BuildOutputMapper interface {
+// OutputMapper types map an input filename into an output filename.
+type OutputMapper interface {
 	Map(string) string
 }
 

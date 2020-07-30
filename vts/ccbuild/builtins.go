@@ -10,6 +10,7 @@ import (
 	"github.com/twitchylinux/ccr/vts/ccbuild/runners"
 	"github.com/twitchylinux/ccr/vts/ccbuild/runners/syslib"
 	"github.com/twitchylinux/ccr/vts/common"
+	"github.com/twitchylinux/ccr/vts/match"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 )
@@ -37,7 +38,7 @@ func mkStripPrefixOutputMapper(s *Script) *starlark.Builtin {
 			return nil, errors.New("expected 1 argument")
 		}
 		s, _ := starlark.AsString(args[0])
-		return &vts.StripPrefixOutputMapper{Prefix: strings.TrimPrefix(s, "/")}, nil
+		return &match.StripPrefixOutputMapper{Prefix: strings.TrimPrefix(s, "/")}, nil
 	})
 }
 

@@ -5,6 +5,8 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/gobwas/glob"
+	"github.com/twitchylinux/ccr/vts/match"
 	"go.starlark.net/starlark"
 )
 
@@ -18,11 +20,6 @@ func mustDecodeHex(t *testing.T, s string) []byte {
 }
 
 func TestRollupHash(t *testing.T) {
-	outputFiles := starlark.NewDict(3)
-	outputFiles.SetKey(starlark.String("cool.txt"), starlark.String("cool.txt"))
-	outputFiles.SetKey(starlark.String("*.txt"), starlark.String("/kek.txt"))
-	outputFiles.SetKey(starlark.String("*.go"), &StripPrefixOutputMapper{Prefix: "/usr/local/go/src"})
-
 	tcs := []struct {
 		name   string
 		target ReproducibleTarget
@@ -113,10 +110,16 @@ func TestRollupHash(t *testing.T) {
 			&Build{Name: "users", Path: "//systems:users_list",
 				Steps:    []*BuildStep{{Kind: StepUnpackGz, Path: "go1.11.4.tar.gz", ToPath: "src"}},
 				HostDeps: []TargetRef{{Target: &Component{Name: "mmkay"}}},
-				Output:   outputFiles,
+				Output: &match.FilenameRules{
+					Rules: []match.MatchRule{
+						{P: glob.MustCompile("cool.txt"), Out: match.LiteralOutputMapper("cool.txt")},
+						{P: glob.MustCompile("*.txt"), Out: match.LiteralOutputMapper("/kek.txt")},
+						{P: glob.MustCompile("*.go"), Out: &match.StripPrefixOutputMapper{Prefix: "/usr/local/go/src"}},
+					},
+				},
 				PatchIns: map[string]TargetRef{"/cool.txt": TargetRef{Target: &Puesdo{Kind: FileRef, Path: "cool.txt"}}},
 			},
-			mustDecodeHex(t, "EB18ECE9C076BDB4F0F4C2807AD709E1386C3A12EAB07F4277DC41F97623536D"),
+			mustDecodeHex(t, "C799BEA8C70F35B8D863607CBC8E1F6E50F9D416E30125D841A9D66A0E827C36"),
 			"",
 		},
 	}

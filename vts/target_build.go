@@ -4,9 +4,8 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"sort"
-	"strings"
 
-	"github.com/gobwas/glob"
+	"github.com/twitchylinux/ccr/vts/match"
 	"go.starlark.net/starlark"
 )
 
@@ -22,7 +21,7 @@ type Build struct {
 
 	HostDeps []TargetRef
 	Steps    []*BuildStep
-	Output   *starlark.Dict
+	Output   *match.FilenameRules
 	PatchIns map[string]TargetRef
 }
 
@@ -129,59 +128,12 @@ func (t *Build) RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error) {
 		}
 	}
 	if t.Output != nil {
-		fmt.Fprintln(hash, "Output mappings:")
-		out := make([]string, 0, t.Output.Len())
-		for _, e := range t.Output.Items() {
-			out = append(out, fmt.Sprintf("%s: %s", e[0].String(), e[1].String()))
-		}
-		sort.Strings(out)
-		for _, kv := range out {
-			hash.Write([]byte(kv))
-		}
+		fmt.Fprintln(hash, t.Output.RollupHash())
 	}
 
 	return hash.Sum(nil), nil
 }
 
-type artifactMatch struct {
-	p   glob.Glob
-	out BuildOutputMapper
-}
-
-type BuildArtifactMatcher struct {
-	rules []artifactMatch
-}
-
-func (m *BuildArtifactMatcher) Match(artifactPath string) string {
-	for _, r := range m.rules {
-		if r.p.Match(artifactPath) {
-			return r.out.Map(artifactPath)
-		}
-	}
-	return ""
-}
-
-func (t *Build) OutputMappings() BuildArtifactMatcher {
-	if t.Output == nil {
-		return BuildArtifactMatcher{}
-	}
-	out := BuildArtifactMatcher{rules: make([]artifactMatch, t.Output.Len())}
-	keys := make([]string, 0, t.Output.Len())
-	for _, e := range t.Output.Keys() {
-		keys = append(keys, string(e.(starlark.String)))
-	}
-	sort.Strings(keys)
-
-	for i, k := range keys {
-		v, _, _ := t.Output.Get(starlark.String(k))
-		var mapper BuildOutputMapper
-		if s, isStr := v.(starlark.String); isStr {
-			mapper = LiteralOutputMapper(s)
-		} else {
-			mapper = v.(BuildOutputMapper)
-		}
-
-		out.rules[i] = artifactMatch{p: glob.MustCompile(strings.TrimPrefix(k, "/")), out: mapper}
-	}
-	return out
+func (t *Build) OutputMappings() *match.FilenameRules {
+	return t.Output
 }

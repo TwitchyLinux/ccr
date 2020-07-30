@@ -238,7 +238,7 @@ var newScriptTestcases = []struct {
 	{
 		name:     "build_invalid_output",
 		filename: "testdata/invalid_build_output.ccr",
-		err:      "invalid build output key: cannot use type starlark.Int",
+		err:      "invalid build outputs: index 0: key is starlark.Int, need string",
 	},
 }
 

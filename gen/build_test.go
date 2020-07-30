@@ -10,10 +10,12 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/gobwas/glob"
 	"github.com/twitchylinux/ccr/cache"
 	"github.com/twitchylinux/ccr/proc"
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/common"
+	"github.com/twitchylinux/ccr/vts/match"
 	"go.starlark.net/starlark"
 	"gopkg.in/src-d/go-billy.v4/osfs"
 )
@@ -58,11 +60,12 @@ func TestBuildWriteToCache(t *testing.T) {
 	if err := ioutil.WriteFile(filepath.Join(rb.OverlayUpperPath(), "b.txt"), nil, 0644); err != nil {
 		t.Fatal(err)
 	}
-	outMapping := starlark.NewDict(12)
-	// Leading / should have been removed by (*vts.Build).OutputMappings().
-	outMapping.SetKey(starlark.String("a.txt"), starlark.String("b.txt"))
 
-	if err := rb.WriteToCache(c, &vts.Build{Output: outMapping}, bytes.Repeat([]byte{0}, 32)); err != nil {
+	if err := rb.WriteToCache(c, &vts.Build{Output: &match.FilenameRules{
+		Rules: []match.MatchRule{
+			{P: glob.MustCompile("a.txt"), Out: match.LiteralOutputMapper("b.txt")},
+		},
+	}}, bytes.Repeat([]byte{0}, 32)); err != nil {
 		t.Errorf("rb.WriteToCache() failed: %v", err)
 	}
 
@@ -419,9 +422,6 @@ func TestPopulateBuild(t *testing.T) {
 }
 
 func TestGenerateBuild(t *testing.T) {
-	outTxtOnly := starlark.NewDict(3)
-	outTxtOnly.SetKey(starlark.String("*.txt"), &vts.StripPrefixOutputMapper{Prefix: "/"})
-
 	tcs := []struct {
 		name        string
 		b           *vts.Build
@@ -444,7 +444,11 @@ func TestGenerateBuild(t *testing.T) {
 						Path:         "file.txt",
 					}},
 				},
-				Output: outTxtOnly,
+				Output: &match.FilenameRules{
+					Rules: []match.MatchRule{
+						{P: glob.MustCompile("*.txt"), Out: &match.StripPrefixOutputMapper{Prefix: "/"}},
+					},
+				},
 			},
 			expectFiles: map[string]os.FileMode{"somefile.txt": os.FileMode(0644)},
 		},

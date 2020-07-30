@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/gobwas/glob"
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/common"
+	"github.com/twitchylinux/ccr/vts/match"
 	"go.starlark.net/starlark"
 )
 
@@ -577,20 +577,10 @@ func makeBuild(s *Script) *starlark.Builtin {
 			}
 		}
 		if outputs != nil {
-			for _, v := range outputs.Items() {
-				k, ok := v[0].(starlark.String)
-				if !ok {
-					return nil, fmt.Errorf("invalid build output key: cannot use type %T", v[0])
-				}
-				if _, err := glob.Compile(string(k)); err != nil {
-					return nil, fmt.Errorf("invalid build output match %q: %v", string(k), err)
-				}
-
-				if _, isMapper := v[1].(vts.BuildOutputMapper); !isMapper && v[1].Type() != "string" {
-					return nil, fmt.Errorf("invalid build output value: cannot use type %T", v[1])
-				}
+			var err error
+			if b.Output, err = match.BuildFilenameMappers(outputs); err != nil {
+				return nil, fmt.Errorf("invalid build outputs: %v", err)
 			}
-			b.Output = outputs
 		}
 		if inputs != nil {
 			for i, v := range inputs.Items() {
