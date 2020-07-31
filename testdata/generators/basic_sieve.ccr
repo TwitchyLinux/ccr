@@ -11,8 +11,8 @@ build(
 
 
 resource(
-  name   = "bad_filter",
-  parent = "common://resources:file",
+  name   = "filter",
+  parent = "common://resources:virtual",
   path   = "/usr/include/f.txt",
   source = sieve(
     inputs = [
@@ -28,12 +28,15 @@ resource(
   name   = "union",
   parent = "common://resources:file",
   path   = "fake.txt",
-  source = sieve(
-    inputs = [
-      ":files",
-      file('fake.txt'),
-    ],
-  ),
+  source = ":s",
+)
+
+sieve(
+  name   = 's',
+  inputs = [
+    ":files",
+    file('fake.txt'),
+  ],
 )
 
 resource(
@@ -52,5 +55,32 @@ resource(
         },
       ),
     ],
+  ),
+)
+
+resource(
+  name   = "prefix",
+  parent = "common://resources:file",
+  path   = "/cat/fake.txt",
+  source = sieve(
+    inputs = [
+      file('fake.txt'),
+    ],
+    prefix = 'cat',
+  ),
+)
+
+
+resource(
+  name   = "rename",
+  parent = "common://resources:file",
+  path   = "/real.txt",
+  source = sieve(
+    inputs = [
+      file('fake.txt'),
+    ],
+    rename = {
+      'fake.txt': 'real.txt',
+    }
   ),
 )

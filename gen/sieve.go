@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path/filepath"
 
 	"github.com/gobwas/glob"
 	"github.com/twitchylinux/ccr/vts"
+	"github.com/twitchylinux/ccr/vts/match"
 )
 
 // unionFileset exposes a single fileset that is the ordered union of input
@@ -81,6 +83,54 @@ func (fs *filterFileset) Read(b []byte) (int, error) {
 	return fs.base.Read(b)
 }
 
+// prefixFileset exposes a fileset that adds a prefix onto all files.
+type prefixFileset struct {
+	base   fileset
+	prefix string
+}
+
+func (fs *prefixFileset) Close() error {
+	return fs.base.Close()
+}
+
+func (fs *prefixFileset) Next() (path string, header *tar.Header, err error) {
+	path, h, err := fs.base.Next()
+	if err != nil {
+		return "", nil, err
+	}
+	return filepath.Join(fs.prefix, path), h, nil
+}
+
+func (fs *prefixFileset) Read(b []byte) (int, error) {
+	return fs.base.Read(b)
+}
+
+// renameFileset exposes a fileset that renames files based on match rules.
+type renameFileset struct {
+	base  fileset
+	rules *match.FilenameRules
+}
+
+func (fs *renameFileset) Close() error {
+	return fs.base.Close()
+}
+
+func (fs *renameFileset) Next() (path string, header *tar.Header, err error) {
+	path, h, err := fs.base.Next()
+	if err != nil {
+		return "", nil, err
+	}
+
+	if newPath := fs.rules.Match(path); newPath != "" {
+		return newPath, h, nil
+	}
+	return path, h, nil
+}
+
+func (fs *renameFileset) Read(b []byte) (int, error) {
+	return fs.base.Read(b)
+}
+
 func filesetForSieve(gc GenerationContext, s *vts.Sieve) (fileset, error) {
 	inputs := make([]fileset, 0, len(s.Inputs))
 	for i, inp := range s.Inputs {
@@ -104,7 +154,10 @@ func filesetForSieve(gc GenerationContext, s *vts.Sieve) (fileset, error) {
 	}
 
 	if s.AddPrefix != "" {
-		return nil, errors.New("add prefix not implemented")
+		out = &prefixFileset{base: out, prefix: s.AddPrefix}
+	}
+	if s.Renames != nil {
+		out = &renameFileset{base: out, rules: s.Renames}
 	}
 
 	return out, nil
