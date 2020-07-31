@@ -61,7 +61,7 @@ func (t *Sieve) NeedInputs() []TargetRef {
 }
 
 func (t *Sieve) String() string {
-	return fmt.Sprintf("sieve<%s>", "_")
+	return fmt.Sprintf("sieve<%s>", t.Name)
 }
 
 func (t *Sieve) Freeze() {

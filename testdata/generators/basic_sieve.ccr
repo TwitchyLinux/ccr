@@ -1,0 +1,56 @@
+build(
+  name      = "files",
+  output    = {
+    'tmp/*': strip_prefix('/tmp/'),
+  },
+  patch_inputs = {
+    "/tmp/f.txt": file('fake.txt'),
+    "/tmp/f.h": file('fake.txt'),
+  },
+)
+
+
+resource(
+  name   = "bad_filter",
+  parent = "common://resources:file",
+  path   = "/usr/include/f.txt",
+  source = sieve(
+    inputs = [
+      ":files",
+    ],
+    exclude = [
+      "*.txt",
+    ],
+  ),
+)
+
+resource(
+  name   = "union",
+  parent = "common://resources:file",
+  path   = "fake.txt",
+  source = sieve(
+    inputs = [
+      ":files",
+      file('fake.txt'),
+    ],
+  ),
+)
+
+resource(
+  name   = "union2",
+  parent = "common://resources:file",
+  path   = "c.html",
+  source = sieve(
+    inputs = [
+      file('fake.txt'),
+      build(
+        output    = {
+          '/**': strip_prefix(''),
+        },
+        patch_inputs = {
+          "/c.html": file('fake.txt'),
+        },
+      ),
+    ],
+  ),
+)

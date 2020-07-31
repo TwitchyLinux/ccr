@@ -4,6 +4,7 @@ package gen
 import (
 	"archive/tar"
 	"fmt"
+	"path/filepath"
 
 	"github.com/twitchylinux/ccr/cache"
 	"github.com/twitchylinux/ccr/vts"
@@ -47,6 +48,15 @@ func PopulateResource(gc GenerationContext, resource *vts.Resource, source vts.T
 			})
 		}
 		return fmt.Errorf("cannot generate using puesdo source %v", src.Kind)
+
+	case *vts.Sieve:
+		outPath, mode, err := resourcePathMode(resource, gc.RunnerEnv)
+		if err != nil {
+			return err
+		}
+		return populateFileToPath(gc.RunnerEnv.FS, fsr, outPath, mode, func(path string, _ *tar.Header) (bool, error) {
+			return path != filepath.Base(outPath), nil
+		})
 
 	case *vts.Build:
 		return writeResourceFromBuild(gc, resource, fsr)

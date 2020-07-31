@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/gobwas/glob"
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/match"
 	"go.starlark.net/starlark"
@@ -105,7 +106,7 @@ func makeSieve(s *Script) *starlark.Builtin {
 			defer i.Done()
 			var x starlark.Value
 			for i.Next(&x) {
-				v, err := toDepTarget(s.path, x)
+				v, err := toGeneratorTarget(s.path, x)
 				if err != nil {
 					return nil, fmt.Errorf("invalid input: %v", err)
 				}
@@ -120,6 +121,9 @@ func makeSieve(s *Script) *starlark.Builtin {
 				v, ok := x.(starlark.String)
 				if !ok {
 					return nil, fmt.Errorf("invalid exclude pattern: %T", x)
+				}
+				if _, err := glob.Compile(string(v)); err != nil {
+					return nil, fmt.Errorf("invalid exclude pattern %q: %v", string(v), err)
 				}
 				st.ExcludeGlobs = append(st.ExcludeGlobs, string(v))
 			}

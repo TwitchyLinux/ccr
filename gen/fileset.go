@@ -81,6 +81,9 @@ func filesetForSource(gc GenerationContext, source vts.Target) (fileset, error) 
 			return nil, vts.WrapWithTarget(err, src)
 		}
 		return gc.Cache.FilesetReader(h)
+
+	case *vts.Sieve:
+		return filesetForSieve(gc, src)
 	}
 	return nil, fmt.Errorf("cannot obtain fileset for source %T", source)
 }

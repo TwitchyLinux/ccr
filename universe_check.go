@@ -135,6 +135,7 @@ func (u *Universe) checkAgainstSource(opts *vts.RunnerEnv, t vts.Target, src vts
 		}
 	case *vts.Generator:
 	case *vts.Build:
+	case *vts.Sieve:
 	default:
 		return fmt.Errorf("cannot check against source of type %T", src)
 	}

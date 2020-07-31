@@ -671,6 +671,28 @@ Class: //basic:whelp
 			err:    "semver constraint was not met",
 			config: GenerateConfig{},
 		},
+		{
+			name:   "sieve_basic_filter",
+			target: "//basic_sieve:bad_filter",
+			config: GenerateConfig{},
+			err:    "file does not exist",
+		},
+		{
+			name:   "sieve_union",
+			target: "//basic_sieve:union",
+			config: GenerateConfig{},
+			hasFiles: map[string]os.FileMode{
+				"/fake.txt": os.FileMode(0644),
+			},
+		},
+		{
+			name:   "sieve_union_2",
+			target: "//basic_sieve:union2",
+			config: GenerateConfig{},
+			hasFiles: map[string]os.FileMode{
+				"/c.html": os.FileMode(0644),
+			},
+		},
 	}
 
 	cd, err := ioutil.TempDir("", "")
