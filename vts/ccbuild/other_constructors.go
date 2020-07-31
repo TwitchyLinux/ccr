@@ -83,10 +83,10 @@ func makeSieve(s *Script) *starlark.Builtin {
 
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var name, prefix string
-		var inputs, exGlobs *starlark.List
+		var inputs, exGlobs, incGlobs *starlark.List
 		var renames *starlark.Dict
 		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name?", &name, "inputs?", &inputs,
-			"prefix?", &prefix, "rename?", &renames, "exclude?", &exGlobs); err != nil {
+			"prefix?", &prefix, "rename?", &renames, "exclude?", &exGlobs, "include?", &incGlobs); err != nil {
 			return starlark.None, err
 		}
 
@@ -126,6 +126,21 @@ func makeSieve(s *Script) *starlark.Builtin {
 					return nil, fmt.Errorf("invalid exclude pattern %q: %v", string(v), err)
 				}
 				st.ExcludeGlobs = append(st.ExcludeGlobs, string(v))
+			}
+		}
+		if incGlobs != nil {
+			i := incGlobs.Iterate()
+			defer i.Done()
+			var x starlark.Value
+			for i.Next(&x) {
+				v, ok := x.(starlark.String)
+				if !ok {
+					return nil, fmt.Errorf("invalid include pattern: %T", x)
+				}
+				if _, err := glob.Compile(string(v)); err != nil {
+					return nil, fmt.Errorf("invalid include pattern %q: %v", string(v), err)
+				}
+				st.IncludeGlobs = append(st.IncludeGlobs, string(v))
 			}
 		}
 		if renames != nil {

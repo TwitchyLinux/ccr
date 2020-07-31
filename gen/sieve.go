@@ -54,8 +54,9 @@ func (fs *unionFileset) Read(b []byte) (int, error) {
 
 // filterFileset exposes a fileset that filters files based on path.
 type filterFileset struct {
-	base            fileset
-	excludePatterns []glob.Glob
+	base     fileset
+	patterns []glob.Glob
+	invert   bool
 }
 
 func (fs *filterFileset) Close() error {
@@ -70,8 +71,8 @@ outer:
 			return "", nil, err
 		}
 
-		for _, p := range fs.excludePatterns {
-			if p.Match(path) {
+		for _, p := range fs.patterns {
+			if p.Match(path) != fs.invert {
 				continue outer
 			}
 		}
@@ -143,10 +144,20 @@ func filesetForSieve(gc GenerationContext, s *vts.Sieve) (fileset, error) {
 	var out fileset = &unionFileset{all: inputs, remaining: inputs}
 
 	if len(s.ExcludeGlobs) > 0 {
-		ff := filterFileset{base: out, excludePatterns: make([]glob.Glob, len(s.ExcludeGlobs))}
+		ff := filterFileset{base: out, patterns: make([]glob.Glob, len(s.ExcludeGlobs))}
 		for i, p := range s.ExcludeGlobs {
 			var err error
-			if ff.excludePatterns[i], err = glob.Compile(p); err != nil {
+			if ff.patterns[i], err = glob.Compile(p); err != nil {
+				return nil, err
+			}
+		}
+		out = &ff
+	}
+	if len(s.IncludeGlobs) > 0 {
+		ff := filterFileset{base: out, patterns: make([]glob.Glob, len(s.IncludeGlobs)), invert: true}
+		for i, p := range s.IncludeGlobs {
+			var err error
+			if ff.patterns[i], err = glob.Compile(p); err != nil {
 				return nil, err
 			}
 		}

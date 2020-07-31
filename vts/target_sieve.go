@@ -20,6 +20,7 @@ type Sieve struct {
 	AddPrefix    string
 	Renames      *match.FilenameRules
 	ExcludeGlobs []string
+	IncludeGlobs []string
 }
 
 func (t *Sieve) DefinedAt() *DefPosition {
@@ -98,6 +99,9 @@ func (t *Sieve) RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error) {
 	}
 	for _, ex := range t.ExcludeGlobs {
 		fmt.Fprintf(hash, "Ex pattern: %s\n", ex)
+	}
+	for _, ex := range t.IncludeGlobs {
+		fmt.Fprintf(hash, "Inc pattern: %s\n", ex)
 	}
 	if t.Renames != nil {
 		fmt.Fprintln(hash, t.Renames.RollupHash())

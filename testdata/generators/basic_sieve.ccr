@@ -11,7 +11,7 @@ build(
 
 
 resource(
-  name   = "filter",
+  name   = "filter_exclude",
   parent = "common://resources:file",
   path   = "/usr/include/f.txt",
   source = sieve(
@@ -24,6 +24,20 @@ resource(
     rename = {
       'f.txt': '/usr/include/f.txt',
     },
+  ),
+)
+
+resource(
+  name   = "filter_include",
+  parent = "common://resources:c_headers",
+  path   = "/usr/include",
+  source = sieve(
+    inputs = [
+      ":files",
+    ],
+    include = [
+      "*.h",
+    ],
   ),
 )
 

@@ -672,10 +672,15 @@ Class: //basic:whelp
 			config: GenerateConfig{},
 		},
 		{
-			name:   "sieve_basic_filter",
-			target: "//basic_sieve:filter",
+			name:   "sieve_basic_filter_exclude",
+			target: "//basic_sieve:filter_exclude",
 			config: GenerateConfig{},
 			err:    "file does not exist",
+		},
+		{
+			name:   "sieve_basic_filter_include",
+			target: "//basic_sieve:filter_include",
+			config: GenerateConfig{},
 		},
 		{
 			name:   "sieve_union",
