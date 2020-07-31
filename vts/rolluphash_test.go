@@ -93,9 +93,15 @@ func TestRollupHash(t *testing.T) {
 		},
 		{
 			"sieve",
-			&Sieve{Name: "users", TargetPath: "//systems:users_list", ExcludeGlobs: []string{"*.txt", "*.ccr"},
-				Inputs: []TargetRef{{Target: &Generator{Name: "users", Path: "//systems:users_list"}}}},
-			mustDecodeHex(t, "147A460E82AA181FD5E35E60578A9DA7BEC40DB75D7B6E60CE2BAE439B8CC1D0"),
+			&Sieve{Name: "users", TargetPath: "//systems:users_list",
+				AddPrefix: "/usr/", ExcludeGlobs: []string{"*.txt", "*.ccr"},
+				Inputs: []TargetRef{{Target: &Generator{Name: "users", Path: "//systems:users_list"}}},
+				Renames: &match.FilenameRules{
+					Rules: []match.MatchRule{
+						{P: glob.MustCompile("cool.txt"), Out: match.LiteralOutputMapper("kek.txt")},
+					},
+				}},
+			mustDecodeHex(t, "A06A624DDF7CAFF4D37CA8576246C0283B2245D2A24C47446B034350C1D8E0A0"),
 			"",
 		},
 		{

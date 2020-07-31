@@ -8,5 +8,8 @@ resource(
     exclude = [
       "*.txt",
     ],
+    rename = {
+      'cool.txt': 'kek.txt',
+    },
   ),
 )

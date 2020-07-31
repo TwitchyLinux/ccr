@@ -8,10 +8,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gobwas/glob"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/common"
+	"github.com/twitchylinux/ccr/vts/match"
 	"go.starlark.net/starlark"
 )
 
@@ -179,6 +181,9 @@ var newScriptTestcases = []struct {
 					ContractPath: "testdata/resource_with_sieve_source.ccr",
 					Inputs:       []vts.TargetRef{{Path: "//test:something"}},
 					ExcludeGlobs: []string{"*.txt"},
+					Renames: &match.FilenameRules{
+						Rules: []match.MatchRule{{P: glob.MustCompile("cool.txt"), Out: match.LiteralOutputMapper("kek.txt")}},
+					},
 				},
 				},
 			},

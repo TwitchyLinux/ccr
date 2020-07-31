@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/twitchylinux/ccr/vts"
+	"github.com/twitchylinux/ccr/vts/match"
 	"go.starlark.net/starlark"
 )
 
@@ -80,10 +81,11 @@ func makeSieve(s *Script) *starlark.Builtin {
 	t := vts.TargetSieve
 
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-		var name string
+		var name, prefix string
 		var inputs, exGlobs *starlark.List
+		var renames *starlark.Dict
 		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name?", &name, "inputs?", &inputs,
-			"exclude?", &exGlobs); err != nil {
+			"prefix?", &prefix, "rename?", &renames, "exclude?", &exGlobs); err != nil {
 			return starlark.None, err
 		}
 
@@ -91,6 +93,7 @@ func makeSieve(s *Script) *starlark.Builtin {
 			Name:         name,
 			TargetPath:   s.makePath(name),
 			ContractPath: s.fPath,
+			AddPrefix:    prefix,
 			Pos: &vts.DefPosition{
 				Path:  s.fPath,
 				Frame: thread.CallFrame(1),
@@ -119,6 +122,12 @@ func makeSieve(s *Script) *starlark.Builtin {
 					return nil, fmt.Errorf("invalid exclude pattern: %T", x)
 				}
 				st.ExcludeGlobs = append(st.ExcludeGlobs, string(v))
+			}
+		}
+		if renames != nil {
+			var err error
+			if st.Renames, err = match.BuildFilenameMappers(renames); err != nil {
+				return nil, fmt.Errorf("invalid sieve renames: %v", err)
 			}
 		}
 

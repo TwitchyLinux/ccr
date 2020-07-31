@@ -296,7 +296,7 @@ func TestPatchingBuildEnv(t *testing.T) {
 	}
 }
 
-func TestPopulateBuild(t *testing.T) {
+func TestPopulateResourceFromBuild(t *testing.T) {
 	tcs := []struct {
 		name           string
 		r              *vts.Resource
@@ -399,13 +399,12 @@ func TestPopulateBuild(t *testing.T) {
 					t.Fatalf("Failed to yeet backing archive into cache: %v", err)
 				}
 			}
-
-			if err := populateBuild(GenerationContext{
+			if err := PopulateResource(GenerationContext{
 				Cache: c,
 				RunnerEnv: &vts.RunnerEnv{
 					FS: osfs.New(outDir),
 				}}, tc.r, b); err != nil {
-				t.Errorf("populateBuild(%v, %v) failed: %v", tc.r, b, err)
+				t.Errorf("PopulateResource(%v, %v) failed: %v", tc.r, b, err)
 			}
 
 			for p, m := range tc.expectFiles {

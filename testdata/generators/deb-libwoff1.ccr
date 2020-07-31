@@ -2,6 +2,7 @@ resource(
   name   = "lib_libwoff2common_1.0.2",
   parent = "common://resources:sys_library",
   path   = "/usr/lib/x86_64-linux-gnu/libwoff2common.so.1.0.2",
+  mode   = '0644',
   source = ":debsrc_libwoff1",
 )
 

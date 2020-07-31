@@ -2,6 +2,7 @@
 package gen
 
 import (
+	"archive/tar"
 	"fmt"
 
 	"github.com/twitchylinux/ccr/cache"
@@ -17,23 +18,38 @@ type GenerationContext struct {
 }
 
 // PopulateResource is called to fulfill generation of a resource based on
-// the given source. The provided source should have already been generated.
+// the given source. The provided source should have already been used as
+// an argument to Generate().
 func PopulateResource(gc GenerationContext, resource *vts.Resource, source vts.Target) error {
+	// Special case: Generators do their own generation.
+	if gen, isGen := source.(*vts.Generator); isGen {
+		return gen.Run(resource, gc.Inputs, gc.RunnerEnv)
+	}
+	fsr, err := filesetForSource(gc, source)
+	if err != nil {
+		return err
+	}
+	defer fsr.Close()
+
 	switch src := source.(type) {
 	case *vts.Puesdo:
+		outPath, mode, err := resourcePathMode(resource, gc.RunnerEnv)
+		if err != nil {
+			return err
+		}
+
 		switch src.Kind {
 		case vts.FileRef:
-			return populateFile(gc, resource, src)
+			return populateFileToPath(gc.RunnerEnv.FS, fsr, outPath, mode, nil)
 		case vts.DebRef:
-			return populateDebSource(gc, resource, src)
+			return populateFileToPath(gc.RunnerEnv.FS, fsr, outPath, mode, func(path string, _ *tar.Header) (bool, error) {
+				return path != outPath, nil
+			})
 		}
 		return fmt.Errorf("cannot generate using puesdo source %v", src.Kind)
 
-	case *vts.Generator:
-		return src.Run(resource, gc.Inputs, gc.RunnerEnv)
-
 	case *vts.Build:
-		return populateBuild(gc, resource, src)
+		return writeResourceFromBuild(gc, resource, fsr)
 	}
 
 	return fmt.Errorf("cannot generate using source %T for resource %v", source, resource)
@@ -44,7 +60,7 @@ func PopulateResource(gc GenerationContext, resource *vts.Resource, source vts.T
 func Generate(gc GenerationContext, t vts.Target) error {
 	switch t := t.(type) {
 	case *vts.Resource, *vts.ResourceClass, *vts.Attr, *vts.AttrClass,
-		*vts.Checker, *vts.Component, *vts.Toolchain:
+		*vts.Checker, *vts.Component, *vts.Toolchain, *vts.Sieve:
 		return nil // Targets dont require direct generation.
 	case *vts.Generator:
 		return nil // Generators are always fulfilled with their source.

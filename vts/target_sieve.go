@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 
+	"github.com/twitchylinux/ccr/vts/match"
 	"go.starlark.net/starlark"
 )
 
@@ -16,6 +17,8 @@ type Sieve struct {
 
 	Inputs []TargetRef
 
+	AddPrefix    string
+	Renames      *match.FilenameRules
 	ExcludeGlobs []string
 }
 
@@ -80,7 +83,7 @@ func (t *Sieve) Hash() (uint32, error) {
 
 func (t *Sieve) RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error) {
 	hash := sha256.New()
-	fmt.Fprintf(hash, "Sieve: %q\n", t.Name)
+	fmt.Fprintf(hash, "Sieve: %q\n%s\n", t.Name, t.AddPrefix)
 
 	for _, dep := range t.Inputs {
 		rt, isHashable := dep.Target.(ReproducibleTarget)
@@ -95,6 +98,9 @@ func (t *Sieve) RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error) {
 	}
 	for _, ex := range t.ExcludeGlobs {
 		fmt.Fprintf(hash, "Ex pattern: %s\n", ex)
+	}
+	if t.Renames != nil {
+		fmt.Fprintln(hash, t.Renames.RollupHash())
 	}
 
 	return hash.Sum(nil), nil

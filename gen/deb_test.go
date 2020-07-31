@@ -13,15 +13,22 @@ import (
 	"gopkg.in/src-d/go-billy.v4/osfs"
 )
 
-func TestFilePopulateResource(t *testing.T) {
+func TestPopulateResourceFromDeb(t *testing.T) {
+	debSrc := &vts.Puesdo{
+		Kind:         vts.DebRef,
+		ContractPath: "../testdata/generators/deb.ccr",
+		SHA256:       "d2e9dd92dd3f1bdbafd63b4a122415d28fecc5f6152d82fa0f76a9766d95ba17",
+		Path:         "libwoff1_1.0.2-1_amd64.deb",
+		Name:         "fake_deb",
+	}
 	tcs := []struct {
 		name        string
 		r           *vts.Resource
-		err         string
 		expectFiles map[string]os.FileMode
+		err         string
 	}{
 		{
-			name: "basic",
+			name: "deb_explicit_mode",
 			r: &vts.Resource{
 				Path:   "//test:yeet",
 				Name:   "yeet",
@@ -30,44 +37,24 @@ func TestFilePopulateResource(t *testing.T) {
 					{
 						Target: &vts.Attr{
 							Parent: vts.TargetRef{Target: common.PathClass},
-							Val:    starlark.String("/yeetfile"),
+							Val:    starlark.String("/usr/lib/x86_64-linux-gnu/libwoff2common.so.1.0.2"),
 						},
 					},
 					{
 						Target: &vts.Attr{
 							Parent: vts.TargetRef{Target: common.ModeClass},
-							Val:    starlark.String("0645"),
+							Val:    starlark.String("0600"),
 						},
 					},
 				},
 				Source: &vts.TargetRef{
-					Target: &vts.Puesdo{
-						Kind:         vts.FileRef,
-						ContractPath: "testdata/something.ccr",
-						Path:         "file.txt",
-					},
+					Target: debSrc,
 				},
 			},
-			expectFiles: map[string]os.FileMode{"/yeetfile": os.FileMode(0645)},
+			expectFiles: map[string]os.FileMode{"/usr/lib/x86_64-linux-gnu/libwoff2common.so.1.0.2": os.FileMode(0600)},
 		},
 		{
-			name: "missing_attrs",
-			r: &vts.Resource{
-				Path:   "//test:yeet",
-				Name:   "yeet",
-				Parent: vts.TargetRef{Target: common.FileResourceClass},
-				Source: &vts.TargetRef{
-					Target: &vts.Puesdo{
-						Kind:         vts.FileRef,
-						ContractPath: "testdata/something.ccr",
-						Path:         "file.txt",
-					},
-				},
-			},
-			err: "path: attr not specified",
-		},
-		{
-			name: "file_not_present",
+			name: "deb_inherit_mode",
 			r: &vts.Resource{
 				Path:   "//test:yeet",
 				Name:   "yeet",
@@ -76,25 +63,35 @@ func TestFilePopulateResource(t *testing.T) {
 					{
 						Target: &vts.Attr{
 							Parent: vts.TargetRef{Target: common.PathClass},
-							Val:    starlark.String("/yeetfile"),
-						},
-					},
-					{
-						Target: &vts.Attr{
-							Parent: vts.TargetRef{Target: common.ModeClass},
-							Val:    starlark.String("0645"),
+							Val:    starlark.String("/usr/lib/x86_64-linux-gnu/libwoff2common.so.1.0.2"),
 						},
 					},
 				},
 				Source: &vts.TargetRef{
-					Target: &vts.Puesdo{
-						Kind:         vts.FileRef,
-						ContractPath: "testdata/something.ccr",
-						Path:         "lol its missing.txt",
-					},
+					Target: debSrc,
 				},
 			},
-			err: "stat testdata/lol its missing.txt: no such file or directory",
+			expectFiles: map[string]os.FileMode{"/usr/lib/x86_64-linux-gnu/libwoff2common.so.1.0.2": os.FileMode(0755)},
+		},
+		{
+			name: "deb_file_missing",
+			r: &vts.Resource{
+				Path:   "//test:yeet",
+				Name:   "yeet",
+				Parent: vts.TargetRef{Target: common.FileResourceClass},
+				Details: []vts.TargetRef{
+					{
+						Target: &vts.Attr{
+							Parent: vts.TargetRef{Target: common.PathClass},
+							Val:    starlark.String("/lol/missing"),
+						},
+					},
+				},
+				Source: &vts.TargetRef{
+					Target: debSrc,
+				},
+			},
+			err: os.ErrNotExist.Error(),
 		},
 	}
 
@@ -116,31 +113,29 @@ func TestFilePopulateResource(t *testing.T) {
 			}
 			defer os.RemoveAll(outDir)
 
-			gc := GenerationContext{
+			d := tc.r.Source.Target.(*vts.Puesdo)
+
+			err = PopulateResource(GenerationContext{
 				Cache: c,
 				RunnerEnv: &vts.RunnerEnv{
 					FS: osfs.New(outDir),
 				},
-			}
-			err = PopulateResource(gc, tc.r, tc.r.Source.Target)
+			}, tc.r, d)
 
 			switch {
-			case err == nil && tc.err != "":
-				t.Errorf("PopulateResource() did not error, expected %q", tc.err)
-			case err != nil && tc.err == "":
-				t.Errorf("PopulateResource(%v) failed: %v", tc.r, err)
 			case err != nil && tc.err != err.Error():
-				t.Errorf("PopulateResource().err = %v, want %v", err, tc.err)
+				t.Errorf("PopulateResource(%v, %v) err = %v, want %v", tc.r, d, err, tc.err)
+			case err != nil && tc.err == "":
+				t.Errorf("PopulateResource(%v, %v) failed: %v", tc.r, d, err)
 			}
 
 			for p, m := range tc.expectFiles {
 				s, err := os.Stat(filepath.Join(outDir, p))
 				if err != nil {
-					t.Errorf("missing output file: %v", err)
-				} else {
-					if s.Mode() != m {
-						t.Errorf("%q: mode = %v, want %v", p, s.Mode(), m)
-					}
+					t.Errorf("failed to check expected file %q: %v", p, err)
+				}
+				if err == nil && m != s.Mode() {
+					t.Errorf("%q: mode = %v, want %v", p, s.Mode(), m)
 				}
 			}
 		})

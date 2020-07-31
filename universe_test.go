@@ -584,8 +584,8 @@ Class: //basic:whelp
 			hasFiles: map[string]os.FileMode{
 				"/usr/lib/x86_64-linux-gnu":                         os.FileMode(os.ModeDir | 0755),
 				"/usr/lib/x86_64-linux-gnu/libwoff2common.so.1.0.2": os.FileMode(0644),
-				"/usr/lib/x86_64-linux-gnu/libwoff2dec.so.1.0.2":    os.FileMode(0644),
-				"/usr/lib/x86_64-linux-gnu/libwoff2enc.so.1.0.2":    os.FileMode(0644),
+				"/usr/lib/x86_64-linux-gnu/libwoff2dec.so.1.0.2":    os.FileMode(0755),
+				"/usr/lib/x86_64-linux-gnu/libwoff2enc.so.1.0.2":    os.FileMode(0755),
 			},
 		},
 		{

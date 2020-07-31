@@ -1,9 +1,11 @@
 package gen
 
 import (
+	"archive/tar"
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -18,17 +20,17 @@ import (
 
 // unpackedDeb resolves a debian package referenced in a target,
 // to a *dpkg.Deb object.
-func unpackedDeb(gc GenerationContext, src *vts.Puesdo) (*dpkg.Deb, error) {
+func unpackedDeb(c *cache.Cache, src *vts.Puesdo) (*dpkg.Deb, error) {
 	var dr cache.ReadSeekCloser
 	var err error
 
-	cv, ok := gc.Cache.GetObj(src.SHA256)
+	cv, ok := c.GetObj(src.SHA256)
 	if ok {
 		return cv.(*dpkg.Deb), nil
 	}
 
 	if src.URL != "" {
-		if dr, err = deb.PkgReader(gc.Cache, src.SHA256, src.URL); err != nil {
+		if dr, err = deb.PkgReader(c, src.SHA256, src.URL); err != nil {
 			return nil, err
 		}
 	} else {
@@ -52,38 +54,45 @@ func unpackedDeb(gc GenerationContext, src *vts.Puesdo) (*dpkg.Deb, error) {
 	if d, err = dpkg.Open(dr); err != nil {
 		return nil, fmt.Errorf("failed decoding deb: %v", err)
 	}
-	gc.Cache.PutObj(src.SHA256, d)
+	c.PutObj(src.SHA256, d)
 
 	return d, nil
 }
 
-// populateDebSource implements generation of a resource target, based
-// on a reference to a debian package as its source.
-func populateDebSource(gc GenerationContext, resource *vts.Resource, src *vts.Puesdo) error {
-	p, err := determinePath(resource, gc.RunnerEnv)
+// debFileset implements the fileset interface for files in a debian package.
+type debFileset struct {
+	files []dpkg.DataFile
+	r     *bytes.Reader
+}
+
+func (fs *debFileset) Close() error {
+	fs.files, fs.r = nil, nil
+	return nil
+}
+
+func (fs *debFileset) Next() (path string, header *tar.Header, err error) {
+	if len(fs.files) == 0 {
+		return "", nil, io.EOF
+	}
+	file := fs.files[0]
+	fs.files = fs.files[1:]
+
+	fs.r = bytes.NewReader(file.Data)
+	file.Hdr.Name = strings.TrimPrefix(file.Hdr.Name, ".")
+	return file.Hdr.Name, &file.Hdr, nil
+}
+
+func (fs *debFileset) Read(b []byte) (int, error) {
+	if fs.r == nil {
+		return 0, errors.New("file not open")
+	}
+	return fs.r.Read(b)
+}
+
+func filesetForDebSource(gc GenerationContext, src *vts.Puesdo) (*debFileset, error) {
+	d, err := unpackedDeb(gc.Cache, src)
 	if err != nil {
-		return vts.WrapWithTarget(err, resource)
+		return nil, vts.WrapWithTarget(err, src)
 	}
-
-	d, err := unpackedDeb(gc, src)
-	if err != nil {
-		return vts.WrapWithTarget(err, src)
-	}
-
-	// TODO: better way to do this?
-	for _, f := range d.Files() {
-		if f.Hdr.Name == "."+p {
-			w, err := gc.RunnerEnv.FS.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.FileMode(f.Hdr.Mode))
-			if err != nil {
-				return vts.WrapWithTarget(vts.WrapWithPath(err, p), resource)
-			}
-			defer w.Close()
-			if _, err := io.Copy(w, bytes.NewReader(f.Data)); err != nil {
-				return vts.WrapWithTarget(vts.WrapWithPath(err, p), resource)
-			}
-			return nil
-		}
-	}
-
-	return fmt.Errorf("couldnt find %s in deb", p)
+	return &debFileset{files: d.Files()}, nil
 }
