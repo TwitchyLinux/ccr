@@ -3,7 +3,6 @@ package gen
 import (
 	"archive/tar"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -14,7 +13,6 @@ import (
 	"github.com/twitchylinux/ccr/gen/buildstep"
 	"github.com/twitchylinux/ccr/proc"
 	"github.com/twitchylinux/ccr/vts"
-	"github.com/twitchylinux/ccr/vts/common"
 	"gopkg.in/src-d/go-billy.v4"
 	"gopkg.in/src-d/go-billy.v4/osfs"
 )
@@ -88,7 +86,7 @@ func (rb *RunningBuild) Patch(gc GenerationContext, patches map[string]vts.Targe
 func (rb *RunningBuild) patchToPath(gc GenerationContext, path string, pt vts.Target, fsr fileset) error {
 	switch t := pt.(type) {
 	case *vts.Build:
-		return writeMultiFilesFromBuild(gc.Cache, rb.fs, filepath.Join(rb.OverlayUpperPath(), path), fsr)
+		return writeMultiFiles(gc.Cache, rb.fs, filepath.Join(rb.OverlayUpperPath(), path), fsr)
 
 	case *vts.Puesdo:
 		switch t.Kind {
@@ -166,34 +164,7 @@ func (rb *RunningBuild) WriteToCache(c *cache.Cache, b *vts.Build, hash []byte) 
 	return err
 }
 
-func writeResourceFromBuild(gc GenerationContext, resource *vts.Resource, fsr fileset) error {
-	outPath, mode, err := resourcePathMode(resource, gc.RunnerEnv)
-	if err != nil {
-		return err
-	}
-
-	parent := resource.Parent.Target.(*vts.ResourceClass)
-	switch parent {
-	case common.FileResourceClass:
-		err = populateFileToPath(gc.RunnerEnv.FS, fsr, outPath, mode, func(path string, _ *tar.Header) (bool, error) {
-			return path != filepath.Base(outPath), nil
-		})
-	case common.CHeadersResourceClass:
-		err = writeMultiFilesFromBuild(gc.Cache, gc.RunnerEnv.FS, outPath, fsr)
-	default:
-		return fmt.Errorf("cannot populate from build for resources of class %q", parent.GlobalPath())
-	}
-
-	if err != nil {
-		if err == os.ErrNotExist {
-			err = errors.New("file missing from build output")
-		}
-		return vts.WrapWithPath(vts.WrapWithTarget(err, resource), outPath)
-	}
-	return nil
-}
-
-func writeMultiFilesFromBuild(c *cache.Cache, fs billy.Filesystem, p string, fr fileset) error {
+func writeMultiFiles(c *cache.Cache, fs billy.Filesystem, p string, fr fileset) error {
 	for {
 		path, h, err := fr.Next()
 		if err != nil {

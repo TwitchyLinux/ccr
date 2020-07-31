@@ -7,4 +7,5 @@ resource_class(
     "common://elf/samearch",
     "common://elf/ldd-satisfiable",
   ],
+  populate = const.populate.first_file,
 )

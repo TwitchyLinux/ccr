@@ -10,6 +10,7 @@ var FileResourceClass = &vts.ResourceClass{
 	Checks: []vts.TargetRef{
 		{Target: FilePresentChecker},
 	},
+	PopStrategy: vts.PopulateFileMatchPath,
 }
 
 var DirResourceClass = &vts.ResourceClass{
@@ -40,11 +41,13 @@ var BinResourceClass = &vts.ResourceClass{
 	Checks: []vts.TargetRef{
 		{Target: BinaryResourceChecker},
 	},
+	PopStrategy: vts.PopulateFileMatchPath,
 }
 
 var SysLibResourceClass = &vts.ResourceClass{
-	Path: "common://resources:sys_library",
-	Name: "sys_library",
+	Path:        "common://resources:sys_library",
+	Name:        "sys_library",
+	PopStrategy: vts.PopulateFileMatchPath,
 }
 
 var JSONResourceClass = &vts.ResourceClass{
@@ -53,6 +56,7 @@ var JSONResourceClass = &vts.ResourceClass{
 	Checks: []vts.TargetRef{
 		{Target: JSONResourceChecker},
 	},
+	PopStrategy: vts.PopulateFileMatchPath,
 }
 
 var VirtualResourceClass = &vts.ResourceClass{
@@ -66,4 +70,5 @@ var CHeadersResourceClass = &vts.ResourceClass{
 	Checks: []vts.TargetRef{
 		{Target: CHeadersChecker},
 	},
+	PopStrategy: vts.PopulateFiles,
 }

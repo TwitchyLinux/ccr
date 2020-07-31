@@ -183,11 +183,14 @@ func makeResourceClass(s *Script) *starlark.Builtin {
 
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var name string
+		var popStrategy starlark.Int
 		var chks, deps *starlark.List
-		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name", &name, "chks?", &chks, "deps?", &deps); err != nil {
+		if err := starlark.UnpackArgs(t.String(), args, kwargs, "name", &name, "chks?", &chks, "deps?", &deps,
+			"populate?", &popStrategy); err != nil {
 			return starlark.None, err
 		}
 
+		ps, _ := popStrategy.Uint64()
 		r := &vts.ResourceClass{
 			Path: s.makePath(name),
 			Name: name,
@@ -195,6 +198,7 @@ func makeResourceClass(s *Script) *starlark.Builtin {
 				Path:  s.fPath,
 				Frame: thread.CallFrame(1),
 			},
+			PopStrategy: vts.PopulateStrategy(ps),
 		}
 		if chks != nil {
 			i := chks.Iterate()

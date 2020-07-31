@@ -12,7 +12,7 @@ build(
 
 resource(
   name   = "filter",
-  parent = "common://resources:virtual",
+  parent = "common://resources:file",
   path   = "/usr/include/f.txt",
   source = sieve(
     inputs = [
@@ -21,6 +21,9 @@ resource(
     exclude = [
       "*.txt",
     ],
+    rename = {
+      'f.txt': '/usr/include/f.txt',
+    },
   ),
 )
 

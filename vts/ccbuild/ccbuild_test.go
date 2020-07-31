@@ -112,6 +112,7 @@ var newScriptTestcases = []struct {
 					{Path: "common://elf/samearch"},
 					{Path: "common://elf/ldd-satisfiable"},
 				},
+				PopStrategy: vts.PopulateFileFirst,
 			},
 		},
 	},

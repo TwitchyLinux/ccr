@@ -693,14 +693,14 @@ Class: //basic:whelp
 				"/c.html": os.FileMode(0644),
 			},
 		},
-		// {
-		// 	name:   "sieve_prefix",
-		// 	target: "//basic_sieve:prefix",
-		// 	config: GenerateConfig{},
-		// 	hasFiles: map[string]os.FileMode{
-		// 		"/c.html": os.FileMode(0644),
-		// 	},
-		// },
+		{
+			name:   "sieve_prefix",
+			target: "//basic_sieve:prefix",
+			config: GenerateConfig{},
+			hasFiles: map[string]os.FileMode{
+				"/cat/fake.txt": os.FileMode(0644),
+			},
+		},
 		{
 			name:   "sieve_rename",
 			target: "//basic_sieve:rename",

@@ -77,6 +77,12 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 				"each_component": starlark.String(vts.ChkKindEachComponent),
 				"universe":       starlark.String(vts.ChkKindGlobal),
 			}),
+			"populate": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
+				"first_file":        starlark.MakeInt(int(vts.PopulateFileFirst)),
+				"matching_path":     starlark.MakeInt(int(vts.PopulateFileMatchPath)),
+				"matching_filename": starlark.MakeInt(int(vts.PopulateFileMatchBasePath)),
+				"all":               starlark.MakeInt(int(vts.PopulateFiles)),
+			}),
 		}),
 		"builtin": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
 			"json": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{

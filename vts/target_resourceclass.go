@@ -2,14 +2,47 @@ package vts
 
 import "fmt"
 
+// PopulateStrategy describes how files should be read from the source
+// and written into the output filesystem, when a resource is being
+// generated.
+type PopulateStrategy uint8
+
+const (
+	// PopulateFileMatchPath indicates a single file should be populated from
+	// the source, where the source path and resource path are an exact match.
+	PopulateFileMatchPath PopulateStrategy = iota + 1
+	// PopulateFileFirst indicates a single file should be populated from the
+	// source, where the first file in the source is used.
+	PopulateFileFirst
+	// PopulateFileMatchBasePath indicates a single file should be populated
+	// from the source, where the filename of the resource path matches the
+	// path of the file in the source.
+	PopulateFileMatchBasePath
+	// PopulateFiles indicates all files from the source should be populated,
+	// with file paths from the source being joined with the resource path
+	// to determine the path the files should be written.
+	PopulateFiles
+)
+
+// Unary returns true if the population strategy is about emitting a single
+// file.
+func (s PopulateStrategy) Unary() bool {
+	switch s {
+	case PopulateFiles:
+		return false
+	}
+	return true
+}
+
 // ResourceClass is a target representing a resource class.
 type ResourceClass struct {
 	Path string
 	Name string
 	Pos  *DefPosition
 
-	Deps   []TargetRef
-	Checks []TargetRef
+	PopStrategy PopulateStrategy
+	Deps        []TargetRef
+	Checks      []TargetRef
 }
 
 func (t *ResourceClass) DefinedAt() *DefPosition {
@@ -45,6 +78,10 @@ func (t *ResourceClass) Validate() error {
 		return err
 	}
 	return nil
+}
+
+func (t *ResourceClass) PopulateStrategy() PopulateStrategy {
+	return t.PopStrategy
 }
 
 // RunCheckers runs checkers on a resource, in the context of this
