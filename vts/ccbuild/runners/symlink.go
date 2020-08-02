@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/twitchylinux/ccr/vts"
 	"go.starlark.net/starlark"
@@ -108,5 +109,18 @@ func (*symlinkGenerator) Run(g *vts.Generator, inputs *vts.InputSet, opts *vts.R
 		return err
 	}
 
-	return opts.FS.Symlink(target, p)
+	if err := opts.FS.Symlink(target, p); err != nil {
+		if strings.HasSuffix(err.Error(), " file exists") {
+			link, err := opts.FS.Readlink(p)
+			if err != nil {
+				return vts.WrapWithPath(err, p)
+			}
+			if link != target {
+				return fmt.Errorf("symlink exists but has incorrect target %q", link)
+			}
+			return nil
+		}
+		return err
+	}
+	return nil
 }
