@@ -101,20 +101,20 @@ func TestRunStreaming(t *testing.T) {
 	if err := e.WaitStreaming(id); err != nil {
 		t.Errorf("WaitStreaming() failed: %v", err)
 	}
-	if ec := e.StreamingExitCode(id); ec != 0 {
-		t.Errorf("StreamingExitCode() = %d, want 0", ec)
+	if ec, err := e.StreamingExitStatus(id); ec != 0 || err != nil {
+		t.Errorf("StreamingExitCode() = %d (%v), want 0 (nil)", ec, err)
 	}
 	if err := e.WaitStreaming(id2); err != nil {
 		t.Errorf("WaitStreaming() failed: %v", err)
 	}
-	if ec := e.StreamingExitCode(id2); ec != 0 {
-		t.Errorf("StreamingExitCode() = %d, want 0", ec)
+	if ec, err := e.StreamingExitStatus(id2); ec != 0 || err != nil {
+		t.Errorf("StreamingExitCode() = %d (%v), want 0 (nil)", ec, err)
 	}
 	if err := e.WaitStreaming(id3); err != nil {
 		t.Errorf("WaitStreaming() failed: %v", err)
 	}
-	if ec := e.StreamingExitCode(id3); ec != 1 {
-		t.Errorf("StreamingExitCode() = %d, want 1", ec)
+	if ec, err := e.StreamingExitStatus(id3); ec != 1 || err == nil || err.Error() != "exit status 1" {
+		t.Errorf("StreamingExitCode() = %d (%v), want 1 (nil)", ec, err)
 	}
 
 	if want := []byte("yeow\n"); !bytes.Equal(want, stdout.Bytes()) {

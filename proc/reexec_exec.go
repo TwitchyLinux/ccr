@@ -3,7 +3,7 @@ package proc
 import (
 	"bytes"
 	"encoding/gob"
-  "os"
+	"os"
 	"os/exec"
 	"strconv"
 	"sync"
@@ -47,8 +47,8 @@ type execManager struct {
 	processes map[string]*exec.Cmd
 	stream    chan outputData
 
-	l       sync.Mutex
-	wg      sync.WaitGroup
+	l      sync.Mutex
+	wg     sync.WaitGroup
 	closed bool
 }
 
@@ -56,63 +56,63 @@ func (m *execManager) Close() error {
 	if m.closed {
 		return nil
 	}
-  m.closed = true
 
-  m.l.Lock()
-  for _, c := range m.processes {
-    c.Process.Kill()
-  }
-  m.l.Unlock()
+	m.l.Lock()
+	for _, c := range m.processes {
+		c.Process.Kill()
+	}
+	m.l.Unlock()
+	m.closed = true
 	m.wg.Wait() // Wait for all process watchers (the Wait()'ers) to finish.
-  close(m.stream)
+	close(m.stream)
 	return nil
 }
 
 func (m *execManager) outputStreamer() {
-	for  msg := range m.stream {
-    m.out.Encode(msg)
+	for msg := range m.stream {
+		m.out.Encode(msg)
 	}
 }
 
 type streamWriter struct {
-	id string
-  isErr bool
+	id    string
+	isErr bool
 
-	m  *execManager
+	m *execManager
 }
 
 func (w *streamWriter) Write(b []byte) (int, error) {
-  if w.m.closed {
-    return 0, os.ErrClosed
-  }
-  w.m.stream <- outputData{Data: b, ProcID: w.id, IsStderr: w.isErr}
+	if w.m.closed {
+		return 0, os.ErrClosed
+	}
+	w.m.stream <- outputData{Data: b, ProcID: w.id, IsStderr: w.isErr}
 	return len(b), nil
 }
 
 func (m *execManager) watchProc(c *exec.Cmd, id string) {
-  defer m.wg.Done()
-  defer func(){
-    m.l.Lock()
-    defer m.l.Unlock()
-    delete(m.processes, id)
-  }()
+	defer m.wg.Done()
+	defer func() {
+		m.l.Lock()
+		defer m.l.Unlock()
+		delete(m.processes, id)
+	}()
 
-  od := outputData{ProcID: id,Complete: true}
-  if err := c.Wait(); err != nil {
-    od.Error = err.Error()
-    if eErr, isExecErr := err.(*exec.ExitError); isExecErr {
-      od.ExitCode = eErr.ExitCode()
-    }
-  }
-  m.stream <- od
+	od := outputData{ProcID: id, Complete: true}
+	if err := c.Wait(); err != nil {
+		od.Error = err.Error()
+		if eErr, isExecErr := err.(*exec.ExitError); isExecErr {
+			od.ExitCode = eErr.ExitCode()
+		}
+	}
+	m.stream <- od
 }
 
 func (m *execManager) RunStreaming(cmd procCommand, pivotDir string, readOnly bool) procResp {
 	m.l.Lock()
 	defer m.l.Unlock()
-  if m.closed {
-    return procResp{Code: cmd.Code, Error: os.ErrClosed.Error()}
-  }
+	if m.closed {
+		return procResp{Code: cmd.Code, Error: os.ErrClosed.Error()}
+	}
 
 	c := reexec.Command(append([]string{"reexecEntry", "run", pivotDir, strconv.FormatBool(readOnly), cmd.Dir}, cmd.Args...)...)
 	c.Stdout = &streamWriter{m: m, id: cmd.ProcID, isErr: false}
@@ -126,10 +126,10 @@ func (m *execManager) RunStreaming(cmd procCommand, pivotDir string, readOnly bo
 			resp.ExitCode = eErr.ExitCode()
 		}
 	} else {
-    m.wg.Add(1)
-    m.processes[cmd.ProcID] = c
-    go m.watchProc(c, cmd.ProcID)
-  }
+		m.wg.Add(1)
+		m.processes[cmd.ProcID] = c
+		go m.watchProc(c, cmd.ProcID)
+	}
 	return resp
 }
 

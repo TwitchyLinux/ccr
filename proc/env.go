@@ -27,7 +27,6 @@ type Env struct {
 
 	l                  sync.Mutex
 	streamingProcesses map[string]envProc
-	streamingExitCodes map[string]int
 
 	p            *exec.Cmd
 	cmdW, cmdR   *os.File
@@ -39,8 +38,11 @@ type Env struct {
 }
 
 type envProc struct {
-	stdout io.Writer
-	stderr io.Writer
+	complete bool
+	exitCode int
+	error    string
+	stdout   io.Writer
+	stderr   io.Writer
 }
 
 // RunBlocking runs the specified command.
@@ -76,24 +78,31 @@ func (e *Env) WaitStreaming(id string) error {
 	for {
 		time.Sleep(45 * time.Millisecond)
 		e.l.Lock()
-		_, running := e.streamingProcesses[id]
+		info, ok := e.streamingProcesses[id]
 		e.l.Unlock()
-		if !running {
+		if !ok {
+			return os.ErrNotExist
+		}
+		if info.complete {
 			return nil
 		}
 	}
 }
 
-// StreamingExitCode returns the exit code of the specified streaming command,
-// or -1 if it does not exist.
-func (e *Env) StreamingExitCode(id string) int {
+// StreamingExitStatus returns the exit code and error (if any) of the
+// specified streaming command, or -1/ErrNotExist if it does not exist.
+func (e *Env) StreamingExitStatus(id string) (int, error) {
 	e.l.Lock()
 	defer e.l.Unlock()
-	code, ok := e.streamingExitCodes[id]
+	info, ok := e.streamingProcesses[id]
 	if !ok {
-		return -1
+		return -1, os.ErrNotExist
 	}
-	return code
+	var err error
+	if info.error != "" {
+		err = errors.New(info.error)
+	}
+	return info.exitCode, err
 }
 
 // EnsurePatched makes sure the top-level file or directory is mapped into the
@@ -141,7 +150,7 @@ func NewEnv(readOnly bool) (*Env, error) {
 		return nil, err
 	}
 
-	out := Env{dir: tmp, streamingProcesses: map[string]envProc{}, streamingExitCodes: map[string]int{}}
+	out := Env{dir: tmp, streamingProcesses: map[string]envProc{}}
 
 	if out.cmdR, out.cmdW, err = os.Pipe(); err != nil {
 		os.RemoveAll(tmp)
@@ -211,16 +220,15 @@ func (e *Env) streamToConsole() {
 			return
 		}
 		e.l.Lock()
-		procInfo, ok := e.streamingProcesses[resp.ProcID]
+		procInfo := e.streamingProcesses[resp.ProcID]
 		e.l.Unlock()
-		if !ok {
-			continue
-		}
 
 		if resp.Complete {
 			e.l.Lock()
-			e.streamingExitCodes[resp.ProcID] = resp.ExitCode
-			delete(e.streamingProcesses, resp.ProcID)
+			procInfo.complete = true
+			procInfo.error = resp.Error
+			procInfo.exitCode = resp.ExitCode
+			e.streamingProcesses[resp.ProcID] = procInfo
 			e.l.Unlock()
 		} else {
 			if resp.IsStderr {
