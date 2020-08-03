@@ -88,4 +88,10 @@ var commonTargets = map[string]vts.Target{
 	"common://toolchains/version:sed":       SedVersion,
 	"common://toolchains:grep":              GrepToolchain,
 	"common://toolchains/version:grep":      GrepVersion,
+	"common://toolchains:m4":                M4Toolchain,
+	"common://toolchains/version:m4":        M4Version,
+	"common://toolchains:automake":          AutomakeToolchain,
+	"common://toolchains/version:automake":  AutomakeVersion,
+	"common://toolchains:autoconf":          AutoconfToolchain,
+	"common://toolchains/version:autoconf":  AutoconfVersion,
 }

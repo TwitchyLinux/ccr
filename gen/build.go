@@ -46,15 +46,15 @@ func (rb *RunningBuild) Close() error {
 	return rb.env.Close()
 }
 
-func (rb *RunningBuild) ExecBlocking(args []string, stdout, stderr io.Writer) (int, error) {
-	id, err := rb.env.RunStreaming("/tmp", stdout, stderr, args...)
+func (rb *RunningBuild) ExecBlocking(wd string, args []string, stdout, stderr io.Writer) (int, error) {
+	id, err := rb.env.RunStreaming(wd, stdout, stderr, args...)
 	if err != nil {
 		return 0, err
 	}
 	if err := rb.env.WaitStreaming(id); err != nil {
 		return 0, err
 	}
-	return rb.env.StreamingExitCode(id), nil
+	return rb.env.StreamingExitStatus(id)
 }
 
 func (rb *RunningBuild) EnsurePatched(path string) error {
@@ -85,7 +85,7 @@ func (rb *RunningBuild) Patch(gc GenerationContext, patches map[string]vts.Targe
 
 func (rb *RunningBuild) patchToPath(gc GenerationContext, path string, pt vts.Target, fsr fileset) error {
 	switch t := pt.(type) {
-	case *vts.Build:
+	case *vts.Build, *vts.Sieve:
 		return writeMultiFiles(gc.Cache, rb.fs, filepath.Join(rb.OverlayUpperPath(), path), fsr)
 
 	case *vts.Puesdo:
@@ -117,6 +117,10 @@ func (rb *RunningBuild) Generate(c *cache.Cache) error {
 			}
 		case vts.StepShellCmd:
 			if err := buildstep.RunShellCmd(rb, step); err != nil {
+				return fmt.Errorf("step %d (%s) failed: %v", i+1, step.Kind, err)
+			}
+		case vts.StepConfigure:
+			if err := buildstep.RunConfigure(rb, step); err != nil {
 				return fmt.Errorf("step %d (%s) failed: %v", i+1, step.Kind, err)
 			}
 		default:

@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"sort"
 
 	"go.starlark.net/starlark"
 )
@@ -12,9 +13,10 @@ type StepKind string
 
 // Valid BuildStep StepKind values.
 const (
-	StepUnpackGz = "unpack_gz"
-	StepUnpackXz = "unpack_xz"
-	StepShellCmd = "bash_cmd"
+	StepUnpackGz  = "unpack_gz"
+	StepUnpackXz  = "unpack_xz"
+	StepShellCmd  = "bash_cmd"
+	StepConfigure = "configure"
 )
 
 // BuildStep is an anonymous target representing a step in a build.
@@ -26,6 +28,9 @@ type BuildStep struct {
 	Path   string
 	URL    string
 	SHA256 string
+
+	Dir       string
+	NamedArgs map[string]string
 
 	Args []string
 }
@@ -52,6 +57,10 @@ func (t *BuildStep) Validate() error {
 	case StepShellCmd:
 		if len(t.Args) != 1 {
 			return errors.New("only one argument can be provided")
+		}
+	case StepConfigure:
+		if t.Dir == "" {
+			return errors.New("dir must be specified")
 		}
 	}
 	return nil
@@ -82,8 +91,21 @@ func (t *BuildStep) RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error)
 	hash := sha256.New()
 	fmt.Fprintf(hash, "step: %q\n", t.Kind)
 	fmt.Fprintf(hash, "%q\n%q\n%q\n%q\n", t.ToPath, t.Path, t.URL, t.SHA256)
+	if t.Dir != "" {
+		fmt.Fprintf(hash, "dir: %s\n", t.Dir)
+	}
 	for i, a := range t.Args {
 		fmt.Fprintf(hash, "Arg[%d] = %q\n", i, a)
+	}
+	if len(t.NamedArgs) > 0 {
+		ordered := make([]string, 0, len(t.NamedArgs))
+		for k := range t.NamedArgs {
+			ordered = append(ordered, k)
+		}
+		sort.Strings(ordered)
+		for _, k := range ordered {
+			fmt.Fprintf(hash, "NamedArg[%s] = %q\n", k, t.NamedArgs[k])
+		}
 	}
 
 	return hash.Sum(nil), nil

@@ -121,7 +121,13 @@ func TestRollupHash(t *testing.T) {
 		{
 			"build",
 			&Build{Name: "users", Path: "//systems:users_list",
-				Steps:    []*BuildStep{{Kind: StepUnpackGz, Path: "go1.11.4.tar.gz", ToPath: "src"}},
+				Steps: []*BuildStep{
+					{Kind: StepUnpackGz, Path: "go1.11.4.tar.gz", ToPath: "src"},
+					{Kind: StepConfigure, Dir: "/tmp/aaa", NamedArgs: map[string]string{
+						"with-prefix": "/usr",
+						"something":   "else",
+					}},
+				},
 				HostDeps: []TargetRef{{Target: &Component{Name: "mmkay"}}},
 				Output: &match.FilenameRules{
 					Rules: []match.MatchRule{
@@ -132,7 +138,7 @@ func TestRollupHash(t *testing.T) {
 				},
 				PatchIns: map[string]TargetRef{"/cool.txt": TargetRef{Target: &Puesdo{Kind: FileRef, Path: "cool.txt"}}},
 			},
-			mustDecodeHex(t, "B78A0DC2EF84FB2D79FFAB5B7FC6E5F5B22E949EF8A7CE1964A42F88273D5E3C"),
+			mustDecodeHex(t, "F9E2BD6B014E155E3C55C46C7C648C599C760C5FB1B303663B9064751DA6EB56"),
 			"",
 		},
 	}

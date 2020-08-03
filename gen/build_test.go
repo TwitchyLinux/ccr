@@ -182,6 +182,28 @@ func TestStepShellCmdErrors(t *testing.T) {
 	}
 }
 
+func TestStepConfigure(t *testing.T) {
+	rb, c, d := makeEnv(t)
+	defer os.RemoveAll(d)
+	defer rb.Close()
+	rb.steps = []*vts.BuildStep{
+		{
+			Kind: vts.StepConfigure,
+			Dir:  "/tmp/somedir",
+		},
+	}
+	if err := os.Mkdir(filepath.Join(rb.OverlayUpperPath(), "tmp/somedir"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := ioutil.WriteFile(filepath.Join(rb.OverlayUpperPath(), "tmp/somedir/configure"), []byte("#!/bin/bash\nexit 0"), 0777); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := rb.Generate(c); err != nil {
+		t.Errorf("Generate() failed: %v", err)
+	}
+}
+
 func TestPatchingBuildEnv(t *testing.T) {
 	tcs := []struct {
 		name           string

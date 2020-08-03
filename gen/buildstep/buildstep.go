@@ -18,7 +18,7 @@ type RunningBuild interface {
 	OverlayUpperPath() string
 	RootFS() billy.Filesystem
 	SourceFS() billy.Filesystem
-	ExecBlocking(args []string, stdout, stderr io.Writer) (int, error)
+	ExecBlocking(wd string, args []string, stdout, stderr io.Writer) (int, error)
 }
 
 type httpClient interface {

@@ -71,6 +71,11 @@ func (l overlayLayout) DevPath() string {
 	return filepath.Join(l.base, "dev")
 }
 
+// TmpPath returns the absolute path to where /tmp is created.
+func (l overlayLayout) TmpPath() string {
+	return filepath.Join(l.OverlayUpperPath(), "tmp")
+}
+
 // RootPath returns the absolute path to the root fs tree for child processes.
 func (l overlayLayout) RootPath() string {
 	return filepath.Join(l.base, "root")
@@ -128,10 +133,9 @@ func (l overlayLayout) Setup() error {
 	if err := os.Mkdir(l.OverlayUpperPath(), 0755); err != nil {
 		return err
 	}
-	if err := os.Mkdir(filepath.Join(l.OverlayUpperPath(), "tmp"), 0755); err != nil {
+	if err := os.Mkdir(l.TmpPath(), 0755); err != nil {
 		return err
 	}
-	l.makeOpaque("/tmp") // best effort
 
 	if err := os.Mkdir(l.OverlayWorkingPath(), 0755); err != nil {
 		return err
@@ -142,7 +146,7 @@ func (l overlayLayout) Setup() error {
 	if err := os.Mkdir(l.RootPath(), 0755); err != nil {
 		return err
 	}
-	if err := syscall.Mount("", l.RootPath(), "tmpfs", 0, "mode=777,size=65536k"); err != nil {
+	if err := syscall.Mount("", l.RootPath(), "tmpfs", 0, "mode=777,size=524288k"); err != nil {
 		return err
 	}
 	l.binds = append(l.binds, l.RootPath())
@@ -184,6 +188,8 @@ func (l overlayLayout) SetupRootBinds() (err error) {
 			src = l.DevPath()
 		case "proc", "boot", "lost+found":
 			continue
+		case "tmp":
+			src = l.TmpPath()
 		default:
 			src = filepath.Join(l.OverlayMountPath(), n)
 		}

@@ -487,3 +487,109 @@ return spl[len(spl)-1]
 		},
 	}
 )
+
+var (
+	M4Toolchain = &vts.Toolchain{
+		Path: "common://toolchains:m4",
+		Name: "m4",
+		BinaryMappings: map[string]string{
+			"m4": "/bin/m4",
+		},
+		Details: []vts.TargetRef{
+			{Target: M4Version},
+		},
+	}
+
+	M4Version = &vts.Attr{
+		Path:   "common://toolchains/version:m4",
+		Name:   "m4",
+		Parent: vts.TargetRef{Target: SemverClass},
+		Val: &vts.ComputedValue{
+			InlineScript: []byte(`
+inv = run("m4", "--version")
+lines = inv.output.split('\n')
+if len(lines) < 2:
+  broken_assumption("m4 --version output format may have changed")
+
+if not lines[0].startswith('m4 '):
+  broken_assumption("m4 --version output format may have changed")
+
+spl = lines[0].split(' ')
+if len(spl) < 3:
+  broken_assumption("m4 --version output format may have changed")
+return spl[len(spl)-1]
+	`),
+		},
+	}
+)
+
+var (
+	AutoconfToolchain = &vts.Toolchain{
+		Path: "common://toolchains:autoconf",
+		Name: "autoconf",
+		BinaryMappings: map[string]string{
+			"autoconf":   "/bin/autoconf",
+			"autoreconf": "/bin/autoreconf",
+		},
+		Details: []vts.TargetRef{
+			{Target: AutoconfVersion},
+		},
+	}
+
+	AutoconfVersion = &vts.Attr{
+		Path:   "common://toolchains/version:autoconf",
+		Name:   "autoconf",
+		Parent: vts.TargetRef{Target: SemverClass},
+		Val: &vts.ComputedValue{
+			InlineScript: []byte(`
+inv = run("/bin/autoconf", "-V")
+lines = inv.output.split('\n')
+if len(lines) < 2:
+  broken_assumption("autoconf --version output format may have changed")
+
+if not lines[0].startswith('autoconf '):
+  broken_assumption("autoconf --version output format may have changed")
+
+spl = lines[0].split(' ')
+if len(spl) < 3:
+  broken_assumption("autoconf --version output format may have changed")
+return spl[len(spl)-1]
+	`),
+		},
+	}
+)
+
+var (
+	AutomakeToolchain = &vts.Toolchain{
+		Path: "common://toolchains:automake",
+		Name: "automake",
+		BinaryMappings: map[string]string{
+			"automake": "/bin/automake",
+		},
+		Details: []vts.TargetRef{
+			{Target: AutomakeVersion},
+		},
+	}
+
+	AutomakeVersion = &vts.Attr{
+		Path:   "common://toolchains/version:automake",
+		Name:   "automake",
+		Parent: vts.TargetRef{Target: SemverClass},
+		Val: &vts.ComputedValue{
+			InlineScript: []byte(`
+inv = run("automake", "--version")
+lines = inv.output.split('\n')
+if len(lines) < 2:
+  broken_assumption("automake --version output format may have changed")
+
+if not lines[0].startswith('automake '):
+  broken_assumption("automake --version output format may have changed")
+
+spl = lines[0].split(' ')
+if len(spl) < 3:
+  broken_assumption("automake --version output format may have changed")
+return spl[len(spl)-1]
+	`),
+		},
+	}
+)

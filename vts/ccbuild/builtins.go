@@ -108,6 +108,7 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 			"unpack_gz": makeBuildStep(s, vts.StepUnpackGz),
 			"unpack_xz": makeBuildStep(s, vts.StepUnpackXz),
 			"shell_cmd": makeBuildStep(s, vts.StepShellCmd),
+			"configure": makeBuildStep(s, vts.StepConfigure),
 		}),
 		"host": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
 			"recommended_cpus": starlark.MakeInt(recommendedCPUs()),
@@ -122,8 +123,12 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 
 func makeBuildStep(s *Script, kind vts.StepKind) *starlark.Builtin {
 	return starlark.NewBuiltin(string(kind), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-		var to, path, sha256, url string
-		var argsOutput []string
+		var (
+			to, path, sha256, url string
+			dir                   string
+			argsOutput            []string
+			argDict               map[string]string
+		)
 		switch kind {
 		case vts.StepUnpackGz, vts.StepUnpackXz:
 			if err := starlark.UnpackArgs(string(kind), args, kwargs,
@@ -139,15 +144,42 @@ func makeBuildStep(s *Script, kind vts.StepKind) *starlark.Builtin {
 				}
 				argsOutput[i] = string(s)
 			}
+		case vts.StepConfigure:
+			var sArgs *starlark.Dict
+			argDict = map[string]string{}
+			if err := starlark.UnpackArgs(string(kind), args, kwargs,
+				"path?", &path, "dir?", &dir, "args?", &sArgs); err != nil {
+				return starlark.None, err
+			}
+
+			if sArgs != nil {
+				for _, name := range sArgs.Keys() {
+					n, ok := name.(starlark.String)
+					if !ok {
+						return nil, fmt.Errorf("invalid args key: %v", name)
+					}
+					v, _, err := sArgs.Get(name)
+					if err != nil {
+						return starlark.None, err
+					}
+					v2, ok := v.(starlark.String)
+					if !ok {
+						return nil, fmt.Errorf("invalid args value: %v", v)
+					}
+					argDict[string(n)] = string(v2)
+				}
+			}
 		}
 
 		return &vts.BuildStep{
-			Kind:   kind,
-			ToPath: to,
-			Path:   path,
-			SHA256: sha256,
-			URL:    url,
-			Args:   argsOutput,
+			Kind:      kind,
+			Dir:       dir,
+			ToPath:    to,
+			Path:      path,
+			SHA256:    sha256,
+			URL:       url,
+			Args:      argsOutput,
+			NamedArgs: argDict,
 
 			Pos: &vts.DefPosition{
 				Path:  s.fPath,

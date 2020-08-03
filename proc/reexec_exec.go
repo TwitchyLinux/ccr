@@ -118,6 +118,7 @@ func (m *execManager) RunStreaming(cmd procCommand, pivotDir string, readOnly bo
 	c.Stdout = &streamWriter{m: m, id: cmd.ProcID, isErr: false}
 	c.Stderr = &streamWriter{m: m, id: cmd.ProcID, isErr: true}
 	c.SysProcAttr = &syscall.SysProcAttr{Cloneflags: syscall.CLONE_NEWNS}
+	c.Env = []string{"PATH=/usr/local/bin:/usr/bin:/bin:/sbin:/usr/local/go/bin", "TMPDIR=/tmp", "FORCE_UNSAFE_CONFIGURE=1"}
 	resp := procResp{Code: cmd.Code}
 
 	if err := c.Start(); err != nil {
