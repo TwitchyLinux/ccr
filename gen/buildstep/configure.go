@@ -18,7 +18,11 @@ func RunConfigure(rb RunningBuild, step *vts.BuildStep) error {
 
 	args := make([]string, 0, len(step.NamedArgs))
 	for k, v := range step.NamedArgs {
-		args = append(args, fmt.Sprintf("--%s=%s", k, v))
+		if v != "" {
+			args = append(args, fmt.Sprintf("--%s=%s", k, v))
+		} else {
+			args = append(args, fmt.Sprintf("--%s", k))
+		}
 	}
 	args = append(args, "TMPDIR=/tmp")
 
