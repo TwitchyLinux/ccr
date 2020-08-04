@@ -242,46 +242,32 @@ func TestStepConfigure(t *testing.T) {
 func TestPatchingBuildEnv(t *testing.T) {
 	tcs := []struct {
 		name           string
-		r              *vts.Resource
+		b              *vts.Build
 		expectFiles    map[string]os.FileMode
 		backingArchive string
 	}{
 		{
 			name: "file target",
-			r: &vts.Resource{
-				Path:   "//test:yeet",
-				Name:   "yeet",
-				Parent: vts.TargetRef{Target: common.FileResourceClass},
-				Source: &vts.TargetRef{
-					Target: &vts.Build{
-						Path: "//test:fake_file_build",
-						Name: "fake_file_build",
-						PatchIns: map[string]vts.TargetRef{
-							"/somefile.txt": {Target: &vts.Puesdo{
-								Kind:         vts.FileRef,
-								ContractPath: "testdata/something.ccr",
-								Path:         "file.txt",
-							}},
-						},
-					},
+			b: &vts.Build{
+				Path: "//test:fake_file_build",
+				Name: "fake_file_build",
+				PatchIns: map[string]vts.TargetRef{
+					"/somefile.txt": {Target: &vts.Puesdo{
+						Kind:         vts.FileRef,
+						ContractPath: "testdata/something.ccr",
+						Path:         "file.txt",
+					}},
 				},
 			},
 			expectFiles: map[string]os.FileMode{"/somefile.txt": os.FileMode(0644)},
 		},
 		{
 			name: "build target",
-			r: &vts.Resource{
-				Path:   "//test:yeet",
-				Name:   "yeet",
-				Parent: vts.TargetRef{Target: common.FileResourceClass},
-				Source: &vts.TargetRef{
-					Target: &vts.Build{
-						Path: "//test:fake_file_build",
-						Name: "fake_file_build",
-						PatchIns: map[string]vts.TargetRef{
-							"/p": {Target: &vts.Build{}},
-						},
-					},
+			b: &vts.Build{
+				Path: "//test:fake_file_build",
+				Name: "fake_file_build",
+				PatchIns: map[string]vts.TargetRef{
+					"/p": {Target: &vts.Build{}},
 				},
 			},
 			expectFiles:    map[string]os.FileMode{"/p/yeetfile": os.FileMode(0644)},
@@ -289,29 +275,119 @@ func TestPatchingBuildEnv(t *testing.T) {
 		},
 		{
 			name: "sieve target",
-			r: &vts.Resource{
-				Path:   "//test:yeet",
-				Name:   "yeet",
-				Parent: vts.TargetRef{Target: common.FileResourceClass},
-				Source: &vts.TargetRef{
-					Target: &vts.Build{
-						Path: "//test:fake_file_build",
-						Name: "fake_file_build",
-						PatchIns: map[string]vts.TargetRef{
-							"/usr/include": {Target: &vts.Sieve{
-								Inputs: []vts.TargetRef{
-									{Target: &vts.Puesdo{
+			b: &vts.Build{
+				Path: "//test:fake_file_build",
+				Name: "fake_file_build",
+				PatchIns: map[string]vts.TargetRef{
+					"/usr/include": {Target: &vts.Sieve{
+						Inputs: []vts.TargetRef{
+							{Target: &vts.Puesdo{
+								Kind:         vts.FileRef,
+								ContractPath: "testdata/something.ccr",
+								Path:         "file.txt",
+							}},
+						},
+						Renames: &match.FilenameRules{Rules: []match.MatchRule{
+							{P: glob.MustCompile("file.txt"), Out: match.LiteralOutputMapper("file2.txt")},
+						}},
+					}},
+				},
+			},
+			expectFiles: map[string]os.FileMode{"/usr/include/file2.txt": os.FileMode(0644)},
+		},
+		{
+			name: "resource file target",
+			b: &vts.Build{
+				Path: "//test:fake_file_build",
+				Name: "fake_file_build",
+				PatchIns: map[string]vts.TargetRef{
+					"/ext_root": {Target: &vts.Resource{
+						Parent: vts.TargetRef{Target: common.FileResourceClass},
+						Details: []vts.TargetRef{
+							{
+								Target: &vts.Attr{
+									Parent: vts.TargetRef{Target: common.PathClass},
+									Val:    starlark.String("/usr/kek.txt"),
+								},
+							},
+							{
+								Target: &vts.Attr{
+									Parent: vts.TargetRef{Target: common.ModeClass},
+									Val:    starlark.String("0641"),
+								},
+							},
+						},
+						Source: &vts.TargetRef{
+							Target: &vts.Puesdo{
+								Kind:         vts.FileRef,
+								ContractPath: "testdata/something.ccr",
+								Path:         "file.txt",
+							},
+						},
+					}},
+				},
+			},
+			expectFiles: map[string]os.FileMode{"/ext_root/usr/kek.txt": os.FileMode(0641)},
+		},
+		{
+			name: "resource symlink target",
+			b: &vts.Build{
+				Path: "//test:fake_file_build",
+				Name: "fake_file_build",
+				PatchIns: map[string]vts.TargetRef{
+					"/ext_root": {Target: &vts.Resource{
+						Parent: vts.TargetRef{Target: common.SymlinkResourceClass},
+						Details: []vts.TargetRef{
+							{
+								Target: &vts.Attr{
+									Parent: vts.TargetRef{Target: common.PathClass},
+									Val:    starlark.String("/usr/kek"),
+								},
+							},
+							{
+								Target: &vts.Attr{
+									Parent: vts.TargetRef{Target: common.TargetClass},
+									Val:    starlark.String("../"),
+								},
+							},
+						},
+						Source: &vts.TargetRef{
+							Target: common.SymlinkGenerator,
+						},
+					}},
+				},
+			},
+			expectFiles: map[string]os.FileMode{"/ext_root/usr/kek": os.ModeDir | os.FileMode(0755)},
+		},
+		{
+			name: "component target",
+			b: &vts.Build{
+				Path: "//test:fake_file_build",
+				Name: "fake_file_build",
+				PatchIns: map[string]vts.TargetRef{
+					"/ext_root": {Target: &vts.Component{
+						Deps: []vts.TargetRef{
+							{Target: &vts.Resource{
+								Parent: vts.TargetRef{Target: common.FileResourceClass},
+								Details: []vts.TargetRef{
+									{
+										Target: &vts.Attr{
+											Parent: vts.TargetRef{Target: common.PathClass},
+											Val:    starlark.String("/usr/swiggity.txt"),
+										},
+									},
+								},
+								Source: &vts.TargetRef{
+									Target: &vts.Puesdo{
 										Kind:         vts.FileRef,
 										ContractPath: "testdata/something.ccr",
 										Path:         "file.txt",
-									}},
-								},
-							}},
-						},
-					},
+									},
+								}}},
+						}}},
 				},
 			},
-			expectFiles: map[string]os.FileMode{"/usr/include/file.txt": os.FileMode(0644)},
+			expectFiles: map[string]os.FileMode{"/ext_root/usr/swiggity.txt": os.FileMode(0644)},
 		},
 	}
 
@@ -337,7 +413,7 @@ func TestPatchingBuildEnv(t *testing.T) {
 			// use cache.PendingFileset etc), but because the fileset format is .tar.gz,
 			// this should work fine.
 			if tc.backingArchive != "" {
-				b := tc.r.Source.Target.(*vts.Build).PatchIns["/p"].Target.(*vts.Build)
+				b := tc.b.PatchIns["/p"].Target.(*vts.Build)
 				h, err := b.RollupHash(nil, nil)
 				if err != nil {
 					t.Fatalf("RollupHash() failed: %v", err)
@@ -351,19 +427,18 @@ func TestPatchingBuildEnv(t *testing.T) {
 				}
 			}
 
-			b := tc.r.Source.Target.(*vts.Build)
 			env, err := proc.NewEnv(false)
 			if err != nil {
 				t.Fatal(err)
 			}
-			rb := RunningBuild{env: env, fs: osfs.New("/"), contractDir: b.ContractDir}
+			rb := RunningBuild{env: env, fs: osfs.New("/"), contractDir: tc.b.ContractDir}
 			defer rb.Close()
 			if err := rb.Patch(GenerationContext{
 				Cache: c,
 				RunnerEnv: &vts.RunnerEnv{
 					FS:  osfs.New(outDir),
 					Dir: outDir,
-				}}, b.PatchIns); err != nil {
+				}}, tc.b.PatchIns); err != nil {
 				t.Fatalf("Patch() failed: %v", err)
 			}
 
@@ -536,7 +611,7 @@ func TestGenerateBuild(t *testing.T) {
 		expectFiles map[string]os.FileMode
 	}{
 		{
-			name: "patches_in_output",
+			name: "patches in output",
 			b: &vts.Build{
 				Path: "//test:fake_file_build",
 				Name: "fake_file_build",
@@ -561,7 +636,7 @@ func TestGenerateBuild(t *testing.T) {
 			expectFiles: map[string]os.FileMode{"somefile.txt": os.FileMode(0644)},
 		},
 		{
-			name: "injections_not_in_output",
+			name: "injections not in output",
 			b: &vts.Build{
 				Path: "//test:f",
 				Name: "f",
@@ -660,6 +735,364 @@ func TestGenerateBuild(t *testing.T) {
 
 			for p, _ := range tc.expectFiles {
 				t.Errorf("file %q missing from buildset", p)
+			}
+		})
+	}
+}
+
+func TestBuildInjections(t *testing.T) {
+	tcs := []struct {
+		name        string
+		b           *vts.Build
+		expectFiles map[string]os.FileMode
+
+		buildSource    *vts.Build
+		backingArchive string
+	}{
+		{
+			name: "unary file resource",
+			b: &vts.Build{
+				Injections: []vts.TargetRef{
+					{Target: &vts.Resource{
+						Path:   "//test:yote",
+						Name:   "yote",
+						Parent: vts.TargetRef{Target: common.FileResourceClass},
+						Details: []vts.TargetRef{
+							{
+								Target: &vts.Attr{
+									Parent: vts.TargetRef{Target: common.PathClass},
+									Val:    starlark.String("/usr/kek.txt"),
+								},
+							},
+							{
+								Target: &vts.Attr{
+									Parent: vts.TargetRef{Target: common.ModeClass},
+									Val:    starlark.String("0641"),
+								},
+							},
+						},
+						Source: &vts.TargetRef{
+							Target: &vts.Puesdo{
+								Kind:         vts.FileRef,
+								ContractPath: "testdata/something.ccr",
+								Path:         "file.txt",
+							},
+						},
+					}},
+				},
+			},
+			expectFiles: map[string]os.FileMode{"usr/kek.txt": os.FileMode(0641)},
+		},
+		{
+			name: "multi file resource",
+			b: &vts.Build{
+				Path: "//test:f",
+				Name: "f",
+				Injections: []vts.TargetRef{
+					{Target: &vts.Resource{
+						Parent: vts.TargetRef{Target: common.CHeadersResourceClass},
+						Details: []vts.TargetRef{
+							{
+								Target: &vts.Attr{
+									Parent: vts.TargetRef{Target: common.PathClass},
+									Val:    starlark.String("/usr/inc"),
+								},
+							},
+						},
+						Source: &vts.TargetRef{
+							Target: &vts.Sieve{
+								Inputs: []vts.TargetRef{
+									{Target: &vts.Puesdo{
+										Kind:         vts.FileRef,
+										ContractPath: "testdata/something.ccr",
+										Path:         "file.txt",
+									}},
+								},
+								Renames: &match.FilenameRules{Rules: []match.MatchRule{
+									{P: glob.MustCompile("file.txt"), Out: match.LiteralOutputMapper("kek.h")},
+								}},
+							},
+						},
+					}},
+				},
+			},
+			expectFiles: map[string]os.FileMode{"usr/inc/kek.h": os.FileMode(0644)},
+		},
+		{
+			name: "build",
+			b: &vts.Build{
+				Injections: []vts.TargetRef{
+					{Target: &vts.Build{
+						Path: "//test:fake_headers_build",
+						Name: "fake_headers_build",
+					}},
+				},
+			},
+			buildSource: &vts.Build{
+				Path: "//test:fake_headers_build",
+				Name: "fake_headers_build",
+			},
+			backingArchive: "testdata/fake_cheaders_build_cache.tar.gz",
+			expectFiles: map[string]os.FileMode{
+				"asm":           os.ModeDir | os.FileMode(0755),
+				"asm/headerz.h": os.FileMode(0644),
+			},
+		},
+		{
+			name: "file_from_build",
+			b: &vts.Build{
+				Path: "//test:f",
+				Name: "f",
+				Injections: []vts.TargetRef{
+					{Target: &vts.Resource{
+						Parent: vts.TargetRef{Target: common.CHeadersResourceClass},
+						Details: []vts.TargetRef{
+							{
+								Target: &vts.Attr{
+									Parent: vts.TargetRef{Target: common.PathClass},
+									Val:    starlark.String("/usr/inc2"),
+								},
+							},
+						},
+						Source: &vts.TargetRef{Target: &vts.Build{
+							Path: "//test:fake_headers_build2",
+							Name: "fake_headers_build2",
+						}},
+					}},
+				},
+			},
+			buildSource: &vts.Build{
+				Path: "//test:fake_headers_build2",
+				Name: "fake_headers_build2",
+			},
+			backingArchive: "testdata/fake_cheaders_build_cache.tar.gz",
+			expectFiles: map[string]os.FileMode{
+				"/usr/inc2/asm":           os.ModeDir | os.FileMode(0755),
+				"/usr/inc2/asm/headerz.h": os.FileMode(0644),
+			},
+		},
+		{
+			name: "sieve",
+			b: &vts.Build{
+				Injections: []vts.TargetRef{
+					{Target: &vts.Sieve{
+						Inputs: []vts.TargetRef{
+							{Target: &vts.Build{
+								Path: "//test:fake_headers_build3",
+								Name: "fake_headers_build3",
+							}},
+							{Target: &vts.Puesdo{
+								Kind:         vts.FileRef,
+								ContractPath: "testdata/something.ccr",
+								Path:         "file.txt",
+							}},
+						},
+						Renames: &match.FilenameRules{Rules: []match.MatchRule{
+							{P: glob.MustCompile("**.h"), Out: &match.StripPrefixOutputMapper{Prefix: "asm/"}},
+							{P: glob.MustCompile("file.txt"), Out: match.LiteralOutputMapper("kek.h")},
+						}},
+					}},
+				},
+			},
+			buildSource: &vts.Build{
+				Path: "//test:fake_headers_build3",
+				Name: "fake_headers_build3",
+			},
+			backingArchive: "testdata/fake_cheaders_build_cache.tar.gz",
+			expectFiles: map[string]os.FileMode{
+				"headerz.h": os.FileMode(0644),
+				"kek.h":     os.FileMode(0644),
+			},
+		},
+		{
+			name: "simple component",
+			b: &vts.Build{
+				Injections: []vts.TargetRef{
+					{Target: &vts.Component{Deps: []vts.TargetRef{
+						{Target: &vts.Build{
+							Path: "//test:fake_headers_build4",
+							Name: "fake_headers_build4",
+						}}}}},
+				},
+			},
+			buildSource: &vts.Build{
+				Path: "//test:fake_headers_build4",
+				Name: "fake_headers_build4",
+			},
+			backingArchive: "testdata/fake_cheaders_build_cache.tar.gz",
+			expectFiles: map[string]os.FileMode{
+				"asm":           os.ModeDir | os.FileMode(0755),
+				"asm/headerz.h": os.FileMode(0644),
+			},
+		},
+		{
+			name: "component containing generated files",
+			b: &vts.Build{
+				Injections: []vts.TargetRef{
+					{Target: &vts.Component{Deps: []vts.TargetRef{
+						{Target: &vts.Resource{
+							Parent: vts.TargetRef{Target: common.CHeadersResourceClass},
+							Details: []vts.TargetRef{
+								{
+									Target: &vts.Attr{
+										Parent: vts.TargetRef{Target: common.PathClass},
+										Val:    starlark.String("/usr/inc3"),
+									},
+								},
+							},
+							Source: &vts.TargetRef{Target: &vts.Build{
+								Path: "//test:fake_headers_build5",
+								Name: "fake_headers_build5",
+							}},
+						}},
+						{Target: &vts.Resource{
+							Parent: vts.TargetRef{Target: common.FileResourceClass},
+							Details: []vts.TargetRef{
+								{
+									Target: &vts.Attr{
+										Parent: vts.TargetRef{Target: common.PathClass},
+										Val:    starlark.String("/usr/share/blueberries.txt"),
+									},
+								},
+								{
+									Target: &vts.Attr{
+										Parent: vts.TargetRef{Target: common.ModeClass},
+										Val:    starlark.String("0745"),
+									},
+								},
+							},
+							Source: &vts.TargetRef{
+								Target: &vts.Puesdo{
+									Kind:         vts.FileRef,
+									ContractPath: "testdata/something.ccr",
+									Path:         "file.txt",
+								},
+							},
+						}},
+						{Target: &vts.Resource{
+							Parent: vts.TargetRef{Target: common.SymlinkResourceClass},
+							Details: []vts.TargetRef{
+								{
+									Target: &vts.Attr{
+										Parent: vts.TargetRef{Target: common.PathClass},
+										Val:    starlark.String("/usr/share/fruit"),
+									},
+								},
+								{
+									Target: &vts.Attr{
+										Parent: vts.TargetRef{Target: common.ModeClass},
+										Val:    starlark.String("0745"),
+									},
+								},
+								{
+									Target: &vts.Attr{
+										Parent: vts.TargetRef{Target: common.TargetClass},
+										Val:    starlark.String("blueberries.txt"),
+									},
+								},
+							},
+							Source: &vts.TargetRef{Target: common.SymlinkGenerator},
+						}},
+						{Target: &vts.Resource{
+							Parent: vts.TargetRef{Target: common.DirResourceClass},
+							Details: []vts.TargetRef{
+								{
+									Target: &vts.Attr{
+										Parent: vts.TargetRef{Target: common.PathClass},
+										Val:    starlark.String("/test_dir"),
+									},
+								},
+								{
+									Target: &vts.Attr{
+										Parent: vts.TargetRef{Target: common.ModeClass},
+										Val:    starlark.String("0755"),
+									},
+								},
+							},
+							Source: &vts.TargetRef{Target: common.DirGenerator},
+						}},
+					}}},
+				},
+			},
+			buildSource: &vts.Build{
+				Path: "//test:fake_headers_build5",
+				Name: "fake_headers_build5",
+			},
+			backingArchive: "testdata/fake_cheaders_build_cache.tar.gz",
+			expectFiles: map[string]os.FileMode{
+				"/test_dir":                  os.ModeDir | os.FileMode(0755),
+				"/usr/inc3/asm":              os.ModeDir | os.FileMode(0755),
+				"/usr/inc3/asm/headerz.h":    os.FileMode(0644),
+				"/usr/share/blueberries.txt": os.FileMode(0745),
+				"/usr/share/fruit":           os.FileMode(0745),
+			},
+		},
+	}
+
+	cd, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(cd)
+	c, err := cache.NewCache(cd)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			outDir, err := ioutil.TempDir("", "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer os.RemoveAll(outDir)
+
+			// This is not the correct way to write filesets into the cache (should
+			// use cache.PendingFileset etc), but because the fileset format is .tar.gz,
+			// this should work fine.
+			if tc.backingArchive != "" {
+				h, err := tc.buildSource.RollupHash(nil, nil)
+				if err != nil {
+					t.Fatalf("RollupHash() failed: %v", err)
+				}
+
+				p := c.SHA256Path(hex.EncodeToString(h))
+				cmd := exec.Command("install", "-D", tc.backingArchive, p)
+				cmd.Stderr, cmd.Stdout = os.Stderr, os.Stdout
+				if err := cmd.Run(); err != nil {
+					t.Fatalf("Failed to yeet backing archive into cache: %v", err)
+				}
+			}
+
+			env, err := proc.NewEnv(false)
+			if err != nil {
+				t.Fatal(err)
+			}
+			rb := RunningBuild{env: env, fs: osfs.New("/"), contractDir: tc.b.ContractDir}
+			defer rb.Close()
+
+			gc := GenerationContext{
+				Cache: c,
+				RunnerEnv: &vts.RunnerEnv{
+					FS:  osfs.New(outDir),
+					Dir: outDir,
+				}}
+			for _, inj := range tc.b.Injections {
+				if err := rb.inject(gc, inj.Target); err != nil {
+					t.Fatalf("inject(%v) failed: %v", inj.Target, err)
+				}
+			}
+
+			for p, m := range tc.expectFiles {
+				fp := filepath.Join(rb.OverlayPatchPath(), p)
+				s, err := os.Stat(fp)
+				if err != nil {
+					t.Errorf("%s: %v", p, err)
+					continue
+				}
+				if s.Mode() != m {
+					t.Errorf("mode = %v, want %v", s.Mode(), m)
+				}
 			}
 		})
 	}

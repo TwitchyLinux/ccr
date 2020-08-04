@@ -14,6 +14,7 @@ import (
 	"github.com/twitchylinux/ccr/gen/buildstep"
 	"github.com/twitchylinux/ccr/proc"
 	"github.com/twitchylinux/ccr/vts"
+	"github.com/twitchylinux/ccr/vts/common"
 	"gopkg.in/src-d/go-billy.v4"
 	"gopkg.in/src-d/go-billy.v4/osfs"
 )
@@ -69,56 +70,39 @@ func (rb *RunningBuild) EnsurePatched(path string) error {
 
 func (rb *RunningBuild) Patch(gc GenerationContext, patches map[string]vts.TargetRef) error {
 	for path, patch := range patches {
-		fsr, err := filesetForSource(gc, patch.Target)
-		if err != nil {
-			return err
-		}
-		if err := rb.patchToPath(gc, path, patch.Target, fsr); err != nil {
-			fsr.Close()
-			return err
-		}
-		if err := fsr.Close(); err != nil {
-			return fmt.Errorf("closing fileset: %v", err)
-		}
-
-		if err := rb.EnsurePatched(path); err != nil {
+		if err := rb.patch(gc, path, patch); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (rb *RunningBuild) inject(gc GenerationContext, pt vts.Target) error {
-	switch t := pt.(type) {
-	case *vts.Build, *vts.Sieve:
-		fsr, err := filesetForSource(gc, t)
-		if err != nil {
-			return err
-		}
-		defer fsr.Close()
-		return writeMultiFiles(gc.Cache, rb.fs, rb.OverlayPatchPath(), fsr)
-
+func (rb *RunningBuild) patch(gc GenerationContext, path string, patch vts.TargetRef) error {
+	// Support patching in resources and components specially.
+	switch t := patch.Target.(type) {
 	case *vts.Component:
-		for _, d := range t.Dependencies() {
-			if err := rb.inject(gc, d.Target); err != nil {
-				return vts.WrapWithActionTarget(err, t)
+		for _, dep := range t.Deps {
+			if err := rb.patch(gc, path, dep); err != nil {
+				return err
 			}
 		}
 		return nil
-
 	case *vts.Resource:
-		if t.Source == nil {
-			return vts.WrapWithTarget(errors.New("cannot inject using virtual resource"), t)
-		}
-		if _, isGen := t.Source.Target.(*vts.Generator); isGen {
-			return vts.WrapWithTarget(errors.New("cannot inject generator targets"), t)
-		}
-		gc.RunnerEnv = &vts.RunnerEnv{Dir: rb.OverlayPatchPath(), FS: osfs.New(rb.OverlayPatchPath())}
-		gc.Inputs = &vts.InputSet{Resource: t}
-		return PopulateResource(gc, t, t.Source.Target)
+		return rb.injectResourceToPath(gc, t, filepath.Join(rb.OverlayUpperPath(), path))
 	}
 
-	return fmt.Errorf("cannot inject target of type %T", pt)
+	fsr, err := filesetForSource(gc, patch.Target)
+	if err != nil {
+		return err
+	}
+	if err := rb.patchToPath(gc, path, patch.Target, fsr); err != nil {
+		fsr.Close()
+		return err
+	}
+	if err := fsr.Close(); err != nil {
+		return fmt.Errorf("closing fileset: %v", err)
+	}
+	return rb.EnsurePatched(path)
 }
 
 func (rb *RunningBuild) patchToPath(gc GenerationContext, path string, pt vts.Target, fsr fileset) error {
@@ -141,6 +125,50 @@ func (rb *RunningBuild) patchToPath(gc GenerationContext, path string, pt vts.Ta
 	}
 
 	return vts.WrapWithPath(fmt.Errorf("cannot patch using source target of type %T", pt), path)
+}
+
+func (rb *RunningBuild) inject(gc GenerationContext, pt vts.Target) error {
+	switch t := pt.(type) {
+	case *vts.Build, *vts.Sieve:
+		fsr, err := filesetForSource(gc, t)
+		if err != nil {
+			return err
+		}
+		defer fsr.Close()
+		return writeMultiFiles(gc.Cache, rb.fs, rb.OverlayPatchPath(), fsr)
+
+	case *vts.Component:
+		for _, d := range t.Dependencies() {
+			if err := rb.inject(gc, d.Target); err != nil {
+				return vts.WrapWithActionTarget(err, t)
+			}
+		}
+		return nil
+
+	case *vts.Resource:
+		return rb.injectResourceToPath(gc, t, rb.OverlayPatchPath())
+	}
+
+	return fmt.Errorf("cannot inject target of type %T", pt)
+}
+
+var permittedInjectGenerators = map[*vts.Generator]struct{}{
+	common.SymlinkGenerator: struct{}{},
+	common.DirGenerator:     struct{}{},
+}
+
+func (rb *RunningBuild) injectResourceToPath(gc GenerationContext, t *vts.Resource, path string) error {
+	if t.Source == nil {
+		return vts.WrapWithTarget(errors.New("cannot inject using virtual resource"), t)
+	}
+	gc.RunnerEnv = &vts.RunnerEnv{Dir: path, FS: osfs.New(path)}
+	gc.Inputs = &vts.InputSet{Resource: t}
+	if gen, isGen := t.Source.Target.(*vts.Generator); isGen {
+		if _, permitted := permittedInjectGenerators[gen]; !permitted {
+			return vts.WrapWithTarget(errors.New("cannot inject generator targets"), t)
+		}
+	}
+	return PopulateResource(gc, t, t.Source.Target)
 }
 
 func (rb *RunningBuild) Generate(c *cache.Cache) error {
