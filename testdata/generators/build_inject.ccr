@@ -1,0 +1,63 @@
+build(
+  name      = "patch_build",
+  steps     = [
+    step.shell_cmd('touch /tmp/1.txt'),
+  ],
+  output    = {
+    '/tmp/*.txt': '1.txt',
+    '/out2.txt': '2.txt',
+  },
+  host_deps = [
+    "common://toolchains:bash" >> semver("4"),
+    "common://toolchains:coreutils" >> semver("5"),
+  ],
+  patch_inputs = {
+    "/out2.txt": ":dep_resource",
+  },
+)
+
+build(
+  name      = "inject_build",
+  steps     = [
+    step.shell_cmd('touch /tmp/1.txt'),
+  ],
+  output    = {
+    '/tmp/*.txt': '1.txt',
+  },
+  host_deps = [
+    "common://toolchains:bash" >> semver("4"),
+    "common://toolchains:coreutils" >> semver("5"),
+  ],
+  inject = [
+    ":dep_resource",
+  ],
+)
+
+resource(
+  name   = "patch_resource",
+  parent = "common://resources:file",
+  path   = "1.txt",
+  source = ":patch_build",
+)
+
+resource(
+  name   = "dep_resource",
+  parent = "common://resources:file",
+  path   = "shouldnt_get_populated.txt",
+  source = file('fake.txt'),
+)
+
+resource(
+  name   = "inject_resource",
+  parent = "common://resources:file",
+  path   = "1.txt",
+  source = ":inject_build",
+)
+
+component(
+  name   = "should_have_both_files",
+  deps   = [
+    ":inject_resource",
+    ":dep_resource",
+  ],
+)

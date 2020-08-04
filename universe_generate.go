@@ -170,7 +170,6 @@ func (u *Universe) generateTarget(s generationState, t vts.Target) error {
 				return vts.WrapWithTarget(err, classInstance)
 			}
 		}
-		s.haveGenerated[t] = struct{}{}
 	}
 
 	// If a target has host dependencies, they need to be checked against
@@ -208,8 +207,13 @@ func (u *Universe) generateTarget(s generationState, t vts.Target) error {
 			if err := u.generateTarget(s, src.Target); err != nil {
 				return vts.WrapWithTarget(err, src.Target)
 			}
-			if err := u.populateResourceFromSource(s, st.(*vts.Resource), src.Target); err != nil {
-				return vts.WrapWithTarget(err, src.Target)
+			// If the current target is a transitive input of a sourced target
+			// (such as a build or generator), we dont want to populate it to
+			// the output path.
+			if !s.isGeneratingInputs {
+				if err := u.populateResourceFromSource(s, st.(*vts.Resource), src.Target); err != nil {
+					return vts.WrapWithTarget(err, src.Target)
+				}
 			}
 		}
 	}
@@ -222,7 +226,9 @@ func (u *Universe) generateTarget(s generationState, t vts.Target) error {
 		return err
 	}
 
-	s.haveGenerated[t] = struct{}{}
+	if !s.isGeneratingInputs {
+		s.haveGenerated[t] = struct{}{}
+	}
 	return nil
 }
 

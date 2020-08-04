@@ -515,6 +515,7 @@ func TestUniverseGenerate(t *testing.T) {
 		config       GenerateConfig
 		testManifest string
 		hasFiles     map[string]os.FileMode
+		notFiles     []string
 		err          string
 	}{
 		{
@@ -714,6 +715,33 @@ Class: //basic:whelp
 				"/real.txt": os.FileMode(0644),
 			},
 		},
+		{
+			name:   "build_patches_not_populated",
+			target: "//build_inject:patch_resource",
+			config: GenerateConfig{},
+			hasFiles: map[string]os.FileMode{
+				"/1.txt": os.FileMode(0644),
+			},
+			notFiles: []string{"shouldnt_get_populated.txt"},
+		},
+		{
+			name:   "build_injections_not_populated",
+			target: "//build_inject:inject_resource",
+			config: GenerateConfig{},
+			hasFiles: map[string]os.FileMode{
+				"/1.txt": os.FileMode(0644),
+			},
+			notFiles: []string{"shouldnt_get_populated.txt"},
+		},
+		{
+			name:   "resource_populated_when_also_direct_dep",
+			target: "//build_inject:should_have_both_files",
+			config: GenerateConfig{},
+			hasFiles: map[string]os.FileMode{
+				"/1.txt":                      os.FileMode(0644),
+				"/shouldnt_get_populated.txt": os.FileMode(0644),
+			},
+		},
 	}
 
 	cd, err := ioutil.TempDir("", "")
@@ -781,6 +809,14 @@ Class: //basic:whelp
 				}
 				if st.Mode() != m {
 					t.Errorf("file %q has mode %#o, want %#o", p, st.Mode(), m)
+				}
+			}
+			for _, p := range tc.notFiles {
+				_, err := os.Stat(filepath.Join(td, p))
+				if err == nil {
+					t.Errorf("%s was populated but should not have", p)
+				} else if !os.IsNotExist(err) {
+					t.Errorf("%v", err)
 				}
 			}
 		})
