@@ -47,8 +47,9 @@ func (t *Sieve) Validate() error {
 	for i, inp := range t.Inputs {
 		_, puesdo := inp.Target.(*Puesdo)
 		_, build := inp.Target.(*Build)
-		if !puesdo && !build {
-			return fmt.Errorf("inputs[%d] is type %T, but must be build, file, or deb", i, inp.Target)
+		_, sieve := inp.Target.(*Sieve)
+		if !puesdo && !build && !sieve {
+			return fmt.Errorf("inputs[%d] is type %T, but must be build, sieve, file, or deb", i, inp.Target)
 		}
 		if len(inp.Constraints) > 0 {
 			return fmt.Errorf("inputs[%d]: cannot specify constraints here", i)

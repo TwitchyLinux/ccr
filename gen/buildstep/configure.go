@@ -24,11 +24,10 @@ func RunConfigure(rb RunningBuild, step *vts.BuildStep) error {
 			args = append(args, fmt.Sprintf("--%s", k))
 		}
 	}
-	args = append(args, "TMPDIR=/tmp")
 
 	// fmt.Fprintf(os.Stdout, "+ Running %s %s from %s.\n", cmd, strings.Join(args, " "), wd)
-	_, err := rb.ExecBlocking(wd, append([]string{cmd}, args...), os.Stdout, os.Stderr)
-	if err != nil {
+	ec, err := rb.ExecBlocking(wd, append([]string{cmd}, args...), os.Stdout, os.Stderr)
+	if err != nil || ec != 0 {
 		p := filepath.Join(rb.OverlayUpperPath(), step.Dir, "config.log")
 		if _, err := os.Stat(p); err == nil {
 			fmt.Fprintln(os.Stderr, "Configure exited with exit code!!\nA config.log file was found, copying to /tmp/ccr_config.log")

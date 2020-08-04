@@ -255,6 +255,9 @@ var newScriptTestcases = []struct {
 					}},
 					"/usr/inc": {Path: "//test:aaa"},
 				},
+				Injections: []vts.TargetRef{
+					{Path: "//some/other:target"},
+				},
 			},
 		},
 	},

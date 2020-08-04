@@ -369,11 +369,12 @@ func makeBuild(s *Script) *starlark.Builtin {
 
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var name string
-		var deps, steps *starlark.List
+		var deps, steps, inject *starlark.List
 		var outputs, inputs *starlark.Dict
 		if err := starlark.UnpackArgs(t.String(), args, kwargs,
 			"name?", &name, "host_deps?", &deps, "steps?", &steps,
-			"patch_inputs?", &inputs, "output?", &outputs); err != nil {
+			"patch_inputs?", &inputs, "output?", &outputs,
+			"inject?", &inject); err != nil {
 			return starlark.None, err
 		}
 
@@ -431,6 +432,18 @@ func makeBuild(s *Script) *starlark.Builtin {
 					return nil, fmt.Errorf("patch_inputs[%d] invalid: %v", i, err)
 				}
 				b.PatchIns[string(k)] = src
+			}
+		}
+		if inject != nil {
+			i := inject.Iterate()
+			defer i.Done()
+			var x starlark.Value
+			for i.Next(&x) {
+				v, err := toDepTarget(s.path, x)
+				if err != nil {
+					return nil, fmt.Errorf("invalid inject: %v", err)
+				}
+				b.Injections = append(b.Injections, v)
 			}
 		}
 

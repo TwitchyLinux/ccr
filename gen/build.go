@@ -3,6 +3,7 @@ package gen
 import (
 	"archive/tar"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -83,6 +84,36 @@ func (rb *RunningBuild) Patch(gc GenerationContext, patches map[string]vts.Targe
 	return nil
 }
 
+func (rb *RunningBuild) inject(gc GenerationContext, pt vts.Target) error {
+	switch t := pt.(type) {
+	case *vts.Build, *vts.Sieve:
+		fsr, err := filesetForSource(gc, t)
+		if err != nil {
+			return err
+		}
+		defer fsr.Close()
+		return writeMultiFiles(gc.Cache, rb.fs, rb.OverlayUpperPath(), fsr)
+
+	case *vts.Component:
+		for _, d := range t.Dependencies() {
+			if err := rb.inject(gc, d.Target); err != nil {
+				return vts.WrapWithActionTarget(err, t)
+			}
+		}
+		return nil
+
+	case *vts.Resource:
+		if t.Source == nil {
+			return vts.WrapWithTarget(errors.New("cannot patch using virtual resource"), t)
+		}
+		gc.RunnerEnv = &vts.RunnerEnv{Dir: rb.OverlayUpperPath(), FS: osfs.New(rb.OverlayUpperPath())}
+		gc.Inputs = &vts.InputSet{Resource: t}
+		return PopulateResource(gc, t, t.Source.Target)
+	}
+
+	return fmt.Errorf("cannot inject target of type %T", pt)
+}
+
 func (rb *RunningBuild) patchToPath(gc GenerationContext, path string, pt vts.Target, fsr fileset) error {
 	switch t := pt.(type) {
 	case *vts.Build, *vts.Sieve:
@@ -106,6 +137,10 @@ func (rb *RunningBuild) patchToPath(gc GenerationContext, path string, pt vts.Ta
 }
 
 func (rb *RunningBuild) Generate(c *cache.Cache) error {
+	// cmd := exec.Command("find", rb.OverlayUpperPath())
+	// cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	// cmd.Run()
+
 	for i, step := range rb.steps {
 		switch step.Kind {
 		case vts.StepUnpackGz, vts.StepUnpackXz:
@@ -217,6 +252,13 @@ func generateBuild(gc GenerationContext, b *vts.Build) error {
 		return vts.WrapWithTarget(fmt.Errorf("creating build environment: %v", err), b)
 	}
 	rb := RunningBuild{env: env, steps: b.Steps, fs: osfs.New("/"), contractDir: b.ContractDir}
+	for _, inj := range b.Injections {
+		if err := rb.inject(gc, inj.Target); err != nil {
+			rb.Close()
+			return vts.WrapWithTarget(err, b)
+		}
+	}
+
 	if err := rb.Patch(gc, b.PatchIns); err != nil {
 		rb.Close()
 		return vts.WrapWithTarget(fmt.Errorf("failed to apply patch-ins: %v", err), b)

@@ -163,6 +163,11 @@ func (u *Universe) linkTarget(t vts.Target) error {
 				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
+		for i := range n.Injections {
+			if n.Injections[i], err = u.makeTargetRef(n.Injections[i]); err != nil {
+				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
+			}
+		}
 		out := make(map[string]vts.TargetRef, len(n.PatchIns))
 		for k, v := range n.PatchIns {
 			if out[k], err = u.makeTargetRef(v); err != nil {

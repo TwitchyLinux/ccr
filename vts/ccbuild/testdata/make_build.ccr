@@ -15,4 +15,7 @@ build(
     '/cool.txt': file('uncool.txt'),
     '/usr/inc': ":aaa",
   },
+  inject = [
+    "//some/other:target",
+  ],
 )

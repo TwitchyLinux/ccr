@@ -19,10 +19,11 @@ type Build struct {
 	ContractDir  string
 	ContractPath string
 
-	HostDeps []TargetRef
-	Steps    []*BuildStep
-	Output   *match.FilenameRules
-	PatchIns map[string]TargetRef
+	HostDeps   []TargetRef
+	Steps      []*BuildStep
+	Output     *match.FilenameRules
+	PatchIns   map[string]TargetRef
+	Injections []TargetRef
 }
 
 func (t *Build) DefinedAt() *DefPosition {
@@ -47,6 +48,10 @@ func (t *Build) TargetName() string {
 
 func (t *Build) Validate() error {
 	return nil
+}
+
+func (t *Build) Dependencies() []TargetRef {
+	return t.Injections
 }
 
 func (t *Build) HostDependencies() []TargetRef {
@@ -129,6 +134,18 @@ func (t *Build) RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error) {
 	}
 	if t.Output != nil {
 		fmt.Fprintln(hash, t.Output.RollupHash())
+	}
+
+	for _, inj := range t.Injections {
+		rt, isHashable := inj.Target.(ReproducibleTarget)
+		if !isHashable {
+			return nil, WrapWithTarget(fmt.Errorf("cannot compute rollup hash on non-reproducible target of type %T", inj.Target), inj.Target)
+		}
+		h, err := rt.RollupHash(env, eval)
+		if err != nil {
+			return nil, err
+		}
+		hash.Write(h)
 	}
 
 	return hash.Sum(nil), nil

@@ -252,6 +252,32 @@ func TestPatchingBuildEnv(t *testing.T) {
 			expectFiles:    map[string]os.FileMode{"/p/yeetfile": os.FileMode(0644)},
 			backingArchive: "testdata/fake_file_build_cache.tar.gz",
 		},
+		{
+			name: "sieve target",
+			r: &vts.Resource{
+				Path:   "//test:yeet",
+				Name:   "yeet",
+				Parent: vts.TargetRef{Target: common.FileResourceClass},
+				Source: &vts.TargetRef{
+					Target: &vts.Build{
+						Path: "//test:fake_file_build",
+						Name: "fake_file_build",
+						PatchIns: map[string]vts.TargetRef{
+							"/usr/include": {Target: &vts.Sieve{
+								Inputs: []vts.TargetRef{
+									{Target: &vts.Puesdo{
+										Kind:         vts.FileRef,
+										ContractPath: "testdata/something.ccr",
+										Path:         "file.txt",
+									}},
+								},
+							}},
+						},
+					},
+				},
+			},
+			expectFiles: map[string]os.FileMode{"/usr/include/file.txt": os.FileMode(0644)},
+		},
 	}
 
 	cd, err := ioutil.TempDir("", "")
