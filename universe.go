@@ -4,6 +4,7 @@ package ccr
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/twitchylinux/ccr/cache"
@@ -402,6 +403,23 @@ func (u *Universe) QueryByName(basePath, target, attr string) (starlark.Value, e
 
 func (u *Universe) QueryByClass(basePath, target, parent string) (starlark.Value, error) {
 	return u.query(basePath, target, parent, true)
+}
+
+// GetTarget returns the target with the specified name.
+func (u *Universe) GetTarget(name string) vts.GlobalTarget {
+	return u.fqTargets[name]
+}
+
+func (u *Universe) TargetRollupHash(name string) ([]byte, error) {
+	t, ok := u.fqTargets[name]
+	if !ok {
+		return nil, os.ErrNotExist
+	}
+	rt, ok := t.(vts.ReproducibleTarget)
+	if !ok {
+		return nil, fmt.Errorf("target %T cannot be hashed", t)
+	}
+	return rt.RollupHash(u.makeEnv("/"), proc.EvalComputedAttribute)
 }
 
 // NewUniverse constructs an empty universe.
