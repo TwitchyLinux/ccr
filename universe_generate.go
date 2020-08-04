@@ -82,9 +82,6 @@ type generationState struct {
 	// haveGenerated keeps track of targets which have already
 	// been generated.
 	haveGenerated targetSet
-	// inputDep exhaustively enumerates targets which are part of a generator
-	// input which is currently being examined.
-	inputDep targetSet
 	// targetChain enumerates targets from the root to the current target.
 	targetChain []vts.Target
 	// rootTarget represents the topmost target for which dependencies and inputs
@@ -130,10 +127,11 @@ func (u *Universe) generateTarget(s generationState, t vts.Target) error {
 	// If target is a decendant of a set of inputs, we check to make sure
 	// it hasn't already been seen, which would symbolize a circular dependency.
 	if s.isGeneratingInputs {
-		if _, alreadyDep := s.inputDep[t]; alreadyDep {
-			return s.makeCircularDepErr(t)
+		for _, c := range s.targetChain {
+			if c == t {
+				return s.makeCircularDepErr(t)
+			}
 		}
-		s.inputDep[t] = struct{}{}
 	}
 	if _, alreadyGenerated := s.haveGenerated[t]; alreadyGenerated {
 		return nil
@@ -147,18 +145,17 @@ func (u *Universe) generateTarget(s generationState, t vts.Target) error {
 	// Inputs cannot have circular dependencies, so we evaluate them first and
 	// in a different mode to detect the circular dependencies.
 	if inputs, hasInputs := t.(vts.InputTarget); hasInputs {
-		subState := generationState{
-			isGeneratingInputs:     true,
-			haveGenerated:          s.haveGenerated,
-			inputDep:               make(targetSet, 128),
-			basePath:               s.basePath,
-			conf:                   s.conf,
-			runnerEnv:              s.runnerEnv,
-			rootTarget:             t,
-			completedToolchainDeps: make(targetSet, 32),
-		}
-		subState.inputDep[t] = struct{}{}
 		for _, inp := range inputs.NeedInputs() {
+			subState := generationState{
+				isGeneratingInputs:     true,
+				haveGenerated:          s.haveGenerated,
+				basePath:               s.basePath,
+				conf:                   s.conf,
+				runnerEnv:              s.runnerEnv,
+				rootTarget:             t,
+				completedToolchainDeps: make(targetSet, 32),
+				targetChain:            append(make([]vts.Target, 0, 6), t),
+			}
 			if err := u.generateTarget(subState, inp.Target); err != nil {
 				return vts.WrapWithTarget(err, inp.Target)
 			}

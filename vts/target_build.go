@@ -50,17 +50,16 @@ func (t *Build) Validate() error {
 	return nil
 }
 
-func (t *Build) Dependencies() []TargetRef {
-	return t.Injections
-}
-
 func (t *Build) HostDependencies() []TargetRef {
 	return t.HostDeps
 }
 
 func (t *Build) NeedInputs() []TargetRef {
-	out := make([]TargetRef, 0, len(t.PatchIns))
+	out := make([]TargetRef, 0, len(t.PatchIns)+len(t.Injections))
 	for _, t := range t.PatchIns {
+		out = append(out, t)
+	}
+	for _, t := range t.Injections {
 		out = append(out, t)
 	}
 	return out

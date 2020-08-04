@@ -535,19 +535,19 @@ Class: //basic:whelp
 			name:   "circular_component",
 			target: "//circular:circ_component",
 			config: GenerateConfig{},
-			err:    "circular dependency: //circular:circ_component -> //circular:c1 -> //circular:gen",
+			err:    "circular dependency: //circular:gen -> //circular:circ_component -> //circular:c1 -> //circular:gen",
 		},
 		{
 			name:   "circular_resource",
 			target: "//circular:circ_resource",
 			config: GenerateConfig{},
-			err:    "circular dependency: //circular:r2 -> //circular:c3 -> //circular:gen2",
+			err:    "circular dependency: //circular:gen2 -> //circular:r2 -> //circular:c3 -> //circular:gen2",
 		},
 		{
 			name:   "circular_build",
 			target: "//circular:circ_build",
 			config: GenerateConfig{},
-			err:    "circular dependency: //circular:r3 -> //circular:c5 -> //circular:gen3",
+			err:    "circular dependency: //circular:gen3 -> //circular:r3 -> //circular:c5 -> //circular:gen3",
 		},
 		{
 			name:         "file",
