@@ -49,12 +49,44 @@ var SysLibResourceClass = &vts.ResourceClass{
 	Name:        "sys_library",
 	PopStrategy: vts.PopulateFileMatchPath,
 }
+var SysLibLinkResourceClass = &vts.ResourceClass{
+	Path: "common://resources:sys_library_symlink",
+	Name: "sys_library_symlink",
+	Checks: []vts.TargetRef{
+		{Target: SymlinkPresentChecker},
+	},
+	PopStrategy: vts.PopulateFileMatchPath,
+}
+var StaticLibResourceClass = &vts.ResourceClass{
+	Path: "common://resources:static_library",
+	Name: "static_library",
+	Checks: []vts.TargetRef{
+		{Target: FilePresentChecker},
+	},
+	PopStrategy: vts.PopulateFileMatchPath,
+}
 
 var JSONResourceClass = &vts.ResourceClass{
 	Path: "common://resources:json_file",
 	Name: "json_file",
 	Checks: []vts.TargetRef{
 		{Target: JSONResourceChecker},
+	},
+	PopStrategy: vts.PopulateFileMatchPath,
+}
+var PkgcfgResourceClass = &vts.ResourceClass{
+	Path: "common://resources:pkgcfg_file",
+	Name: "pkgcfg_file",
+	Checks: []vts.TargetRef{
+		{Target: FilePresentChecker},
+	},
+	PopStrategy: vts.PopulateFileMatchPath,
+}
+var LibtoolDescResourceClass = &vts.ResourceClass{
+	Path: "common://resources:libtool_desc",
+	Name: "libtool_desc",
+	Checks: []vts.TargetRef{
+		{Target: FilePresentChecker},
 	},
 	PopStrategy: vts.PopulateFileMatchPath,
 }
@@ -71,4 +103,12 @@ var CHeadersResourceClass = &vts.ResourceClass{
 		{Target: CHeadersChecker},
 	},
 	PopStrategy: vts.PopulateFiles,
+}
+var CHeaderResourceClass = &vts.ResourceClass{
+	Path: "common://resources:c_header",
+	Name: "c_header",
+	Checks: []vts.TargetRef{
+		{Target: FilePresentChecker},
+	},
+	PopStrategy: vts.PopulateFileMatchPath,
 }

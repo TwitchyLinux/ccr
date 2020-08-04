@@ -108,7 +108,10 @@ func (rb *RunningBuild) inject(gc GenerationContext, pt vts.Target) error {
 
 	case *vts.Resource:
 		if t.Source == nil {
-			return vts.WrapWithTarget(errors.New("cannot patch using virtual resource"), t)
+			return vts.WrapWithTarget(errors.New("cannot inject using virtual resource"), t)
+		}
+		if _, isGen := t.Source.Target.(*vts.Generator); isGen {
+			return vts.WrapWithTarget(errors.New("cannot inject generator targets"), t)
 		}
 		gc.RunnerEnv = &vts.RunnerEnv{Dir: rb.OverlayPatchPath(), FS: osfs.New(rb.OverlayPatchPath())}
 		gc.Inputs = &vts.InputSet{Resource: t}

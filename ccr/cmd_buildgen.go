@@ -86,7 +86,7 @@ func generateFromBuild(h []byte, target string) error {
 		case strings.HasPrefix(path, "usr/include/") && strings.HasSuffix(path, ".h"):
 			fmt.Fprintf(w, "resource(\n")
 			fmt.Fprintf(w, "  name   = %q,\n", mkLibName(path, "h"))
-			fmt.Fprintf(w, "  parent = %s,\n", strconv.Quote(common.FileResourceClass.Path))
+			fmt.Fprintf(w, "  parent = %s,\n", strconv.Quote(common.CHeaderResourceClass.Path))
 			fmt.Fprintf(w, "  path   = %s,\n", strconv.Quote("/"+path))
 			fmt.Fprintf(w, "  mode   = %s,\n", strconv.Quote(fmt.Sprintf("%04o", h.Mode)))
 			fmt.Fprintf(w, "  source = %s,\n", strconv.Quote(target))
@@ -96,12 +96,32 @@ func generateFromBuild(h []byte, target string) error {
 		case strings.HasPrefix(path, "usr/lib/pkgconfig") && strings.HasSuffix(path, ".pc"):
 			fmt.Fprintf(w, "resource(\n")
 			fmt.Fprintf(w, "  name   = %q,\n", mkLibName(path, "pkgconfig"))
-			fmt.Fprintf(w, "  parent = %s,\n", strconv.Quote(common.FileResourceClass.Path))
+			fmt.Fprintf(w, "  parent = %s,\n", strconv.Quote(common.PkgcfgResourceClass.Path))
 			fmt.Fprintf(w, "  path   = %s,\n", strconv.Quote("/"+path))
 			fmt.Fprintf(w, "  mode   = %s,\n", strconv.Quote(fmt.Sprintf("%04o", h.Mode)))
 			fmt.Fprintf(w, "  source = %s,\n", strconv.Quote(target))
 			fmt.Fprintf(w, ")\n\n")
 			devTargets = append(devTargets, mkLibName(path, "pkgconfig"))
+
+		case strings.HasPrefix(path, "usr/lib/") && strings.HasSuffix(path, ".la"):
+			fmt.Fprintf(w, "resource(\n")
+			fmt.Fprintf(w, "  name   = %q,\n", mkLibName(path, "la"))
+			fmt.Fprintf(w, "  parent = %s,\n", strconv.Quote(common.LibtoolDescResourceClass.Path))
+			fmt.Fprintf(w, "  path   = %s,\n", strconv.Quote("/"+path))
+			fmt.Fprintf(w, "  mode   = %s,\n", strconv.Quote(fmt.Sprintf("%04o", h.Mode)))
+			fmt.Fprintf(w, "  source = %s,\n", strconv.Quote(target))
+			fmt.Fprintf(w, ")\n\n")
+			devTargets = append(devTargets, mkLibName(path, "la"))
+
+		case strings.HasPrefix(path, "usr/lib/") && strings.HasSuffix(path, ".a"):
+			fmt.Fprintf(w, "resource(\n")
+			fmt.Fprintf(w, "  name   = %q,\n", mkLibName(path, "static"))
+			fmt.Fprintf(w, "  parent = %s,\n", strconv.Quote(common.StaticLibResourceClass.Path))
+			fmt.Fprintf(w, "  path   = %s,\n", strconv.Quote("/"+path))
+			fmt.Fprintf(w, "  mode   = %s,\n", strconv.Quote(fmt.Sprintf("%04o", h.Mode)))
+			fmt.Fprintf(w, "  source = %s,\n", strconv.Quote(target))
+			fmt.Fprintf(w, ")\n\n")
+			devTargets = append(devTargets, mkLibName(path, "static"))
 
 		case strings.HasPrefix(path, "usr/lib/") && strings.HasPrefix(filepath.Base(path), "lib"):
 			switch h.Typeflag {
@@ -120,7 +140,7 @@ func generateFromBuild(h []byte, target string) error {
 			case tar.TypeSymlink:
 				fmt.Fprintf(w, "resource(\n")
 				fmt.Fprintf(w, "  name   = %q,\n", mkLibName(path, "symlink"))
-				fmt.Fprintf(w, "  parent = %s,\n", strconv.Quote(common.SymlinkResourceClass.Path))
+				fmt.Fprintf(w, "  parent = %s,\n", strconv.Quote(common.SysLibLinkResourceClass.Path))
 				fmt.Fprintf(w, "  path   = %s,\n", strconv.Quote("/"+path))
 				fmt.Fprintf(w, "  target = %s,\n", strconv.Quote(h.Linkname))
 				fmt.Fprintf(w, "  source = %s,\n", strconv.Quote("common://generators:symlink"))
