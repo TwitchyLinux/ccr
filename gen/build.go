@@ -35,6 +35,10 @@ func (rb *RunningBuild) OverlayUpperPath() string {
 	return rb.env.OverlayUpperPath()
 }
 
+func (rb *RunningBuild) OverlayPatchPath() string {
+	return rb.env.OverlayPatchPath()
+}
+
 func (rb *RunningBuild) RootFS() billy.Filesystem {
 	return rb.fs
 }
@@ -92,7 +96,7 @@ func (rb *RunningBuild) inject(gc GenerationContext, pt vts.Target) error {
 			return err
 		}
 		defer fsr.Close()
-		return writeMultiFiles(gc.Cache, rb.fs, rb.OverlayUpperPath(), fsr)
+		return writeMultiFiles(gc.Cache, rb.fs, rb.OverlayPatchPath(), fsr)
 
 	case *vts.Component:
 		for _, d := range t.Dependencies() {
@@ -106,7 +110,7 @@ func (rb *RunningBuild) inject(gc GenerationContext, pt vts.Target) error {
 		if t.Source == nil {
 			return vts.WrapWithTarget(errors.New("cannot patch using virtual resource"), t)
 		}
-		gc.RunnerEnv = &vts.RunnerEnv{Dir: rb.OverlayUpperPath(), FS: osfs.New(rb.OverlayUpperPath())}
+		gc.RunnerEnv = &vts.RunnerEnv{Dir: rb.OverlayPatchPath(), FS: osfs.New(rb.OverlayPatchPath())}
 		gc.Inputs = &vts.InputSet{Resource: t}
 		return PopulateResource(gc, t, t.Source.Target)
 	}
@@ -177,7 +181,7 @@ func (rb *RunningBuild) WriteToCache(c *cache.Cache, b *vts.Build, hash []byte) 
 		if err != nil {
 			return err
 		}
-		if info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+		if info.IsDir() {
 			// For symlinks: safest thing to do - what if it points outside of the env?
 			return nil
 		}
@@ -190,6 +194,19 @@ func (rb *RunningBuild) WriteToCache(c *cache.Cache, b *vts.Build, hash []byte) 
 			return err
 		}
 		if outPath := outPathMatcher.Match(relPath); outPath != "" {
+			if info.Mode()&os.ModeSymlink != 0 {
+				target, err := os.Readlink(path)
+				if err != nil {
+					return err
+				}
+				if !strings.Contains(target, "..") {
+					// Only do ones we can be sure are safe.
+					if err := fs.AddSymlink(outPath, info, target); err != nil {
+						return err
+					}
+				}
+				return nil
+			}
 			src, err := os.Open(path)
 			if err != nil {
 				return err
@@ -217,6 +234,11 @@ func writeMultiFiles(c *cache.Cache, fs billy.Filesystem, p string, fr fileset) 
 		case tar.TypeDir:
 			if err := fs.MkdirAll(filepath.Join(p, path), 0755); err != nil {
 				return vts.WrapWithPath(fmt.Errorf("mkdir from fileset: %v", err), path)
+			}
+
+		case tar.TypeSymlink:
+			if err := fs.Symlink(h.Linkname, filepath.Join(p, path)); err != nil {
+				return vts.WrapWithPath(fmt.Errorf("symlink from fileset: %v", err), path)
 			}
 
 		case tar.TypeReg:

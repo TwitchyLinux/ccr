@@ -32,6 +32,20 @@ func (pfs *PendingFileset) Close() error {
 	return err
 }
 
+func (pfs *PendingFileset) AddSymlink(path string, info os.FileInfo, target string) error {
+	if err := pfs.tar.WriteHeader(&tar.Header{
+		Typeflag: tar.TypeSymlink,
+		Linkname: target,
+		Name:     path,
+		Size:     info.Size(),
+		Mode:     int64(info.Mode()),
+		ModTime:  info.ModTime(),
+	}); err != nil {
+		return fmt.Errorf("writing header: %v", err)
+	}
+	return nil
+}
+
 func (pfs *PendingFileset) AddFile(path string, info os.FileInfo, content io.ReadCloser) error {
 	if err := pfs.tar.WriteHeader(&tar.Header{
 		Name:    path,

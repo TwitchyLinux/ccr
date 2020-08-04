@@ -48,6 +48,12 @@ func (l overlayLayout) LowerBindPath() string {
 	return filepath.Join(l.base, "l")
 }
 
+// LowerPatchPath returns the absolute path to the read-write lower dir,
+// which can be used to patch in additional files.
+func (l overlayLayout) LowerPatchPath() string {
+	return filepath.Join(l.base, "patch")
+}
+
 // OverlayMountPath returns the absolute path to where overlayfs is mounted.
 // This path fuses access to LowerBindPath() and OverlayUpperPath().
 func (l overlayLayout) OverlayMountPath() string {
@@ -128,6 +134,9 @@ func (l overlayLayout) setupDevLayout() error {
 
 func (l overlayLayout) Setup() error {
 	if err := os.Mkdir(l.LowerBindPath(), 0755); err != nil {
+		return err
+	}
+	if err := os.Mkdir(l.LowerPatchPath(), 0755); err != nil {
 		return err
 	}
 	if err := os.Mkdir(l.OverlayUpperPath(), 0755); err != nil {
@@ -278,7 +287,7 @@ func setupEnvFS(baseDir string) (outFS fs, err error) {
 		layout: l,
 		proc: exec.Command("fuse-overlayfs",
 			"-o", "upperdir="+l.OverlayUpperPath(),
-			"-o", "lowerdir="+l.LowerBindPath(),
+			"-o", "lowerdir="+l.LowerBindPath()+":"+l.LowerPatchPath(),
 			"-o", "workdir="+l.OverlayWorkingPath(),
 			l.OverlayMountPath()),
 	}

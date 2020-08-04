@@ -1,6 +1,7 @@
 package gen
 
 import (
+	"archive/tar"
 	"bytes"
 	"encoding/hex"
 	"io"
@@ -60,10 +61,15 @@ func TestBuildWriteToCache(t *testing.T) {
 	if err := ioutil.WriteFile(filepath.Join(rb.OverlayUpperPath(), "b.txt"), nil, 0644); err != nil {
 		t.Fatal(err)
 	}
+	// Make a symlink.
+	if err := os.Symlink("b.txt", filepath.Join(rb.OverlayUpperPath(), "sym.txt")); err != nil {
+		t.Fatal(err)
+	}
 
 	if err := rb.WriteToCache(c, &vts.Build{Output: &match.FilenameRules{
 		Rules: []match.MatchRule{
 			{P: glob.MustCompile("a.txt"), Out: match.LiteralOutputMapper("b.txt")},
+			{P: glob.MustCompile("sym.txt"), Out: match.LiteralOutputMapper("sym.txt")},
 		},
 	}}, bytes.Repeat([]byte{0}, 32)); err != nil {
 		t.Errorf("rb.WriteToCache() failed: %v", err)
@@ -80,6 +86,35 @@ func TestBuildWriteToCache(t *testing.T) {
 	if _, closer, _, err = c.FileInFileset(bytes.Repeat([]byte{0}, 32), "a.txt"); err == nil {
 		closer.Close()
 		t.Errorf("FileInFileset(%X, %q) did not fail: %v", bytes.Repeat([]byte{0}, 32), "a.txt", err)
+	}
+	// Find that symbolic link and make sure its info is good.
+	r, err := c.FilesetReader(bytes.Repeat([]byte{0}, 32))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+	for {
+		path, h, err := r.Next()
+		if err != nil {
+			if err == io.EOF {
+				t.Error("did not find sym.txt")
+				break
+			}
+			t.Fatalf("iterating buildset: %v", err)
+		}
+
+		if path == "sym.txt" {
+			if h.Typeflag != tar.TypeSymlink {
+				t.Errorf("type = %v, want symlink", h.Typeflag)
+			}
+			if h.Linkname != "b.txt" {
+				t.Errorf("target = %q, want b.txt", h.Linkname)
+			}
+			if m := os.FileMode(h.Mode); m&os.ModeSymlink == 0 {
+				t.Errorf("target was not symlink (mode = %v)", m)
+			}
+			break
+		}
 	}
 }
 
@@ -326,7 +361,8 @@ func TestPatchingBuildEnv(t *testing.T) {
 			if err := rb.Patch(GenerationContext{
 				Cache: c,
 				RunnerEnv: &vts.RunnerEnv{
-					FS: osfs.New(outDir),
+					FS:  osfs.New(outDir),
+					Dir: outDir,
 				}}, b.PatchIns); err != nil {
 				t.Fatalf("Patch() failed: %v", err)
 			}
@@ -380,6 +416,30 @@ func TestPopulateResourceFromBuild(t *testing.T) {
 			},
 			expectFiles:    map[string]os.FileMode{"/yeetfile": os.FileMode(0600)},
 			backingArchive: "testdata/fake_file_build_cache.tar.gz",
+		},
+		{
+			name: "symlinks",
+			r: &vts.Resource{
+				Path:   "//test:yeet",
+				Name:   "yeet",
+				Parent: vts.TargetRef{Target: common.CHeadersResourceClass},
+				Details: []vts.TargetRef{
+					{
+						Target: &vts.Attr{
+							Parent: vts.TargetRef{Target: common.PathClass},
+							Val:    starlark.String("/dir"),
+						},
+					},
+				},
+				Source: &vts.TargetRef{
+					Target: &vts.Build{
+						Path: "//test:fake_file_build",
+						Name: "fake_file_build",
+					},
+				},
+			},
+			expectFiles:    map[string]os.FileMode{"/dir/pasta.txt": os.FileMode(0644)},
+			backingArchive: "testdata/symlinks.tar.gz",
 		},
 		{
 			name: "c headers",
@@ -450,7 +510,8 @@ func TestPopulateResourceFromBuild(t *testing.T) {
 			if err := PopulateResource(GenerationContext{
 				Cache: c,
 				RunnerEnv: &vts.RunnerEnv{
-					FS: osfs.New(outDir),
+					FS:  osfs.New(outDir),
+					Dir: outDir,
 				}}, tc.r, b); err != nil {
 				t.Errorf("PopulateResource(%v, %v) failed: %v", tc.r, b, err)
 			}
@@ -475,7 +536,7 @@ func TestGenerateBuild(t *testing.T) {
 		expectFiles map[string]os.FileMode
 	}{
 		{
-			name: "file",
+			name: "patches_in_output",
 			b: &vts.Build{
 				Path: "//test:fake_file_build",
 				Name: "fake_file_build",
@@ -494,6 +555,48 @@ func TestGenerateBuild(t *testing.T) {
 				Output: &match.FilenameRules{
 					Rules: []match.MatchRule{
 						{P: glob.MustCompile("*.txt"), Out: &match.StripPrefixOutputMapper{Prefix: "/"}},
+					},
+				},
+			},
+			expectFiles: map[string]os.FileMode{"somefile.txt": os.FileMode(0644)},
+		},
+		{
+			name: "injections_not_in_output",
+			b: &vts.Build{
+				Path: "//test:f",
+				Name: "f",
+				PatchIns: map[string]vts.TargetRef{
+					"/somefile.txt": {Target: &vts.Puesdo{
+						Kind:         vts.FileRef,
+						ContractPath: "testdata/something.ccr",
+						Path:         "file.txt",
+					}},
+				},
+				Injections: []vts.TargetRef{
+					{Target: &vts.Resource{
+						Path:   "//test:yote",
+						Name:   "yote",
+						Parent: vts.TargetRef{Target: common.FileResourceClass},
+						Details: []vts.TargetRef{
+							{
+								Target: &vts.Attr{
+									Parent: vts.TargetRef{Target: common.PathClass},
+									Val:    starlark.String("/usr/kek.txt"),
+								},
+							},
+						},
+						Source: &vts.TargetRef{
+							Target: &vts.Puesdo{
+								Kind:         vts.FileRef,
+								ContractPath: "testdata/something.ccr",
+								Path:         "file.txt",
+							},
+						},
+					}},
+				},
+				Output: &match.FilenameRules{
+					Rules: []match.MatchRule{
+						{P: glob.MustCompile("**.txt"), Out: &match.StripPrefixOutputMapper{Prefix: ""}},
 					},
 				},
 			},
@@ -527,7 +630,8 @@ func TestGenerateBuild(t *testing.T) {
 			if err := Generate(GenerationContext{
 				Cache: c,
 				RunnerEnv: &vts.RunnerEnv{
-					FS: osfs.New(outDir),
+					FS:  osfs.New(outDir),
+					Dir: outDir,
 				}}, tc.b); err != nil {
 				t.Errorf("Generate(%v) failed: %v", tc.b, err)
 			}

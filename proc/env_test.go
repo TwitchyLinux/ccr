@@ -216,6 +216,35 @@ func TestTmpMasked(t *testing.T) {
 	}
 }
 
+func TestPatchPath(t *testing.T) {
+	t.Parallel()
+	e, err := NewEnv(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Mkdir(filepath.Join(e.OverlayPatchPath(), "usr"), 0755); err != nil {
+		e.Close()
+		t.Fatal(err)
+	}
+	if err := ioutil.WriteFile(filepath.Join(e.OverlayPatchPath(), "usr", "somefile"), []byte("DEF"), 0644); err != nil {
+		e.Close()
+		t.Fatal(err)
+	}
+	o, s, _, err := e.RunBlocking("/tmp", "cat", "/usr/somefile")
+	if err != nil {
+		t.Errorf("RunBlocking(%q) failed: %v", "cat", err)
+		t.Logf("stdout = %q\nstderr = %q", string(o), string(s))
+	}
+	if string(o) != "DEF" {
+		t.Errorf("file contents were not correct: got %q", string(o))
+	}
+
+	if err := e.Close(); err != nil {
+		t.Errorf("Close() failed: %v", err)
+	}
+}
+
 func TestEnsurePatched(t *testing.T) {
 	t.Parallel()
 	e, err := NewEnv(false)

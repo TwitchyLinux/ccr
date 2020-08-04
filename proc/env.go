@@ -118,6 +118,11 @@ func (e *Env) OverlayMountPath() string {
 	return filepath.Join(e.dir, "top")
 }
 
+// OverlayPatchPath returns the path where additional files can be patched.
+func (e *Env) OverlayPatchPath() string {
+	return filepath.Join(e.dir, "patch")
+}
+
 // OverlayUpperPath returns the path to files the environment wrote to.
 func (e *Env) OverlayUpperPath() string {
 	return filepath.Join(e.dir, "u")
