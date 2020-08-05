@@ -160,6 +160,42 @@ func makeSieve(s *Script) *starlark.Builtin {
 	})
 }
 
+func makeSievePrefix(s *Script) *starlark.Builtin {
+	return starlark.NewBuiltin("sieve_prefix", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+		var target, prefix string
+		if err := starlark.UnpackArgs("sieve_prefix", args, kwargs, "target?", &target, "prefix?", &prefix); err != nil {
+			return starlark.None, err
+		}
+
+		m, err := glob.Compile(prefix + "**")
+		if err != nil {
+			return nil, fmt.Errorf("invalid prefix: %v", err)
+		}
+
+		st := &vts.Sieve{
+			ContractPath: s.fPath,
+			Pos: &vts.DefPosition{
+				Path:  s.fPath,
+				Frame: thread.CallFrame(1),
+			},
+			IncludeGlobs: []string{prefix + "**"},
+			Renames: &match.FilenameRules{
+				Rules: []match.MatchRule{
+					{P: m, Out: &match.StripPrefixOutputMapper{Prefix: prefix}},
+				},
+			},
+		}
+
+		v, err := toGeneratorTarget(s.path, starlark.String(target))
+		if err != nil {
+			return nil, fmt.Errorf("invalid input: %v", err)
+		}
+		st.Inputs = append(st.Inputs, v)
+
+		return st, nil
+	})
+}
+
 func makeComputedValue(s *Script) *starlark.Builtin {
 	return starlark.NewBuiltin("compute", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var fname, fun, code string

@@ -192,7 +192,7 @@ func (b *Builder) emitHeaderDir(path, basePath string) {
 	fmt.Fprintf(&b.devRes, "  name   = %q,\n", resName)
 	fmt.Fprintf(&b.devRes, "  parent = %s,\n", strconv.Quote(common.CHeadersResourceClass.Path))
 	fmt.Fprintf(&b.devRes, "  path   = %s,\n", strconv.Quote("/"+path))
-	fmt.Fprintf(&b.devRes, "  source = %s,\n", strconv.Quote(b.target))
+	fmt.Fprintf(&b.devRes, "  source = sieve_prefix(%s, %q),\n", strconv.Quote(b.target), path)
 	fmt.Fprintf(&b.devRes, ")\n\n")
 	b.devTargets = append(b.devTargets, resName)
 }

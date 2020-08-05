@@ -191,6 +191,28 @@ var newScriptTestcases = []struct {
 		},
 	},
 	{
+		name:     "resource with sieve_prefix source",
+		filename: "testdata/resource_with_sieve_prefix.ccr",
+		want: []vts.Target{
+			&vts.Resource{
+				Path:   "//test:yeet",
+				Name:   "yeet",
+				Parent: vts.TargetRef{Path: "common://resource/file"},
+				Source: &vts.TargetRef{Target: &vts.Sieve{
+					ContractPath: "testdata/resource_with_sieve_prefix.ccr",
+					Inputs:       []vts.TargetRef{{Path: "//test:header_files"}},
+					IncludeGlobs: []string{"usr/include/**"},
+					Renames: &match.FilenameRules{
+						Rules: []match.MatchRule{{
+							P:   glob.MustCompile("usr/include/**"),
+							Out: &match.StripPrefixOutputMapper{Prefix: "usr/include/"}}},
+					},
+				},
+				},
+			},
+		},
+	},
+	{
 		name:     "attr with computed value",
 		filename: "testdata/attr_with_computed_value.ccr",
 		want: []vts.Target{
