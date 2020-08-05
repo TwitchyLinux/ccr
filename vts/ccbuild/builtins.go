@@ -146,10 +146,10 @@ func makeBuildStep(s *Script, kind vts.StepKind) *starlark.Builtin {
 				argsOutput[i] = string(s)
 			}
 		case vts.StepConfigure:
-			var sArgs *starlark.Dict
+			var sArgs, sVars *starlark.Dict
 			argDict = map[string]string{}
 			if err := starlark.UnpackArgs(string(kind), args, kwargs,
-				"path?", &path, "dir?", &dir, "args?", &sArgs); err != nil {
+				"path?", &path, "dir?", &dir, "args?", &sArgs, "vars?", &sVars); err != nil {
 				return starlark.None, err
 			}
 
@@ -168,6 +168,23 @@ func makeBuildStep(s *Script, kind vts.StepKind) *starlark.Builtin {
 						return nil, fmt.Errorf("invalid args value: %v", v)
 					}
 					argDict[string(n)] = string(v2)
+				}
+			}
+			if sVars != nil {
+				for _, name := range sVars.Keys() {
+					n, ok := name.(starlark.String)
+					if !ok {
+						return nil, fmt.Errorf("invalid vars key: %v", name)
+					}
+					v, _, err := sVars.Get(name)
+					if err != nil {
+						return starlark.None, err
+					}
+					v2, ok := v.(starlark.String)
+					if !ok {
+						return nil, fmt.Errorf("invalid vars value: %v", v)
+					}
+					argsOutput = append(argsOutput, fmt.Sprintf("%s=%s", string(n), string(v2)))
 				}
 			}
 		}

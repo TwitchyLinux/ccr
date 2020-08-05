@@ -24,6 +24,9 @@ func RunConfigure(rb RunningBuild, step *vts.BuildStep) error {
 			args = append(args, fmt.Sprintf("--%s", k))
 		}
 	}
+	for _, a := range step.Args {
+		args = append(args, a)
+	}
 
 	// fmt.Fprintf(os.Stdout, "+ Running %s %s from %s.\n", cmd, strings.Join(args, " "), wd)
 	ec, err := rb.ExecBlocking(wd, append([]string{cmd}, args...), os.Stdout, os.Stderr)
