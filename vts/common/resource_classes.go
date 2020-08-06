@@ -43,6 +43,14 @@ var BinResourceClass = &vts.ResourceClass{
 	},
 	PopStrategy: vts.PopulateFileMatchPath,
 }
+var BinLinkResourceClass = &vts.ResourceClass{
+	Path: "common://resources:binary_symlink",
+	Name: "binary_symlink",
+	Checks: []vts.TargetRef{
+		{Target: SymlinkPresentChecker},
+	},
+	PopStrategy: vts.PopulateFileMatchPath,
+}
 
 var SysLibResourceClass = &vts.ResourceClass{
 	Path:        "common://resources:sys_library",

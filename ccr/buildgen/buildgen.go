@@ -62,7 +62,7 @@ func (b *Builder) emitHeader(path string, h *tar.Header) {
 	fmt.Fprintf(&b.devRes, "  name   = %q,\n", resName)
 	fmt.Fprintf(&b.devRes, "  parent = %s,\n", strconv.Quote(common.CHeaderResourceClass.Path))
 	fmt.Fprintf(&b.devRes, "  path   = %s,\n", strconv.Quote("/"+path))
-	fmt.Fprintf(&b.devRes, "  mode   = %s,\n", strconv.Quote(fmt.Sprintf("%04o", h.Mode)))
+	fmt.Fprintf(&b.devRes, "  mode   = %s,\n", strconv.Quote(fmt.Sprintf("%04o", h.Mode&0777)))
 	fmt.Fprintf(&b.devRes, "  source = %s,\n", strconv.Quote(b.target))
 	fmt.Fprintf(&b.devRes, ")\n\n")
 	b.devTargets = append(b.devTargets, resName)
@@ -74,7 +74,7 @@ func (b *Builder) emitPkgConfig(path string, h *tar.Header) {
 	fmt.Fprintf(&b.devRes, "  name   = %q,\n", resName)
 	fmt.Fprintf(&b.devRes, "  parent = %s,\n", strconv.Quote(common.PkgcfgResourceClass.Path))
 	fmt.Fprintf(&b.devRes, "  path   = %s,\n", strconv.Quote("/"+path))
-	fmt.Fprintf(&b.devRes, "  mode   = %s,\n", strconv.Quote(fmt.Sprintf("%04o", h.Mode)))
+	fmt.Fprintf(&b.devRes, "  mode   = %s,\n", strconv.Quote(fmt.Sprintf("%04o", h.Mode&0777)))
 	fmt.Fprintf(&b.devRes, "  source = %s,\n", strconv.Quote(b.target))
 	fmt.Fprintf(&b.devRes, ")\n\n")
 	b.devTargets = append(b.devTargets, resName)
@@ -86,7 +86,7 @@ func (b *Builder) emitLibtoolDesc(path string, h *tar.Header) {
 	fmt.Fprintf(&b.devRes, "  name   = %q,\n", resName)
 	fmt.Fprintf(&b.devRes, "  parent = %s,\n", strconv.Quote(common.LibtoolDescResourceClass.Path))
 	fmt.Fprintf(&b.devRes, "  path   = %s,\n", strconv.Quote("/"+path))
-	fmt.Fprintf(&b.devRes, "  mode   = %s,\n", strconv.Quote(fmt.Sprintf("%04o", h.Mode)))
+	fmt.Fprintf(&b.devRes, "  mode   = %s,\n", strconv.Quote(fmt.Sprintf("%04o", h.Mode&0777)))
 	fmt.Fprintf(&b.devRes, "  source = %s,\n", strconv.Quote(b.target))
 	fmt.Fprintf(&b.devRes, ")\n\n")
 	b.devTargets = append(b.devTargets, resName)
@@ -98,7 +98,7 @@ func (b *Builder) emitStaticLib(path string, h *tar.Header) {
 	fmt.Fprintf(&b.devRes, "  name   = %q,\n", resName)
 	fmt.Fprintf(&b.devRes, "  parent = %s,\n", strconv.Quote(common.StaticLibResourceClass.Path))
 	fmt.Fprintf(&b.devRes, "  path   = %s,\n", strconv.Quote("/"+path))
-	fmt.Fprintf(&b.devRes, "  mode   = %s,\n", strconv.Quote(fmt.Sprintf("%04o", h.Mode)))
+	fmt.Fprintf(&b.devRes, "  mode   = %s,\n", strconv.Quote(fmt.Sprintf("%04o", h.Mode&0777)))
 	fmt.Fprintf(&b.devRes, "  source = %s,\n", strconv.Quote(b.target))
 	fmt.Fprintf(&b.devRes, ")\n\n")
 	b.devTargets = append(b.devTargets, resName)
@@ -122,7 +122,7 @@ func (b *Builder) emitSharedLib(path string, h *tar.Header) {
 	fmt.Fprintf(&b.libRes, "  name   = %q,\n", resName)
 	fmt.Fprintf(&b.libRes, "  parent = %s,\n", strconv.Quote(common.SysLibResourceClass.Path))
 	fmt.Fprintf(&b.libRes, "  path   = %s,\n", strconv.Quote("/"+path))
-	fmt.Fprintf(&b.libRes, "  mode   = %s,\n", strconv.Quote(fmt.Sprintf("%04o", h.Mode)))
+	fmt.Fprintf(&b.libRes, "  mode   = %s,\n", strconv.Quote(fmt.Sprintf("%04o", h.Mode&0777)))
 	fmt.Fprintf(&b.libRes, "  source = %s,\n", strconv.Quote(b.target))
 	fmt.Fprintf(&b.libRes, ")\n\n")
 	b.libTargets = append(b.libTargets, resName)
@@ -132,10 +132,19 @@ func (b *Builder) emitBin(path string, h *tar.Header, kind string) {
 	resName := mkLibName(path, kind)
 	fmt.Fprintf(&b.binRes, "resource(\n")
 	fmt.Fprintf(&b.binRes, "  name   = %q,\n", resName)
-	fmt.Fprintf(&b.binRes, "  parent = %s,\n", strconv.Quote(common.BinResourceClass.Path))
+	if h.Typeflag == tar.TypeSymlink {
+		fmt.Fprintf(&b.binRes, "  parent = %s,\n", strconv.Quote(common.BinLinkResourceClass.Path))
+	} else {
+		fmt.Fprintf(&b.binRes, "  parent = %s,\n", strconv.Quote(common.BinResourceClass.Path))
+	}
 	fmt.Fprintf(&b.binRes, "  path   = %s,\n", strconv.Quote("/"+path))
-	fmt.Fprintf(&b.binRes, "  mode   = %s,\n", strconv.Quote(fmt.Sprintf("%04o", h.Mode)))
-	fmt.Fprintf(&b.binRes, "  source = %s,\n", strconv.Quote(b.target))
+	if h.Typeflag == tar.TypeSymlink {
+		fmt.Fprintf(&b.binRes, "  target = %s,\n", strconv.Quote(h.Linkname))
+		fmt.Fprintf(&b.binRes, "  source = %s,\n", strconv.Quote("common://generators:symlink"))
+	} else {
+		fmt.Fprintf(&b.binRes, "  mode   = %s,\n", strconv.Quote(fmt.Sprintf("%04o", h.Mode&0777)))
+		fmt.Fprintf(&b.binRes, "  source = %s,\n", strconv.Quote(b.target))
+	}
 	fmt.Fprintf(&b.binRes, ")\n\n")
 	b.binTargets = append(b.binTargets, resName)
 }

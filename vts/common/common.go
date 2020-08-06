@@ -40,6 +40,7 @@ var commonTargets = map[string]vts.Target{
 	"common://resources:symlink":             SymlinkResourceClass,
 	"common://resources:virtual":             VirtualResourceClass,
 	"common://resources:binary":              BinResourceClass,
+	"common://resources:binary_symlink":      BinLinkResourceClass,
 	"common://resources:sys_library":         SysLibResourceClass,
 	"common://resources:sys_library_symlink": SysLibLinkResourceClass,
 	"common://resources:static_library":      StaticLibResourceClass,
