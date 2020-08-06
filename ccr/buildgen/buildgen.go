@@ -128,8 +128,8 @@ func (b *Builder) emitSharedLib(path string, h *tar.Header) {
 	b.libTargets = append(b.libTargets, resName)
 }
 
-func (b *Builder) emitBin(path string, h *tar.Header) {
-	resName := mkLibName(path, "bin")
+func (b *Builder) emitBin(path string, h *tar.Header, kind string) {
+	resName := mkLibName(path, kind)
 	fmt.Fprintf(&b.binRes, "resource(\n")
 	fmt.Fprintf(&b.binRes, "  name   = %q,\n", resName)
 	fmt.Fprintf(&b.binRes, "  parent = %s,\n", strconv.Quote(common.BinResourceClass.Path))
@@ -224,12 +224,14 @@ func (b *Builder) Build(out io.Writer) error {
 
 		switch {
 		case strings.HasPrefix(path, "usr/bin/"):
-			b.emitBin(path, h)
+			b.emitBin(path, h, "bin")
+		case strings.HasPrefix(path, "sbin/"):
+			b.emitBin(path, h, "sbin")
 
 		case strings.HasPrefix(path, "usr/include/") && strings.HasSuffix(path, ".h"):
 			b.header(path, h)
 
-		case strings.HasPrefix(path, "usr/lib/pkgconfig") && strings.HasSuffix(path, ".pc"):
+		case (strings.HasPrefix(path, "usr/lib/pkgconfig") || strings.HasPrefix(path, "lib/pkgconfig")) && strings.HasSuffix(path, ".pc"):
 			b.emitPkgConfig(path, h)
 
 		case (strings.HasPrefix(path, "usr/lib/") || strings.HasPrefix(path, "lib/")) && strings.HasSuffix(path, ".la"):
@@ -238,15 +240,16 @@ func (b *Builder) Build(out io.Writer) error {
 		case (strings.HasPrefix(path, "usr/lib/") || strings.HasPrefix(path, "lib/")) && strings.HasSuffix(path, ".a"):
 			b.emitStaticLib(path, h)
 
-		case (strings.HasPrefix(path, "usr/lib/") || strings.HasPrefix(path, "lib/")) && strings.HasPrefix(filepath.Base(path), "lib"):
-			switch h.Typeflag {
-			case tar.TypeReg:
-				if spl := strings.Split(filepath.Base(path), "."); len(spl) > 1 && spl[1] == "so" {
+		case (strings.HasPrefix(path, "usr/lib/") || strings.HasPrefix(path, "lib/")) &&
+			(strings.HasPrefix(filepath.Base(path), "lib") || strings.Contains(filepath.Base(path), ".so.") || strings.HasSuffix(filepath.Base(path), ".so")):
+			if bp := filepath.Dir(path); bp == "lib" || bp == "usr/lib" {
+				switch h.Typeflag {
+				case tar.TypeReg:
 					b.emitSharedLib(path, h)
-				}
 
-			case tar.TypeSymlink:
-				b.emitLibSymlink(path, h)
+				case tar.TypeSymlink:
+					b.emitLibSymlink(path, h)
+				}
 			}
 		}
 	}
