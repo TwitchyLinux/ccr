@@ -120,3 +120,12 @@ var CHeaderResourceClass = &vts.ResourceClass{
 	},
 	PopStrategy: vts.PopulateFileMatchPath,
 }
+
+var SupportDirResourceClass = &vts.ResourceClass{
+	Path: "common://resources:support_files",
+	Name: "support_files",
+	Checks: []vts.TargetRef{
+		{Target: DirPresentChecker},
+	},
+	PopStrategy: vts.PopulateFiles,
+}

@@ -78,6 +78,9 @@ func doBuildgenCmd(target string) error {
 	}
 	fmt.Printf("\n\n")
 
-	bg := buildgen.New(resCache, target[strings.LastIndex(target, ":"):], h)
+	bg, err := buildgen.New(resCache, target[strings.LastIndex(target, ":"):], h)
+	if err != nil {
+		return err
+	}
 	return bg.Build(os.Stdout)
 }

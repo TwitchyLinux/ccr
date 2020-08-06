@@ -3,6 +3,7 @@ package buildgen
 import (
 	"archive/tar"
 	"bytes"
+	"flag"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -10,9 +11,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gobwas/glob"
 	"github.com/twitchylinux/ccr/cache"
 	"github.com/twitchylinux/ccr/vts/common"
 )
+
+var supportResourceFlag = flag.String("buildgen-support-resources", "", "comma-separated list of names to match path")
 
 func mkLibName(path, detail string) string {
 	spl := strings.Split(filepath.Base(path), ".")
@@ -29,19 +33,40 @@ func mkLibName(path, detail string) string {
 	return spl[0] + "-" + detail + "-" + strings.Join(spl[2:], "-")
 }
 
+type supportResourceMatcher struct {
+	name string
+	p    glob.Glob
+}
+
+func (m *supportResourceMatcher) emit(b *Builder, path string, h *tar.Header) {
+	resName := mkLibName(path, m.name)
+	fmt.Fprintf(&b.supportRes, "resource(\n")
+	fmt.Fprintf(&b.supportRes, "  name   = %q,\n", resName)
+	fmt.Fprintf(&b.supportRes, "  parent = %s,\n", strconv.Quote(common.FileResourceClass.Path))
+	fmt.Fprintf(&b.supportRes, "  path   = %s,\n", strconv.Quote("/"+path))
+	fmt.Fprintf(&b.supportRes, "  mode   = %s,\n", strconv.Quote(fmt.Sprintf("%04o", h.Mode&0777)))
+	fmt.Fprintf(&b.supportRes, "  source = %s,\n", strconv.Quote(b.target))
+	fmt.Fprintf(&b.supportRes, ")\n\n")
+	b.supportTargets = append(b.supportTargets, resName)
+}
+
 type Builder struct {
-	cache  *cache.Cache
-	target string
-	hash   []byte
-	devRes bytes.Buffer
-	libRes bytes.Buffer
-	binRes bytes.Buffer
+	cache        *cache.Cache
+	target       string
+	hash         []byte
+	supportMatch []supportResourceMatcher
+
+	devRes     bytes.Buffer
+	libRes     bytes.Buffer
+	binRes     bytes.Buffer
+	supportRes bytes.Buffer
 
 	headerDirs map[string]struct{}
 
-	devTargets []string
-	libTargets []string
-	binTargets []string
+	devTargets     []string
+	libTargets     []string
+	binTargets     []string
+	supportTargets []string
 }
 
 func (b *Builder) header(path string, h *tar.Header) {
@@ -164,6 +189,9 @@ func (b *Builder) writeLibComponent(w io.Writer) {
 	fmt.Fprintf(w, "component(\n")
 	fmt.Fprintf(w, "  name   = %q,\n", "libs")
 	fmt.Fprintf(w, "  deps   = [\n")
+	if len(b.supportTargets) > 0 {
+		fmt.Fprintf(w, "    %s,\n", strconv.Quote(":support-files"))
+	}
 	for _, lib := range b.libTargets {
 		fmt.Fprintf(w, "    %s,\n", strconv.Quote(":"+lib))
 	}
@@ -177,6 +205,17 @@ func (b *Builder) writeDevComponent(w io.Writer) {
 	fmt.Fprintf(w, "  deps   = [\n")
 	fmt.Fprintf(w, "    %s,\n", strconv.Quote(":libs"))
 	for _, t := range b.devTargets {
+		fmt.Fprintf(w, "    %s,\n", strconv.Quote(":"+t))
+	}
+	fmt.Fprintf(w, "  ],\n")
+	fmt.Fprintf(w, ")\n\n")
+}
+
+func (b *Builder) writeSupportComponent(w io.Writer) {
+	fmt.Fprintf(w, "component(\n")
+	fmt.Fprintf(w, "  name   = %q,\n", "support-files")
+	fmt.Fprintf(w, "  deps   = [\n")
+	for _, t := range b.supportTargets {
 		fmt.Fprintf(w, "    %s,\n", strconv.Quote(":"+t))
 	}
 	fmt.Fprintf(w, "  ],\n")
@@ -206,13 +245,31 @@ func (b *Builder) emitHeaderDir(path, basePath string) {
 	b.devTargets = append(b.devTargets, resName)
 }
 
-func New(c *cache.Cache, target string, h []byte) *Builder {
-	return &Builder{
-		cache:      c,
-		target:     target,
-		hash:       h,
-		headerDirs: map[string]struct{}{},
+func New(c *cache.Cache, target string, h []byte) (*Builder, error) {
+	var matchers []supportResourceMatcher
+	for _, res := range strings.Split(*supportResourceFlag, ",") {
+		eq := strings.Index(res, "=")
+		if eq < 0 {
+			continue
+		}
+
+		p, err := glob.Compile(strings.TrimPrefix(res[eq+1:], "/"))
+		if err != nil {
+			return nil, fmt.Errorf("invalid match pattern %q: %v", res[eq+1:], err)
+		}
+		matchers = append(matchers, supportResourceMatcher{
+			name: res[:eq],
+			p:    p,
+		})
 	}
+
+	return &Builder{
+		cache:        c,
+		target:       target,
+		hash:         h,
+		supportMatch: matchers,
+		headerDirs:   map[string]struct{}{},
+	}, nil
 }
 
 func (b *Builder) Build(out io.Writer) error {
@@ -229,6 +286,13 @@ func (b *Builder) Build(out io.Writer) error {
 				break
 			}
 			return err
+		}
+
+		for _, m := range b.supportMatch {
+			if m.p.Match(path) {
+				m.emit(b, path, h)
+				continue
+			}
 		}
 
 		switch {
@@ -272,6 +336,10 @@ func (b *Builder) Build(out io.Writer) error {
 	}
 	b.writeLibComponent(out)
 	io.Copy(out, &b.libRes)
+	if len(b.supportTargets) > 0 {
+		b.writeSupportComponent(out)
+		io.Copy(out, &b.supportRes)
+	}
 	b.writeDevComponent(out)
 	io.Copy(out, &b.devRes)
 	return nil

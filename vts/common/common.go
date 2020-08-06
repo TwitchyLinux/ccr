@@ -50,6 +50,7 @@ var commonTargets = map[string]vts.Target{
 	"common://resources:libtool_desc":        LibtoolDescResourceClass,
 	"common://resources:c_header":            CHeaderResourceClass,
 	"common://resources:c_headers":           CHeadersResourceClass,
+	"common://resources:support_files":       SupportDirResourceClass,
 
 	"common://resources/accounts:user":  UserResourceClass,
 	"common://resources/accounts:group": GroupResourceClass,
