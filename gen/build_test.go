@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/gobwas/glob"
 	"github.com/twitchylinux/ccr/cache"
@@ -142,12 +143,20 @@ func TestStepUnpackGz(t *testing.T) {
 	// 	return nil
 	// })
 
-	data, err := ioutil.ReadFile(filepath.Join(rb.OverlayUpperPath(), "output/blue/slang"))
+	p := filepath.Join(rb.OverlayUpperPath(), "output/blue/slang")
+	data, err := ioutil.ReadFile(p)
 	if err != nil {
 		t.Fatalf("failed to read file: %v", err)
 	}
 	if want := []byte("bluezies\n"); !bytes.Equal(data, want) {
 		t.Errorf("file content = %q, want %q", data, want)
+	}
+	s, err := os.Stat(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := time.Date(2020, 7, 23, 18, 7, 26, 0, time.Local); s.ModTime().Unix() != want.Unix() {
+		t.Errorf("modtime = %v, want %v", s.ModTime(), want)
 	}
 }
 

@@ -81,7 +81,8 @@ func unpackTarReader(tape io.Reader, rb RunningBuild, step *vts.BuildStep) error
 				return fmt.Errorf("mkdir %q: %v", header.Name, err)
 			}
 		case tar.TypeReg:
-			outFile, err := fs.OpenFile(filepath.Join(rb.OverlayUpperPath(), step.ToPath, header.Name), os.O_WRONLY|os.O_CREATE|os.O_EXCL|os.O_TRUNC, header.FileInfo().Mode())
+			fp := filepath.Join(rb.OverlayUpperPath(), step.ToPath, header.Name)
+			outFile, err := fs.OpenFile(fp, os.O_WRONLY|os.O_CREATE|os.O_EXCL|os.O_TRUNC, header.FileInfo().Mode())
 			if err != nil {
 				return fmt.Errorf("open %q: %v", header.Name, err)
 			}
@@ -90,6 +91,15 @@ func unpackTarReader(tape io.Reader, rb RunningBuild, step *vts.BuildStep) error
 				return fmt.Errorf("copying %q: %v", header.Name, err)
 			}
 			outFile.Close()
+			if header.AccessTime.IsZero() {
+				header.AccessTime = header.ModTime
+			}
+			if header.ChangeTime.IsZero() {
+				header.ChangeTime = header.ModTime
+			}
+			if err := os.Chtimes(fp, header.AccessTime, header.ChangeTime); err != nil {
+				return fmt.Errorf("chtime %q: %v", header.Name, err)
+			}
 
 		case tar.TypeSymlink:
 			if err := fs.MkdirAll(filepath.Dir(filepath.Join(rb.OverlayUpperPath(), step.ToPath, header.Name)), 0755); err != nil && !os.IsExist(err) {
