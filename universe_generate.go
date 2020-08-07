@@ -153,7 +153,7 @@ func (u *Universe) generateTarget(s generationState, t vts.Target) error {
 				conf:                   s.conf,
 				runnerEnv:              s.runnerEnv,
 				rootTarget:             t,
-				completedToolchainDeps: make(targetSet, 32),
+				completedToolchainDeps: s.completedToolchainDeps,
 				targetChain:            append(make([]vts.Target, 0, 6), t),
 			}
 			if err := u.generateTarget(subState, inp.Target); err != nil {
