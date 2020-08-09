@@ -53,7 +53,7 @@ func TestDownloadFailsOnBadHash(t *testing.T) {
 		r.Close()
 		t.Error("Expected non-nil error")
 	}
-	if want := fmt.Sprintf("incorrect hash: \"%x\" != %q", sha256.Sum256(respData), s256); err.Error() != want {
+	if want := fmt.Sprintf("incorrect hash: %x != %x", s256, sha256.Sum256(respData)); err.Error() != want {
 		t.Errorf("err = %q, want %q", err.Error(), want)
 	}
 }

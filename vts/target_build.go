@@ -24,6 +24,8 @@ type Build struct {
 	Output     *match.FilenameRules
 	PatchIns   map[string]TargetRef
 	Injections []TargetRef
+
+	cachedRollupHash []byte
 }
 
 func (t *Build) DefinedAt() *DefPosition {
@@ -90,6 +92,10 @@ func (t *Build) Hash() (uint32, error) {
 }
 
 func (t *Build) RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error) {
+	if t.cachedRollupHash != nil {
+		return t.cachedRollupHash, nil
+	}
+
 	hash := sha256.New()
 	fmt.Fprintf(hash, "%d-build: %q\n%q\n", buildOutputHashCacheBuster, t.Path, t.Name)
 
@@ -147,7 +153,8 @@ func (t *Build) RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error) {
 		hash.Write(h)
 	}
 
-	return hash.Sum(nil), nil
+	t.cachedRollupHash = hash.Sum(nil)
+	return t.cachedRollupHash, nil
 }
 
 func (t *Build) OutputMappings() *match.FilenameRules {

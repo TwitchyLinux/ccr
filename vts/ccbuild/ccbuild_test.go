@@ -313,6 +313,7 @@ func TestNewScript(t *testing.T) {
 
 				if diff := cmp.Diff(tc.want, s.targets, filterPos,
 					cmpopts.IgnoreUnexported(vts.Attr{}),
+					cmpopts.IgnoreUnexported(vts.Build{}),
 					cmpopts.IgnoreFields(vts.ComputedValue{}, "ContractDir"),
 					cmpopts.IgnoreFields(vts.Build{}, "ContractDir", "Output"),
 					cmpopts.IgnoreFields(vts.RefConstraint{}, "Eval")); diff != "" {
