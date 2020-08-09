@@ -2,7 +2,6 @@ package gen
 
 import (
 	"archive/tar"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -295,7 +294,11 @@ func generateBuild(gc GenerationContext, b *vts.Build) error {
 		return vts.WrapWithTarget(err, b)
 	}
 	// See if its already cached.
-	if _, err := os.Stat(gc.Cache.SHA256Path(hex.EncodeToString(bh))); err == nil {
+	isCached, err := gc.Cache.IsHashCached(bh)
+	if err != nil {
+		return err
+	}
+	if isCached {
 		return nil
 	}
 

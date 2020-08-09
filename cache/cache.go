@@ -3,6 +3,7 @@
 package cache
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -52,14 +53,53 @@ func (c *Cache) ByName(name string) (io.ReadCloser, error) {
 	return f, err
 }
 
-func (c *Cache) SHA256Path(hash string) string {
+func (c *Cache) hashString(h []byte) string {
+	s := hex.EncodeToString(h)
+	if len(s) > 36 {
+		return s[:36]
+	}
+	return s
+}
+
+func (c *Cache) hashPath(h []byte) string {
+	hash := c.hashString(h)
 	return filepath.Join(c.dir, hash[:2], hash[2:])
 }
 
-// BySHA256 returns a ReadSeekCloser for the given hash if cached.
+func (c *Cache) IsHashCached(h []byte) (bool, error) {
+	_, err := os.Stat(c.hashPath(h))
+	switch {
+	case err == nil:
+		return true, nil
+	case os.IsNotExist(err):
+		return false, nil
+	default:
+		return false, err
+	}
+}
+
+func (c *Cache) DeleteHash(h []byte) error {
+	return os.Remove(c.hashPath(h))
+}
+
+func (c *Cache) HashWriter(h []byte) (*os.File, error) {
+	hash := c.hashString(h)
+	dir := filepath.Join(c.dir, hash[:2])
+
+	if _, err := os.Stat(dir); err != nil && os.IsNotExist(err) {
+		if err := os.Mkdir(dir, 0755); err != nil {
+			return nil, err
+		}
+	}
+	return os.OpenFile(filepath.Join(dir, hash[2:]), os.O_TRUNC|os.O_CREATE|os.O_RDWR, 0644)
+}
+
+// ByHash returns a ReadSeekCloser for the given hash if cached.
 // Regardless of whether the hash is cached or not, any directory tree
 // for storing the object is created if it does not exist.
-func (c *Cache) BySHA256(hash string) (ReadSeekCloser, error) {
+func (c *Cache) ByHash(h []byte) (ReadSeekCloser, error) {
+	hash := c.hashString(h)
+
 	dir := filepath.Join(c.dir, hash[:2])
 	if _, err := os.Stat(dir); err != nil && os.IsNotExist(err) {
 		if err := os.Mkdir(dir, 0755); err != nil {

@@ -3,6 +3,7 @@ package buildstep
 import (
 	"archive/tar"
 	"compress/gzip"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -28,7 +29,11 @@ func RunUnpack(c *cache.Cache, rb RunningBuild, step *vts.BuildStep) error {
 		defer compressedStream.Close()
 
 	case step.URL != "" && step.SHA256 != "":
-		if compressedStream, err = download(c, step.SHA256, step.URL); err != nil {
+		h, err := hex.DecodeString(step.SHA256)
+		if err != nil {
+			return err
+		}
+		if compressedStream, err = download(c, h, step.URL); err != nil {
 			return err
 		}
 		defer compressedStream.Close()

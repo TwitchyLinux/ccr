@@ -3,7 +3,6 @@ package buildstep
 import (
 	"bytes"
 	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -47,7 +46,7 @@ func TestDownloadFailsOnBadHash(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s256 := hex.EncodeToString(bytes.Repeat([]byte{1}, sha256.Size))
+	s256 := bytes.Repeat([]byte{1}, sha256.Size)
 	respData := []byte("some content here lol\n")
 	r, err := downloadWithClient(&staticResponseFakeServer{d: bytes.NewReader(respData)}, c, s256, "https://aaa.com/somefile.txt")
 	if err == nil {
@@ -74,8 +73,7 @@ func TestDownload(t *testing.T) {
 
 	respData := []byte("swiggity swooty the chonky cat is a cutie\n")
 	h := sha256.Sum256(respData)
-	s256 := hex.EncodeToString(h[:])
-	r, err := downloadWithClient(&staticResponseFakeServer{d: bytes.NewReader(respData)}, c, s256, "https://aaa.com/cats.txt")
+	r, err := downloadWithClient(&staticResponseFakeServer{d: bytes.NewReader(respData)}, c, h[:], "https://aaa.com/cats.txt")
 	if err != nil {
 		t.Fatalf("download failed: %v", err)
 	}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/tar"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"strings"
@@ -25,7 +26,11 @@ func goDebGenCmd(mode, pkg string) error {
 			return err
 		}
 
-		dr, err := deb.PkgReader(resCache, p.Values["SHA256"], debdep.DefaultResolverConfig.BaseURL+"/"+p.Values["Filename"])
+		s256, err := hex.DecodeString(p.Values["SHA256"])
+		if err != nil {
+			return err
+		}
+		dr, err := deb.PkgReader(resCache, s256, debdep.DefaultResolverConfig.BaseURL+"/"+p.Values["Filename"])
 		if err != nil {
 			return err
 		}
@@ -65,7 +70,11 @@ func goDebGenCmd(mode, pkg string) error {
 		fmt.Printf("\n -= %s =-\n", strings.ToUpper(p.Values["Package"]))
 		fmt.Printf("Version: %s\n", p.Values["Version"])
 
-		dr, err := deb.PkgReader(resCache, p.Values["SHA256"], debdep.DefaultResolverConfig.BaseURL+"/"+p.Values["Filename"])
+		s256, err := hex.DecodeString(p.Values["SHA256"])
+		if err != nil {
+			return err
+		}
+		dr, err := deb.PkgReader(resCache, s256, debdep.DefaultResolverConfig.BaseURL+"/"+p.Values["Filename"])
 		if err != nil {
 			return err
 		}

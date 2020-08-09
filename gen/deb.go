@@ -30,7 +30,11 @@ func unpackedDeb(c *cache.Cache, src *vts.Puesdo) (*dpkg.Deb, error) {
 	}
 
 	if src.URL != "" {
-		if dr, err = deb.PkgReader(c, src.SHA256, src.URL); err != nil {
+		s256, err := hex.DecodeString(src.SHA256)
+		if err != nil {
+			return nil, err
+		}
+		if dr, err = deb.PkgReader(c, s256, src.URL); err != nil {
 			return nil, err
 		}
 	} else {

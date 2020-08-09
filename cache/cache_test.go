@@ -34,7 +34,7 @@ func TestCacheByName(t *testing.T) {
 	defer f.Close()
 }
 
-func TestCacheBySHA256(t *testing.T) {
+func TestHashedRW(t *testing.T) {
 	tmp, err := ioutil.TempDir("", "")
 	if err != nil {
 		t.Fatal(err)
@@ -47,19 +47,26 @@ func TestCacheBySHA256(t *testing.T) {
 	}
 
 	ne := sha256.Sum256([]byte("doesnt-exist"))
-	if f, err := c.BySHA256(hex.EncodeToString(ne[:])); err != ErrCacheMiss || f != nil {
-		t.Errorf("BySHA256(%q) returned (%v,%v), want (%v,%v)", "doesnt-exist", f, err, nil, ErrCacheMiss)
+	if f, err := c.ByHash(ne[:]); err != ErrCacheMiss || f != nil {
+		t.Errorf("ByHash(%q) returned (%v,%v), want (%v,%v)", "doesnt-exist", f, err, nil, ErrCacheMiss)
 	}
-	if err := ioutil.WriteFile(c.SHA256Path(hex.EncodeToString(ne[:])), nil, 0644); err != nil {
+	if isCached, err := c.IsHashCached(ne[:]); isCached || err != nil {
+		t.Errorf("IsHashCached(%q) returned (%v,%v), want (false,nil)", ne, isCached, err)
+	}
+
+	if err := ioutil.WriteFile(c.hashPath(ne[:]), nil, 0644); err != nil {
 		t.Fatal(err)
 	}
-	f, err := c.BySHA256(hex.EncodeToString(ne[:]))
+	if isCached, err := c.IsHashCached(ne[:]); !isCached || err != nil {
+		t.Errorf("IsHashCached(%q) returned (%v,%v), want (true,nil)", ne, isCached, err)
+	}
+	f, err := c.ByHash(ne[:])
 	if err != nil {
-		t.Errorf("BySHA256() failed: %v", err)
+		t.Errorf("ByHash() failed: %v", err)
 	}
 	defer f.Close()
 
-	os.Chtimes(c.SHA256Path(hex.EncodeToString(ne[:])), time.Now(), time.Now().Add(-7*24*time.Hour))
+	os.Chtimes(c.hashPath(ne[:]), time.Now(), time.Now().Add(-7*24*time.Hour))
 	if err := c.Clean(); err != nil {
 		t.Errorf("Clean() failed: %v", err)
 	}
@@ -78,24 +85,25 @@ func TestCacheUpdatesModtime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c.BySHA256(hash) // Side effect of setting up directory structure.
-
-	if err := ioutil.WriteFile(c.SHA256Path(hash), []byte("swiggity swooty"), 0644); err != nil {
+	f, err := c.HashWriter(ne[:])
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chtimes(c.SHA256Path(hash), time.Now(), time.Now().Add(-24*time.Hour)); err != nil {
+	f.Close()
+
+	if err := os.Chtimes(c.hashPath(ne[:]), time.Now(), time.Now().Add(-24*time.Hour)); err != nil {
 		t.Fatal(err)
 	}
 
 	// Open the cached object.
-	f, err := c.BySHA256(hash)
+	f2, err := c.ByHash(ne[:])
 	if err != nil {
-		t.Fatalf("BySHA256(%q) failed: %v", hash, err)
+		t.Fatalf("ByHash(%q) failed: %v", hash, err)
 	}
-	f.Close()
+	f2.Close()
 
 	// Expect the mtime to have been updated.
-	s, err := os.Stat(c.SHA256Path(hash))
+	s, err := os.Stat(c.hashPath(ne[:]))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -3,7 +3,6 @@ package gen
 import (
 	"archive/tar"
 	"bytes"
-	"encoding/hex"
 	"io"
 	"io/ioutil"
 	"os"
@@ -428,12 +427,19 @@ func TestPatchingBuildEnv(t *testing.T) {
 					t.Fatalf("RollupHash() failed: %v", err)
 				}
 
-				p := c.SHA256Path(hex.EncodeToString(h))
-				cmd := exec.Command("install", "-D", tc.backingArchive, p)
-				cmd.Stderr, cmd.Stdout = os.Stderr, os.Stdout
-				if err := cmd.Run(); err != nil {
-					t.Fatalf("Failed to yeet backing archive into cache: %v", err)
+				w, err := c.HashWriter(h)
+				if err != nil {
+					t.Fatal(err)
 				}
+				r, err := os.Open(tc.backingArchive)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer r.Close()
+				if _, err := io.Copy(w, r); err != nil {
+					t.Fatal(err)
+				}
+				w.Close()
 			}
 
 			env, err := proc.NewEnv(false)
@@ -584,12 +590,19 @@ func TestPopulateResourceFromBuild(t *testing.T) {
 			// use cache.PendingFileset etc), but because the fileset format is .tar.gz,
 			// this should work fine.
 			if tc.backingArchive != "" {
-				p := c.SHA256Path(hex.EncodeToString(h))
-				cmd := exec.Command("install", "-D", tc.backingArchive, p)
-				cmd.Stderr, cmd.Stdout = os.Stderr, os.Stdout
-				if err := cmd.Run(); err != nil {
-					t.Fatalf("Failed to yeet backing archive into cache: %v", err)
+				w, err := c.HashWriter(h)
+				if err != nil {
+					t.Fatal(err)
 				}
+				r, err := os.Open(tc.backingArchive)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer r.Close()
+				if _, err := io.Copy(w, r); err != nil {
+					t.Fatal(err)
+				}
+				w.Close()
 			}
 			if err := PopulateResource(GenerationContext{
 				Cache: c,
@@ -1065,12 +1078,19 @@ func TestBuildInjections(t *testing.T) {
 					t.Fatalf("RollupHash() failed: %v", err)
 				}
 
-				p := c.SHA256Path(hex.EncodeToString(h))
-				cmd := exec.Command("install", "-D", tc.backingArchive, p)
-				cmd.Stderr, cmd.Stdout = os.Stderr, os.Stdout
-				if err := cmd.Run(); err != nil {
-					t.Fatalf("Failed to yeet backing archive into cache: %v", err)
+				w, err := c.HashWriter(h)
+				if err != nil {
+					t.Fatal(err)
 				}
+				r, err := os.Open(tc.backingArchive)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer r.Close()
+				if _, err := io.Copy(w, r); err != nil {
+					t.Fatal(err)
+				}
+				w.Close()
 			}
 
 			env, err := proc.NewEnv(false)

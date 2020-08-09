@@ -2,12 +2,12 @@
 package buildstep
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/twitchylinux/ccr/cache"
 	"gopkg.in/src-d/go-billy.v4"
@@ -25,8 +25,8 @@ type httpClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-func downloadWithClient(client httpClient, c *cache.Cache, s256, url string) (cache.ReadSeekCloser, error) {
-	f, err := c.BySHA256(s256)
+func downloadWithClient(client httpClient, c *cache.Cache, s256 []byte, url string) (cache.ReadSeekCloser, error) {
+	f, err := c.ByHash(s256)
 	switch {
 	case err == cache.ErrCacheMiss:
 	case err == nil:
@@ -51,7 +51,7 @@ func downloadWithClient(client httpClient, c *cache.Cache, s256, url string) (ca
 	default:
 		return nil, fmt.Errorf("unexpected response code '%d' (%s)", r.StatusCode, r.Status)
 	}
-	w, err := os.OpenFile(c.SHA256Path(s256), os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
+	w, err := c.HashWriter(s256)
 	if err != nil {
 		return nil, err
 	}
@@ -70,10 +70,10 @@ func downloadWithClient(client httpClient, c *cache.Cache, s256, url string) (ca
 		w.Close()
 		return nil, err
 	}
-	if got, want := fmt.Sprintf("%x", h.Sum(nil)), strings.ToLower(s256); got != want {
+	if !bytes.Equal(h.Sum(nil), s256) {
 		w.Close()
-		os.Remove(c.SHA256Path(s256))
-		return nil, fmt.Errorf("incorrect hash: %q != %q", got, want)
+		c.DeleteHash(s256)
+		return nil, fmt.Errorf("incorrect hash: %x != %x", s256, h.Sum(nil))
 	}
 
 	if _, err := w.Seek(0, os.SEEK_SET); err != nil {
@@ -85,6 +85,6 @@ func downloadWithClient(client httpClient, c *cache.Cache, s256, url string) (ca
 
 // download returns a reader to the file referenced by url, downloading
 // and caching it if necessary.
-func download(c *cache.Cache, s256, url string) (cache.ReadSeekCloser, error) {
+func download(c *cache.Cache, s256 []byte, url string) (cache.ReadSeekCloser, error) {
 	return downloadWithClient(http.DefaultClient, c, s256, url)
 }

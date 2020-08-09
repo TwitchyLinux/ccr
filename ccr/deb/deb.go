@@ -49,8 +49,8 @@ func DebPackages(cache *cache.Cache) (*debdep.PackageInfo, error) {
 
 // PkgReader returns a reader to the deb package, caching and
 // downloading it if necessary.
-func PkgReader(c *cache.Cache, sha256, url string) (cache.ReadSeekCloser, error) {
-	f, err := c.BySHA256(sha256)
+func PkgReader(c *cache.Cache, sha256 []byte, url string) (cache.ReadSeekCloser, error) {
+	f, err := c.ByHash(sha256)
 	switch {
 	case err == cache.ErrCacheMiss:
 	case err == nil:
@@ -75,7 +75,7 @@ func PkgReader(c *cache.Cache, sha256, url string) (cache.ReadSeekCloser, error)
 	default:
 		return nil, fmt.Errorf("unexpected response code '%d' (%s)", r.StatusCode, r.Status)
 	}
-	w, err := os.OpenFile(c.SHA256Path(sha256), os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
+	w, err := c.HashWriter(sha256)
 	if err != nil {
 		return nil, err
 	}

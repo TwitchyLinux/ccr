@@ -3,11 +3,9 @@ package cache
 import (
 	"archive/tar"
 	"compress/gzip"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 )
 
 // PendingFileset implements writing a set of files into the cache
@@ -67,15 +65,7 @@ func (pfs *PendingFileset) AddFile(path string, info os.FileInfo, content io.Rea
 }
 
 func (c *Cache) CommitFileset(hash []byte) (*PendingFileset, error) {
-	// Ensure parent directory exists.
-	dir := filepath.Join(c.dir, hex.EncodeToString(hash)[:2])
-	if _, err := os.Stat(dir); err != nil && os.IsNotExist(err) {
-		if err := os.Mkdir(dir, 0755); err != nil {
-			return nil, err
-		}
-	}
-
-	f, err := os.OpenFile(c.SHA256Path(hex.EncodeToString(hash)), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	f, err := c.HashWriter(hash)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +74,7 @@ func (c *Cache) CommitFileset(hash []byte) (*PendingFileset, error) {
 }
 
 func (c *Cache) FileInFileset(fsHash []byte, fsPath string) (io.Reader, io.Closer, os.FileMode, error) {
-	f, err := c.BySHA256(hex.EncodeToString(fsHash))
+	f, err := c.ByHash(fsHash)
 	if err != nil {
 		return nil, nil, 0, err
 	}
@@ -142,7 +132,7 @@ func (fsr *FilesetReader) Read(b []byte) (int, error) {
 }
 
 func (c *Cache) FilesetReader(fsHash []byte) (*FilesetReader, error) {
-	f, err := c.BySHA256(hex.EncodeToString(fsHash))
+	f, err := c.ByHash(fsHash)
 	if err != nil {
 		return nil, err
 	}
