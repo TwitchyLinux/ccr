@@ -70,6 +70,9 @@ func TestHashedRW(t *testing.T) {
 	if err := c.Clean(); err != nil {
 		t.Errorf("Clean() failed: %v", err)
 	}
+	if isCached, err := c.IsHashCached(ne[:]); isCached || err != nil {
+		t.Errorf("IsHashCached(%q) returned (%v,%v), want (false,nil)", ne, isCached, err)
+	}
 }
 
 func TestCacheUpdatesModtime(t *testing.T) {

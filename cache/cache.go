@@ -3,7 +3,7 @@
 package cache
 
 import (
-	"encoding/hex"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -42,11 +42,11 @@ func (c *Cache) PutObj(sha256 string, v interface{}) {
 }
 
 func (c *Cache) NamePath(name string) string {
-	return filepath.Join(c.dir, name)
+	return filepath.Join(c.dir, "named", name)
 }
 
 func (c *Cache) ByName(name string) (io.ReadCloser, error) {
-	f, err := os.Open(filepath.Join(c.dir, name))
+	f, err := os.Open(filepath.Join(c.dir, "named", name))
 	if err != nil && os.IsNotExist(err) {
 		return nil, ErrCacheMiss
 	}
@@ -54,7 +54,7 @@ func (c *Cache) ByName(name string) (io.ReadCloser, error) {
 }
 
 func (c *Cache) hashString(h []byte) string {
-	s := hex.EncodeToString(h)
+	s := base64.RawURLEncoding.EncodeToString(h)
 	if len(s) > 36 {
 		return s[:36]
 	}
@@ -63,7 +63,7 @@ func (c *Cache) hashString(h []byte) string {
 
 func (c *Cache) hashPath(h []byte) string {
 	hash := c.hashString(h)
-	return filepath.Join(c.dir, hash[:2], hash[2:])
+	return filepath.Join(c.dir, "hash", hash[:1], hash[1:])
 }
 
 func (c *Cache) IsHashCached(h []byte) (bool, error) {
@@ -84,14 +84,14 @@ func (c *Cache) DeleteHash(h []byte) error {
 
 func (c *Cache) HashWriter(h []byte) (*os.File, error) {
 	hash := c.hashString(h)
-	dir := filepath.Join(c.dir, hash[:2])
+	dir := filepath.Join(c.dir, "hash", hash[:1])
 
 	if _, err := os.Stat(dir); err != nil && os.IsNotExist(err) {
 		if err := os.Mkdir(dir, 0755); err != nil {
 			return nil, err
 		}
 	}
-	return os.OpenFile(filepath.Join(dir, hash[2:]), os.O_TRUNC|os.O_CREATE|os.O_RDWR, 0644)
+	return os.OpenFile(filepath.Join(dir, hash[1:]), os.O_TRUNC|os.O_CREATE|os.O_RDWR, 0644)
 }
 
 // ByHash returns a ReadSeekCloser for the given hash if cached.
@@ -100,14 +100,14 @@ func (c *Cache) HashWriter(h []byte) (*os.File, error) {
 func (c *Cache) ByHash(h []byte) (ReadSeekCloser, error) {
 	hash := c.hashString(h)
 
-	dir := filepath.Join(c.dir, hash[:2])
+	dir := filepath.Join(c.dir, "hash", hash[:1])
 	if _, err := os.Stat(dir); err != nil && os.IsNotExist(err) {
 		if err := os.Mkdir(dir, 0755); err != nil {
 			return nil, err
 		}
 	}
 
-	f, err := os.Open(filepath.Join(dir, hash[2:]))
+	f, err := os.Open(filepath.Join(dir, hash[1:]))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, ErrCacheMiss
@@ -137,20 +137,20 @@ func (c *Cache) ByHash(h []byte) (ReadSeekCloser, error) {
 
 // Clean purges old objects from the cache.
 func (c *Cache) Clean() error {
-	dirs, err := ioutil.ReadDir(c.dir)
+	dirs, err := ioutil.ReadDir(filepath.Join(c.dir, "hash"))
 	if err != nil {
 		return err
 	}
 
 	now := time.Now()
 	for _, d := range dirs {
-		cf, err := ioutil.ReadDir(filepath.Join(c.dir, d.Name()))
+		cf, err := ioutil.ReadDir(filepath.Join(c.dir, "hash", d.Name()))
 		if err != nil {
 			return err
 		}
 		for _, f := range cf {
 			if f.ModTime().Add(4 * 24 * time.Hour).Before(now) {
-				if err := os.Remove(filepath.Join(c.dir, d.Name(), f.Name())); err != nil {
+				if err := os.Remove(filepath.Join(c.dir, "hash", d.Name(), f.Name())); err != nil {
 					return err
 				}
 			}
@@ -183,6 +183,12 @@ func NewCache(dir string) (*Cache, error) {
 	}
 
 	if err := os.MkdirAll(dir, 0755); err != nil {
+		return nil, err
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "hash"), 0755); err != nil {
+		return nil, err
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "named"), 0755); err != nil {
 		return nil, err
 	}
 
