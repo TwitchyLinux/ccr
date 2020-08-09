@@ -307,15 +307,15 @@ func (b *Builder) Build(out io.Writer) error {
 		case (strings.HasPrefix(path, "usr/lib/pkgconfig") || strings.HasPrefix(path, "lib/pkgconfig")) && strings.HasSuffix(path, ".pc"):
 			b.emitPkgConfig(path, h)
 
-		case (strings.HasPrefix(path, "usr/lib/") || strings.HasPrefix(path, "lib/")) && strings.HasSuffix(path, ".la"):
+		case (strings.HasPrefix(path, "usr/lib/") || strings.HasPrefix(path, "usr/lib64/") || strings.HasPrefix(path, "lib/")) && strings.HasSuffix(path, ".la"):
 			b.emitLibtoolDesc(path, h)
 
-		case (strings.HasPrefix(path, "usr/lib/") || strings.HasPrefix(path, "lib/")) && strings.HasSuffix(path, ".a"):
+		case (strings.HasPrefix(path, "usr/lib/") || strings.HasPrefix(path, "usr/lib64/") || strings.HasPrefix(path, "lib/")) && strings.HasSuffix(path, ".a"):
 			b.emitStaticLib(path, h)
 
-		case (strings.HasPrefix(path, "usr/lib/") || strings.HasPrefix(path, "lib/")) &&
+		case (strings.HasPrefix(path, "usr/lib/") || strings.HasPrefix(path, "usr/lib64/") || strings.HasPrefix(path, "lib/")) &&
 			(strings.HasPrefix(filepath.Base(path), "lib") || strings.Contains(filepath.Base(path), ".so.") || strings.HasSuffix(filepath.Base(path), ".so")):
-			if bp := filepath.Dir(path); bp == "lib" || bp == "usr/lib" {
+			if bp := filepath.Dir(path); bp == "lib" || bp == "usr/lib" || bp == "usr/lib64" {
 				switch h.Typeflag {
 				case tar.TypeReg:
 					b.emitSharedLib(path, h)
