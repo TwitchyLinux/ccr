@@ -31,6 +31,7 @@ type Cache struct {
 type ReadSeekCloser interface {
 	io.ReadCloser
 	io.Seeker
+	io.ReaderAt
 }
 
 func (c *Cache) GetObj(sha256 string) (value interface{}, ok bool) {

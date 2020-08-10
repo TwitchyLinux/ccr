@@ -6,6 +6,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/docker/docker v1.13.1
 	github.com/gobwas/glob v0.2.3
+	github.com/google/crfs v0.0.0-20191108021818-71d77da419c9
 	github.com/google/go-cmp v0.3.1
 	github.com/hashicorp/golang-lru v0.5.3
 	github.com/knqyf263/go-deb-version v0.0.0-20190517075300-09fca494f03d

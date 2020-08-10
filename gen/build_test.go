@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gobwas/glob"
+	"github.com/google/crfs/stargz"
 	"github.com/twitchylinux/ccr/cache"
 	"github.com/twitchylinux/ccr/proc"
 	"github.com/twitchylinux/ccr/vts"
@@ -594,12 +595,16 @@ func TestPopulateResourceFromBuild(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
+				sgz := stargz.NewWriter(w)
 				r, err := os.Open(tc.backingArchive)
 				if err != nil {
 					t.Fatal(err)
 				}
 				defer r.Close()
-				if _, err := io.Copy(w, r); err != nil {
+				if err := sgz.AppendTar(r); err != nil {
+					t.Fatal(err)
+				}
+				if err := sgz.Close(); err != nil {
 					t.Fatal(err)
 				}
 				w.Close()
@@ -1082,12 +1087,16 @@ func TestBuildInjections(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
+				sgz := stargz.NewWriter(w)
 				r, err := os.Open(tc.backingArchive)
 				if err != nil {
 					t.Fatal(err)
 				}
 				defer r.Close()
-				if _, err := io.Copy(w, r); err != nil {
+				if err := sgz.AppendTar(r); err != nil {
+					t.Fatal(err)
+				}
+				if err := sgz.Close(); err != nil {
 					t.Fatal(err)
 				}
 				w.Close()

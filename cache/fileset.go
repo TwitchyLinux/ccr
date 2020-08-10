@@ -5,20 +5,34 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
+
+	"github.com/google/crfs/stargz"
 )
 
 // PendingFileset implements writing a set of files into the cache
 // as a specific cache hash.
 type PendingFileset struct {
-	f    *os.File
-	gzip *gzip.Writer
-	tar  *tar.Writer
+	tmpFile *os.File
+	f       *os.File
+	gzip    *stargz.Writer
+	tar     *tar.Writer
 }
 
 func (pfs *PendingFileset) Close() error {
 	var err error
 	if err2 := pfs.tar.Close(); err != nil {
+		err = err2
+	}
+	if err2 := pfs.tmpFile.Sync(); err != nil {
+		err = err2
+	}
+	if _, err2 := pfs.tmpFile.Seek(0, 0); err2 != nil {
+		err = err2
+	}
+
+	if err2 := pfs.gzip.AppendTar(pfs.tmpFile); err2 != nil {
 		err = err2
 	}
 	if err2 := pfs.gzip.Close(); err != nil {
@@ -27,6 +41,8 @@ func (pfs *PendingFileset) Close() error {
 	if err2 := pfs.f.Close(); err != nil {
 		err = err2
 	}
+	pfs.tmpFile.Close()
+	os.Remove(pfs.tmpFile.Name())
 	return err
 }
 
@@ -69,8 +85,11 @@ func (c *Cache) CommitFileset(hash []byte) (*PendingFileset, error) {
 	if err != nil {
 		return nil, err
 	}
-	gz := gzip.NewWriter(f)
-	return &PendingFileset{f: f, gzip: gz, tar: tar.NewWriter(gz)}, nil
+	t, err := ioutil.TempFile("", "")
+	if err != nil {
+		return nil, err
+	}
+	return &PendingFileset{f: f, tmpFile: t, gzip: stargz.NewWriter(f), tar: tar.NewWriter(t)}, nil
 }
 
 func (c *Cache) FileInFileset(fsHash []byte, fsPath string) (io.Reader, io.Closer, os.FileMode, error) {
@@ -79,35 +98,33 @@ func (c *Cache) FileInFileset(fsHash []byte, fsPath string) (io.Reader, io.Close
 		return nil, nil, 0, err
 	}
 
-	tape, err := gzip.NewReader(f)
+	osF, ok := f.(*os.File)
+	if !ok {
+		return nil, nil, 0, fmt.Errorf("expected reader to be *os.File, got %T", f)
+	}
+	s, err := osF.Stat()
+	if err != nil {
+		return nil, nil, 0, err
+	}
+
+	sgz, err := stargz.Open(io.NewSectionReader(f, 0, s.Size()))
 	if err != nil {
 		return nil, nil, 0, fmt.Errorf("reading gzip: %v", err)
 	}
-	tr := tar.NewReader(tape)
-	for {
-		header, err := tr.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			f.Close()
-			return nil, nil, 0, fmt.Errorf("reading tar: %v", err)
-		}
 
-		switch header.Typeflag {
-		case tar.TypeDir:
-		case tar.TypeReg:
-			if header.Name == fsPath {
-				return tr, f, os.FileMode(header.Mode), nil
-			}
-		default:
-			f.Close()
-			return nil, nil, 0, fmt.Errorf("unsupported tar resource: %x", header.Typeflag)
-		}
+	e, ok := sgz.Lookup(fsPath)
+	if !ok {
+		f.Close()
+		return nil, nil, 0, os.ErrNotExist
 	}
 
-	f.Close()
-	return nil, nil, 0, os.ErrNotExist
+	r, err := sgz.OpenFile(fsPath)
+	if err != nil {
+		f.Close()
+		return nil, nil, 0, fmt.Errorf("reading file: %v", err)
+	}
+
+	return r, f, os.FileMode(e.Mode), nil
 }
 
 type FilesetReader struct {
@@ -123,6 +140,9 @@ func (fsr *FilesetReader) Next() (path string, header *tar.Header, err error) {
 	h, err := fsr.tape.Next()
 	if err != nil {
 		return "", nil, err
+	}
+	if h.Name == "stargz.index.json" {
+		return fsr.Next()
 	}
 	return h.Name, h, nil
 }
