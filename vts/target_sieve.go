@@ -3,6 +3,7 @@ package vts
 import (
 	"crypto/sha256"
 	"fmt"
+	"strings"
 
 	"github.com/twitchylinux/ccr/vts/match"
 	"go.starlark.net/starlark"
@@ -41,6 +42,30 @@ func (t *Sieve) TargetName() string {
 
 func (t *Sieve) TargetType() TargetType {
 	return TargetSieve
+}
+
+// IsPrefixSieve returns true if the sieve matches a single subset of
+// files, and trims the same prefix from their paths.
+func (t *Sieve) IsDirPrefixSieve() bool {
+	if len(t.IncludeGlobs) != 1 || t.Renames == nil || len(t.Renames.Rules) != 1 || len(t.ExcludeGlobs) != 0 {
+		return false
+	}
+	if !strings.HasSuffix(t.IncludeGlobs[0], "/**") {
+		return false
+	}
+	if spm, isSpm := t.Renames.Rules[0].Out.(*match.StripPrefixOutputMapper); isSpm {
+		return spm.Prefix == strings.TrimSuffix(t.IncludeGlobs[0], "**")
+	}
+	return false
+}
+
+// DirPrefix returns the prefix filtered and trimmed by the sieve. The result
+// is undefined if IsDirPrefixSieve() != true.
+func (t *Sieve) DirPrefix() string {
+	if len(t.IncludeGlobs) != 1 {
+		return ""
+	}
+	return strings.TrimSuffix(t.IncludeGlobs[0], "/**")
 }
 
 func (t *Sieve) Validate() error {

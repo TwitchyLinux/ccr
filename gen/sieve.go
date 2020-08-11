@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/gobwas/glob"
+	"github.com/twitchylinux/ccr/proc"
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/match"
 )
@@ -72,9 +73,15 @@ outer:
 		}
 
 		for _, p := range fs.patterns {
-			if p.Match(path) != fs.invert {
+			if p.Match(path) {
+				if fs.invert {
+					return path, h, nil
+				}
 				continue outer
 			}
+		}
+		if fs.invert {
+			continue
 		}
 		return path, h, nil
 	}
@@ -133,6 +140,24 @@ func (fs *renameFileset) Read(b []byte) (int, error) {
 }
 
 func filesetForSieve(gc GenerationContext, s *vts.Sieve) (fileset, error) {
+	// Fast path: Sieve's that only select a subpath + remove a prefix from a
+	// path, from build output.
+	if s.IsDirPrefixSieve() && len(s.Inputs) == 1 {
+		if b, isBuild := s.Inputs[0].Target.(*vts.Build); isBuild {
+			h, err := b.RollupHash(gc.RunnerEnv, proc.EvalComputedAttribute)
+			if err != nil {
+				return nil, err
+			}
+
+			fs, err := gc.Cache.FilesetSubdir(h, s.DirPrefix())
+			if err != nil {
+				return nil, err
+			}
+			// We still need the rename rules to trim the prefix off the filenames.
+			return &renameFileset{base: fs, rules: s.Renames}, nil
+		}
+	}
+
 	inputs := make([]fileset, 0, len(s.Inputs))
 	for i, inp := range s.Inputs {
 		fs, err := filesetForSource(gc, inp.Target)
@@ -141,6 +166,7 @@ func filesetForSieve(gc GenerationContext, s *vts.Sieve) (fileset, error) {
 		}
 		inputs = append(inputs, fs)
 	}
+
 	var out fileset = &unionFileset{all: inputs, remaining: inputs}
 
 	if len(s.ExcludeGlobs) > 0 {

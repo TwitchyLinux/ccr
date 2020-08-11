@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/google/crfs/stargz"
 )
@@ -61,21 +62,24 @@ func (pfs *PendingFileset) AddSymlink(path string, info os.FileInfo, target stri
 }
 
 func (pfs *PendingFileset) AddFile(path string, info os.FileInfo, content io.ReadCloser) error {
-	if err := pfs.tar.WriteHeader(&tar.Header{
+	err := pfs.addFile(&tar.Header{
 		Name:    path,
 		Size:    info.Size(),
 		Mode:    int64(info.Mode()),
 		ModTime: info.ModTime(),
-	}); err != nil {
-		content.Close()
+	}, content)
+	if err2 := content.Close(); err == nil && err2 != nil {
+		err = fmt.Errorf("close: %v", err2)
+	}
+	return err
+}
+
+func (pfs *PendingFileset) addFile(h *tar.Header, content io.Reader) error {
+	if err := pfs.tar.WriteHeader(h); err != nil {
 		return fmt.Errorf("writing header: %v", err)
 	}
 	if _, err := io.Copy(pfs.tar, content); err != nil {
-		content.Close()
 		return fmt.Errorf("copy: %v", err)
-	}
-	if err := content.Close(); err != nil {
-		return fmt.Errorf("close: %v", err)
 	}
 	return nil
 }
@@ -165,4 +169,121 @@ func (c *Cache) FilesetReader(fsHash []byte) (*FilesetReader, error) {
 		f:    f,
 		tape: tar.NewReader(tape),
 	}, nil
+}
+
+type FilesetDirReader struct {
+	f         io.Closer
+	sgz       *stargz.Reader
+	baseEntry *stargz.TOCEntry
+
+	current *stargz.TOCEntry
+	r       *io.SectionReader
+
+	closing chan struct{}
+	next    chan *stargz.TOCEntry
+}
+
+func (fsdr *FilesetDirReader) Close() error {
+	close(fsdr.closing)
+	return fsdr.f.Close()
+}
+
+func (fsdr *FilesetDirReader) Next() (path string, header *tar.Header, err error) {
+	select {
+	case ent, ok := <-fsdr.next:
+		if !ok {
+			return "", nil, io.EOF
+		}
+		fsdr.current = ent
+		fsdr.r = nil
+
+		h := tar.Header{
+			Name:     ent.Name,
+			Mode:     ent.Mode,
+			Uid:      ent.Uid,
+			Gid:      ent.Gid,
+			Linkname: ent.LinkName,
+			Size:     ent.Size,
+			ModTime:  ent.ModTime(),
+			Uname:    ent.Uname,
+			Gname:    ent.Gname,
+			Devmajor: int64(ent.DevMajor),
+			Devminor: int64(ent.DevMinor),
+		}
+		switch ent.Type {
+		case "dir":
+			h.Typeflag = tar.TypeDir
+		case "reg":
+			h.Typeflag = tar.TypeReg
+		case "symlink":
+			h.Typeflag = tar.TypeSymlink
+		default:
+			return "", nil, fmt.Errorf("unknown entry type: %v", ent.Type)
+		}
+		return h.Name, &h, nil
+	}
+}
+
+func (fsdr *FilesetDirReader) Read(b []byte) (int, error) {
+	if fsdr.r == nil {
+		var err error
+		if fsdr.r, err = fsdr.sgz.OpenFile(fsdr.current.Name); err != nil {
+			return 0, err
+		}
+	}
+	n, err := fsdr.r.Read(b)
+	if err == io.EOF {
+		fsdr.r = nil
+	}
+	return n, err
+}
+
+func (fsdr *FilesetDirReader) forEachEnt(baseName string, ent *stargz.TOCEntry) bool {
+	if ent.Type == "dir" {
+		ent.ForeachChild(fsdr.forEachEnt)
+	}
+	select {
+	case <-fsdr.closing:
+		return false
+	case fsdr.next <- ent:
+	}
+	return true
+}
+
+func (c *Cache) FilesetSubdir(fsHash []byte, dirPath string) (*FilesetDirReader, error) {
+	f, err := c.ByHash(fsHash)
+	if err != nil {
+		return nil, err
+	}
+	osF, ok := f.(*os.File)
+	if !ok {
+		return nil, fmt.Errorf("expected reader to be *os.File, got %T", f)
+	}
+	s, err := osF.Stat()
+	if err != nil {
+		return nil, err
+	}
+	sgz, err := stargz.Open(io.NewSectionReader(f, 0, s.Size()))
+	if err != nil {
+		return nil, fmt.Errorf("reading gzip: %v", err)
+	}
+
+	dirPath = strings.TrimPrefix(strings.TrimSuffix(dirPath, "/"), "/")
+	b, ok := sgz.Lookup(dirPath)
+	if !ok {
+		return nil, os.ErrNotExist
+	}
+
+	fsdr := &FilesetDirReader{
+		f:         f,
+		sgz:       sgz,
+		baseEntry: b,
+		closing:   make(chan struct{}),
+		next:      make(chan *stargz.TOCEntry),
+	}
+	go func() {
+		b.ForeachChild(fsdr.forEachEnt)
+		close(fsdr.next)
+	}()
+	return fsdr, nil
 }
