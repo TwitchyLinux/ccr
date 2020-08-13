@@ -160,6 +160,43 @@ func TestStepUnpackGz(t *testing.T) {
 	}
 }
 
+func TestStepPatch(t *testing.T) {
+	rb, c, d := makeEnv(t, "testdata/patch.diff")
+	defer os.RemoveAll(d)
+	defer rb.Close()
+	rb.steps = []*vts.BuildStep{
+		{
+			Kind: vts.StepShellCmd,
+			Args: []string{"echo \"pre-patch content\" > /tmp/a"},
+		},
+		{
+			Kind:   vts.StepPatch,
+			ToPath: "/tmp",
+			Path:   "patch.diff",
+		},
+	}
+
+	if err := rb.Generate(c); err != nil {
+		t.Errorf("Generate() failed: %v", err)
+	}
+
+	// filepath.Walk(d, func(path string, info os.FileInfo, err error) error {
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	fmt.Println(path)
+	// 	return nil
+	// })
+
+	data, err := ioutil.ReadFile(filepath.Join(rb.OverlayUpperPath(), "tmp/a"))
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+	if want := []byte("post-patch content\n"); !bytes.Equal(data, want) {
+		t.Errorf("file content = %q, want %q", data, want)
+	}
+}
+
 func TestStepUnpackXz(t *testing.T) {
 	rb, c, d := makeEnv(t, "testdata/archive.tar.xz")
 	defer os.RemoveAll(d)

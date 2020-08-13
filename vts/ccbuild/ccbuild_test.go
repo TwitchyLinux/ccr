@@ -268,6 +268,7 @@ var newScriptTestcases = []struct {
 					{Kind: vts.StepUnpackGz, Path: "go1.11.4.tar.gz", ToPath: "src"},
 					{Kind: vts.StepUnpackXz, Path: "something.tar.xz", ToPath: "src2"},
 					{Kind: vts.StepShellCmd, Args: []string{"echo mate"}},
+					{Kind: vts.StepPatch, Path: "bro.patch", ToPath: "/tmp/build", PatchLevel: 2},
 				},
 				PatchIns: map[string]vts.TargetRef{
 					"/cool.txt": {Target: &vts.Puesdo{

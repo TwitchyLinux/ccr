@@ -192,6 +192,10 @@ func (rb *RunningBuild) Generate(c *cache.Cache) error {
 			if err := buildstep.RunConfigure(rb, step); err != nil {
 				return fmt.Errorf("step %d (%s) failed: %v", i+1, step.Kind, err)
 			}
+		case vts.StepPatch:
+			if err := buildstep.RunPatch(rb, step); err != nil {
+				return fmt.Errorf("step %d (%s) failed: %v", i+1, step.Kind, err)
+			}
 		default:
 			return fmt.Errorf("step %d: unsupported step %s", i+1, step.Kind)
 		}

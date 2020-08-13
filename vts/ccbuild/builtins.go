@@ -109,6 +109,7 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 			"unpack_xz": makeBuildStep(s, vts.StepUnpackXz),
 			"shell_cmd": makeBuildStep(s, vts.StepShellCmd),
 			"configure": makeBuildStep(s, vts.StepConfigure),
+			"patch":     makeBuildStep(s, vts.StepPatch),
 		}),
 		"host": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
 			"recommended_cpus": starlark.MakeInt(recommendedCPUs()),
@@ -129,6 +130,7 @@ func makeBuildStep(s *Script, kind vts.StepKind) *starlark.Builtin {
 			dir                   string
 			argsOutput            []string
 			argDict               map[string]string
+			patchLevel            int
 		)
 		switch kind {
 		case vts.StepUnpackGz, vts.StepUnpackXz:
@@ -187,17 +189,23 @@ func makeBuildStep(s *Script, kind vts.StepKind) *starlark.Builtin {
 					argsOutput = append(argsOutput, fmt.Sprintf("%s=%s", string(n), string(v2)))
 				}
 			}
+
+		case vts.StepPatch:
+			if err := starlark.UnpackArgs(string(kind), args, kwargs, "path?", &path, "to?", &to, "strip_prefixes?", &patchLevel); err != nil {
+				return starlark.None, err
+			}
 		}
 
 		return &vts.BuildStep{
-			Kind:      kind,
-			Dir:       dir,
-			ToPath:    to,
-			Path:      path,
-			SHA256:    sha256,
-			URL:       url,
-			Args:      argsOutput,
-			NamedArgs: argDict,
+			Kind:       kind,
+			Dir:        dir,
+			ToPath:     to,
+			Path:       path,
+			SHA256:     sha256,
+			URL:        url,
+			Args:       argsOutput,
+			NamedArgs:  argDict,
+			PatchLevel: patchLevel,
 
 			Pos: &vts.DefPosition{
 				Path:  s.fPath,
