@@ -213,9 +213,13 @@ func makeComputedValue(s *Script) *starlark.Builtin {
 			fname = filepath.Join(filepath.Dir(s.fPath), fname)
 		}
 
-		wd, _ := os.Getwd()
+		cd := filepath.Dir(s.fPath)
+		if filepath.IsAbs(cd) {
+			wd, _ := os.Getwd()
+			cd = filepath.Join(wd, filepath.Dir(s.fPath))
+		}
 		return &vts.ComputedValue{
-			ContractDir:  filepath.Join(wd, filepath.Dir(s.fPath)),
+			ContractDir:  cd,
 			ContractPath: s.fPath,
 			Filename:     fname,
 			Func:         fun,

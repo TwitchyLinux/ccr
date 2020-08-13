@@ -378,9 +378,13 @@ func makeBuild(s *Script) *starlark.Builtin {
 			return starlark.None, err
 		}
 
-		wd, _ := os.Getwd()
+		cd := filepath.Dir(s.fPath)
+		if filepath.IsAbs(cd) {
+			wd, _ := os.Getwd()
+			cd = filepath.Join(wd, filepath.Dir(s.fPath))
+		}
 		b := &vts.Build{
-			ContractDir:  filepath.Join(wd, filepath.Dir(s.fPath)),
+			ContractDir:  cd,
 			ContractPath: s.fPath,
 			Path:         s.makePath(name),
 			Name:         name,
