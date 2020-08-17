@@ -16,3 +16,9 @@ var SymlinkGenerator = &vts.Generator{
 	Name:   "symlink",
 	Runner: runners.GenerateSymlink(),
 }
+
+var SysLibUnionLinkerscript = &vts.Generator{
+	Path:   "common://generators:syslib_union_linkerscript",
+	Name:   "syslib_union_linkerscript",
+	Runner: runners.GenerateUnionLinkerscript(),
+}

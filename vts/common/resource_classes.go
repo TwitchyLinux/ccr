@@ -81,6 +81,14 @@ var StaticLibResourceClass = &vts.ResourceClass{
 	},
 	PopStrategy: vts.PopulateFileMatchPath,
 }
+var SysLibLinkerscriptResourceClass = &vts.ResourceClass{
+	Path: "common://resources:sys_library_linkerscript",
+	Name: "sys_library_linkerscript",
+	Checks: []vts.TargetRef{
+		{Target: FilePresentChecker},
+	},
+	PopStrategy: vts.PopulateFileMatchPath,
+}
 
 var JSONResourceClass = &vts.ResourceClass{
 	Path: "common://resources:json_file",

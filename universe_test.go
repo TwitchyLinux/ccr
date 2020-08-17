@@ -515,6 +515,7 @@ func TestUniverseGenerate(t *testing.T) {
 		config       GenerateConfig
 		testManifest string
 		hasFiles     map[string]os.FileMode
+		hasContent   map[string]string
 		notFiles     []string
 		err          string
 	}{
@@ -742,6 +743,23 @@ Class: //basic:whelp
 				"/shouldnt_get_populated.txt": os.FileMode(0644),
 			},
 		},
+		{
+			name:   "good_linkerscript_union",
+			target: "//union_linkerscript:good_union",
+			config: GenerateConfig{},
+			hasFiles: map[string]os.FileMode{
+				"/usr/lib/x86_64-linux-gnu/thingy.so": os.FileMode(0755),
+			},
+			hasContent: map[string]string{
+				"/usr/lib/x86_64-linux-gnu/thingy.so": "INPUT(libwoff2dec.so.1.0.2)\n",
+			},
+		},
+		{
+			name:   "bad_linkerscript_union",
+			target: "//union_linkerscript:bad_input_union",
+			config: GenerateConfig{},
+			err:    "bad magic number '[70 97 107 101]' in record at byte 0x0",
+		},
 	}
 
 	cd, err := ioutil.TempDir("", "")
@@ -809,6 +827,16 @@ Class: //basic:whelp
 				}
 				if st.Mode() != m {
 					t.Errorf("file %q has mode %#o, want %#o", p, st.Mode(), m)
+				}
+			}
+			for p, c := range tc.hasContent {
+				d, err := ioutil.ReadFile(filepath.Join(td, p))
+				if err != nil {
+					t.Error(err)
+					continue
+				}
+				if string(d) != c {
+					t.Errorf("incorrect file content for %s:\n%q\n!=\n%q", p, string(d), c)
 				}
 			}
 			for _, p := range tc.notFiles {

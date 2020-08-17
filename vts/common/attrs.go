@@ -117,3 +117,16 @@ var archDir = map[string]vts.Target{
 		Parent: vts.TargetRef{Target: ArchClass},
 	},
 }
+
+// InputLibraryClass is the class for a library which is part of a linkerscript
+var InputLibraryClass = &vts.AttrClass{
+	Path:       "common://attrs:ldscript_input_library",
+	Name:       "ldscript_input_library",
+	Repeatable: true,
+	Checks: []vts.TargetRef{
+		{Target: &vts.Checker{
+			Kind:   vts.ChkKindEachAttr,
+			Runner: runners.PathCheckValid(),
+		}},
+	},
+}
