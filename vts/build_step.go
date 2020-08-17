@@ -18,6 +18,7 @@ const (
 	StepShellCmd  = "bash_cmd"
 	StepConfigure = "configure"
 	StepPatch     = "patch"
+	StepWrite     = "write"
 )
 
 // BuildStep is an anonymous target representing a step in a build.
@@ -34,6 +35,8 @@ type BuildStep struct {
 
 	Dir       string
 	NamedArgs map[string]string
+
+	Content string
 
 	Args []string
 }
@@ -72,6 +75,14 @@ func (t *BuildStep) Validate() error {
 		}
 		if t.ToPath == "" {
 			return errors.New("to must be specified")
+		}
+
+	case StepWrite:
+		if t.ToPath == "" {
+			return errors.New("to path must be specified")
+		}
+		if t.Content == "" {
+			return errors.New("content must be specified")
 		}
 	}
 	return nil
@@ -121,6 +132,9 @@ func (t *BuildStep) RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error)
 
 	if t.PatchLevel != 0 {
 		fmt.Fprintf(hash, "patch_level = %d\n", t.PatchLevel)
+	}
+	if t.Content != "" {
+		fmt.Fprintf(hash, "content: %s\n", t.Content)
 	}
 
 	return hash.Sum(nil), nil

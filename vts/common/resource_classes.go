@@ -51,6 +51,14 @@ var BinLinkResourceClass = &vts.ResourceClass{
 	},
 	PopStrategy: vts.PopulateFileMatchPath,
 }
+var ScriptResourceClass = &vts.ResourceClass{
+	Path: "common://resources:script",
+	Name: "script",
+	Checks: []vts.TargetRef{
+		{Target: FilePresentChecker},
+	},
+	PopStrategy: vts.PopulateFileMatchPath,
+}
 
 var SysLibResourceClass = &vts.ResourceClass{
 	Path:        "common://resources:sys_library",

@@ -110,6 +110,7 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 			"shell_cmd": makeBuildStep(s, vts.StepShellCmd),
 			"configure": makeBuildStep(s, vts.StepConfigure),
 			"patch":     makeBuildStep(s, vts.StepPatch),
+			"write":     makeBuildStep(s, vts.StepWrite),
 		}),
 		"host": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
 			"recommended_cpus": starlark.MakeInt(recommendedCPUs()),
@@ -127,7 +128,7 @@ func makeBuildStep(s *Script, kind vts.StepKind) *starlark.Builtin {
 	return starlark.NewBuiltin(string(kind), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var (
 			to, path, sha256, url string
-			dir                   string
+			dir, content          string
 			argsOutput            []string
 			argDict               map[string]string
 			patchLevel            int
@@ -194,6 +195,11 @@ func makeBuildStep(s *Script, kind vts.StepKind) *starlark.Builtin {
 			if err := starlark.UnpackArgs(string(kind), args, kwargs, "path?", &path, "to?", &to, "strip_prefixes?", &patchLevel); err != nil {
 				return starlark.None, err
 			}
+
+		case vts.StepWrite:
+			if err := starlark.UnpackArgs(string(kind), args, kwargs, "content?", &content, "to?", &to); err != nil {
+				return starlark.None, err
+			}
 		}
 
 		return &vts.BuildStep{
@@ -206,6 +212,7 @@ func makeBuildStep(s *Script, kind vts.StepKind) *starlark.Builtin {
 			Args:       argsOutput,
 			NamedArgs:  argDict,
 			PatchLevel: patchLevel,
+			Content:    content,
 
 			Pos: &vts.DefPosition{
 				Path:  s.fPath,

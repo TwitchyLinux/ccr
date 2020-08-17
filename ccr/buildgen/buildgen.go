@@ -85,10 +85,17 @@ func (b *Builder) emitHeader(path string, h *tar.Header) {
 	resName := mkLibName(path, "h")
 	fmt.Fprintf(&b.devRes, "resource(\n")
 	fmt.Fprintf(&b.devRes, "  name   = %q,\n", resName)
-	fmt.Fprintf(&b.devRes, "  parent = %s,\n", strconv.Quote(common.CHeaderResourceClass.Path))
-	fmt.Fprintf(&b.devRes, "  path   = %s,\n", strconv.Quote("/"+path))
-	fmt.Fprintf(&b.devRes, "  mode   = %s,\n", strconv.Quote(fmt.Sprintf("%04o", h.Mode&0777)))
-	fmt.Fprintf(&b.devRes, "  source = %s,\n", strconv.Quote(b.target))
+	if h.Typeflag == tar.TypeSymlink {
+		fmt.Fprintf(&b.devRes, "  parent = %s,\n", strconv.Quote(common.SymlinkResourceClass.Path))
+		fmt.Fprintf(&b.devRes, "  path   = %s,\n", strconv.Quote("/"+path))
+		fmt.Fprintf(&b.devRes, "  target = %s,\n", strconv.Quote(h.Linkname))
+		fmt.Fprintf(&b.devRes, "  source = %s,\n", strconv.Quote(common.SymlinkGenerator.Path))
+	} else {
+		fmt.Fprintf(&b.devRes, "  parent = %s,\n", strconv.Quote(common.CHeaderResourceClass.Path))
+		fmt.Fprintf(&b.devRes, "  path   = %s,\n", strconv.Quote("/"+path))
+		fmt.Fprintf(&b.devRes, "  mode   = %s,\n", strconv.Quote(fmt.Sprintf("%04o", h.Mode&0777)))
+		fmt.Fprintf(&b.devRes, "  source = %s,\n", strconv.Quote(b.target))
+	}
 	fmt.Fprintf(&b.devRes, ")\n\n")
 	b.devTargets = append(b.devTargets, resName)
 }

@@ -6,10 +6,14 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
 
 	"github.com/twitchylinux/ccr/cache"
+	"github.com/twitchylinux/ccr/vts"
 	"gopkg.in/src-d/go-billy.v4"
 )
 
@@ -87,4 +91,26 @@ func downloadWithClient(client httpClient, c *cache.Cache, s256 []byte, url stri
 // and caching it if necessary.
 func download(c *cache.Cache, s256 []byte, url string) (cache.ReadSeekCloser, error) {
 	return downloadWithClient(http.DefaultClient, c, s256, url)
+}
+
+// RunPatch runs a patch command in the build environment.
+func RunPatch(rb RunningBuild, step *vts.BuildStep) error {
+	f, err := rb.SourceFS().Open(step.Path)
+	if err != nil {
+		return fmt.Errorf("reading patchfile: %v", err)
+	}
+	defer f.Close()
+
+	dir := filepath.Join(rb.OverlayUpperPath(), step.ToPath)
+	cmd := exec.Command("patch", fmt.Sprintf("-Np%d", step.PatchLevel))
+	cmd.Dir = dir
+	cmd.Stdin = f
+	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	return cmd.Run()
+}
+
+// RunWrite writes a file in the build environment.
+func RunWrite(rb RunningBuild, step *vts.BuildStep) error {
+	fp := filepath.Join(rb.OverlayUpperPath(), step.ToPath)
+	return ioutil.WriteFile(fp, []byte(step.Content), 0644)
 }

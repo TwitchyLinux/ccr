@@ -8,6 +8,7 @@ build(
     step.unpack_xz(to = 'src2', path = 'something.tar.xz'),
     step.shell_cmd('echo mate'),
     step.patch('bro.patch', to = '/tmp/build', strip_prefixes = 2),
+    step.write('cake!\n', to = '/tmp/file'),
   ],
   output       = {
     'cool.txt': 'cool.txt',
