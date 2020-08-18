@@ -52,28 +52,30 @@ func (*unionLinkerscriptGenerator) Run(g *vts.Generator, inputs *vts.InputSet, o
 
 	var libStrings []string
 	for _, lib := range libs {
-		// Load the library resource pointed to by the input, and read ELF
-		// information. This should effectively verify its a valid ELF library.
-		libR, err := opts.Universe.FindByPath(lib)
-		if err != nil {
-			return vts.WrapWithPath(fmt.Errorf("finding input library %q: %v", lib, err), lib)
-		}
-		libRes, ok := libR.(*vts.Resource)
-		if !ok {
-			return vts.WrapWithPath(fmt.Errorf("expected resource target at path, got %T", libR), lib)
-		}
+		if opts.Universe != nil {
+			// Load the library resource pointed to by the input, and read ELF
+			// information. This should effectively verify its a valid ELF library.
+			libR, err := opts.Universe.FindByPath(lib)
+			if err != nil {
+				return vts.WrapWithPath(fmt.Errorf("finding input library %q: %v", lib, err), lib)
+			}
+			libRes, ok := libR.(*vts.Resource)
+			if !ok {
+				return vts.WrapWithPath(fmt.Errorf("expected resource target at path, got %T", libR), lib)
+			}
 
-		ri := libRes.RuntimeInfo()
-		if ri.HasRun(info.ELFPopulator) {
-			continue
-		}
-		if err := info.ELFPopulator.Run(libRes, opts, ri); err != nil {
-			err = vts.WrapWithTarget(err, libRes)
-			err = vts.WrapWithActionTarget(err, g)
-			return err
-		}
-		if _, err := ri.Get(info.ELFPopulator, info.ELFHeader); err != nil {
-			return vts.WrapWithPath(err, lib)
+			ri := libRes.RuntimeInfo()
+			if ri.HasRun(info.ELFPopulator) {
+				continue
+			}
+			if err := info.ELFPopulator.Run(libRes, opts, ri); err != nil {
+				err = vts.WrapWithTarget(err, libRes)
+				err = vts.WrapWithActionTarget(err, g)
+				return err
+			}
+			if _, err := ri.Get(info.ELFPopulator, info.ELFHeader); err != nil {
+				return vts.WrapWithPath(err, lib)
+			}
 		}
 
 		b := filepath.Base(lib)

@@ -152,8 +152,9 @@ func (rb *RunningBuild) inject(gc GenerationContext, pt vts.Target) error {
 }
 
 var permittedInjectGenerators = map[*vts.Generator]struct{}{
-	common.SymlinkGenerator: struct{}{},
-	common.DirGenerator:     struct{}{},
+	common.SymlinkGenerator:        struct{}{},
+	common.DirGenerator:            struct{}{},
+	common.SysLibUnionLinkerscript: struct{}{},
 }
 
 func (rb *RunningBuild) injectResourceToPath(gc GenerationContext, t *vts.Resource, path string) error {
