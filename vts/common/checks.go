@@ -20,6 +20,13 @@ var BinaryResourceChecker = &vts.Checker{
 	Runner: runners.BinaryCheckValid(),
 }
 
+var ScriptResourceChecker = &vts.Checker{
+	Path:   "common://checks/executable:script",
+	Name:   "script",
+	Kind:   vts.ChkKindEachResource,
+	Runner: runners.ScriptCheckValid(),
+}
+
 var FilePresentChecker = &vts.Checker{
 	Path:   "common://checks:file_present",
 	Name:   "file_present",

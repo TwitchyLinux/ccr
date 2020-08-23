@@ -94,7 +94,7 @@ func TestCacheUpdatesModtime(t *testing.T) {
 	}
 	f.Close()
 
-	if err := os.Chtimes(c.hashPath(ne[:]), time.Now(), time.Now().Add(-24*time.Hour)); err != nil {
+	if err := os.Chtimes(c.hashPath(ne[:]), time.Now().Add(-24*time.Hour), time.Now().Add(-24*time.Hour)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -103,14 +103,14 @@ func TestCacheUpdatesModtime(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ByHash(%q) failed: %v", hash, err)
 	}
-	f2.Close()
+	defer f2.Close()
 
 	// Expect the mtime to have been updated.
 	s, err := os.Stat(c.hashPath(ne[:]))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if time.Now().Sub(s.ModTime()) > time.Minute {
-		t.Errorf("subtime is too recent: %v, want %v", s.ModTime(), time.Now())
+	if mt := time.Now().Sub(s.ModTime()); mt > time.Minute {
+		t.Errorf("modtime is too old: %v, want ~%v", mt, time.Minute)
 	}
 }

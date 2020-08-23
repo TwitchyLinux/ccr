@@ -64,6 +64,7 @@ var commonTargets = map[string]vts.Target{
 	"common://checks:symlink_present":         SymlinkPresentChecker,
 	"common://checks/formats:json_valid":      JSONResourceChecker,
 	"common://checks/executable:binary":       BinaryResourceChecker,
+	"common://checks/executable:script":       ScriptResourceChecker,
 	"common://checks:octal_string":            OctalStringChecker,
 	"common://checks:boolean":                 BoolChecker,
 	"common://checks:deb_info":                DebInfoChecker,

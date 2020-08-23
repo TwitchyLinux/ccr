@@ -55,7 +55,7 @@ var ScriptResourceClass = &vts.ResourceClass{
 	Path: "common://resources:script",
 	Name: "script",
 	Checks: []vts.TargetRef{
-		{Target: FilePresentChecker},
+		{Target: ScriptResourceChecker},
 	},
 	PopStrategy: vts.PopulateFileMatchPath,
 }
