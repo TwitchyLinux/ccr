@@ -954,6 +954,7 @@ func TestBuildComputedAttrValues(t *testing.T) {
 				}
 				if !reflect.DeepEqual(v, val) {
 					t.Errorf("attr %q: got value %v, want %v", p, v, val)
+					// t.Logf("attr = %+v", uv.classedTargets[common.PathClass][0].(*vts.Attr).Val.(*vts.ComputedValue).ContractDir)
 				}
 			}
 		})

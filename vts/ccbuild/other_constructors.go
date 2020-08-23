@@ -214,7 +214,7 @@ func makeComputedValue(s *Script) *starlark.Builtin {
 		}
 
 		cd := filepath.Dir(s.fPath)
-		if filepath.IsAbs(cd) {
+		if !filepath.IsAbs(cd) {
 			wd, _ := os.Getwd()
 			cd = filepath.Join(wd, filepath.Dir(s.fPath))
 		}
