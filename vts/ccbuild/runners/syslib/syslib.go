@@ -102,7 +102,7 @@ func (c *globalChecker) checkInterp(interp string, opts *vts.RunnerEnv) error {
 		return nil // No linker declared - no worries.
 	}
 
-	t, err := opts.Universe.FindByPath(interp)
+	t, err := opts.Universe.FindByPath(interp, opts)
 	if err != nil {
 		return fmt.Errorf("couldnt read resource representing declared dynamic linker (%q): %v", interp, err)
 	}
@@ -110,8 +110,8 @@ func (c *globalChecker) checkInterp(interp string, opts *vts.RunnerEnv) error {
 	if !ok {
 		return vts.WrapWithTarget(fmt.Errorf("interpreter %q is a %s, not a resource", interp, t.TargetType().String()), t)
 	}
-	if p := r.Parent.Target.(*vts.ResourceClass).Path; p != "common://resources:sys_library" {
-		return vts.WrapWithTarget(fmt.Errorf("interpreter %q is of class %q, not %q", interp, p, "common://resources:sys_library"), t)
+	if p := r.Parent.Target.(*vts.ResourceClass).Path; p != "common://resources:sys_library" && p != "common://resources:sys_library_symlink" {
+		return vts.WrapWithTarget(fmt.Errorf("interpreter %q is of class %q, need sys_library*", interp, p), t)
 	}
 	// Because it was of class sys_library, the ELF checkers on sys_library would
 	// have validated the correctness of the ELF markup. As such we are done.
@@ -199,12 +199,49 @@ func (c *globalChecker) libsInDir(dir string, opts *vts.RunnerEnv) (map[string]*
 	out := make(map[string]*vts.Resource, 8)
 	for _, target := range opts.Universe.AllTargets() {
 		if r, isResource := target.(*vts.Resource); isResource {
-			if parent := r.Parent.Target.(*vts.ResourceClass); parent.GlobalPath() == "common://resources:sys_library" {
+			parent := r.Parent.Target.(*vts.ResourceClass)
+			switch parent.GlobalPath() {
+			case "common://resources:support_files":
 				path, err := resourcePath(r, opts)
 				if err != nil {
 					return nil, vts.WrapWithTarget(err, r)
 				}
-				out[path] = r
+				if strings.HasPrefix(dir, path) {
+					// Might be a library nested as a support file.
+					files, err := opts.FS.ReadDir(dir)
+					if err != nil {
+						return nil, err
+					}
+					for _, f := range files {
+						if strings.HasPrefix(f.Name(), "lib") || strings.Contains(f.Name(), ".so") {
+							// Make fake library targets.
+							pAttr, err := opts.Universe.Inject(&vts.Attr{
+								Parent: vts.TargetRef{Path: "common://attrs:path"},
+								Val:    starlark.String(filepath.Join(dir, f.Name())),
+							})
+							if err != nil {
+								return nil, fmt.Errorf("injecting path attr for %s: %v", f.Name(), err)
+							}
+							fakeLib, err := opts.Universe.Inject(&vts.Resource{
+								Parent:  vts.TargetRef{Path: "common://resources:sys_library"},
+								Details: []vts.TargetRef{{Target: pAttr}},
+							})
+							if err != nil {
+								return nil, fmt.Errorf("injecting %s: %v", f.Name(), err)
+							}
+
+							out[filepath.Join(dir, f.Name())] = fakeLib.(*vts.Resource)
+						}
+					}
+				}
+			case "common://resources:sys_library", "common://resources:sys_library_symlink":
+				path, err := resourcePath(r, opts)
+				if err != nil {
+					return nil, vts.WrapWithTarget(err, r)
+				}
+				if strings.HasPrefix(path, dir) {
+					out[path] = r
+				}
 			}
 		}
 	}

@@ -55,7 +55,7 @@ func (*unionLinkerscriptGenerator) Run(g *vts.Generator, inputs *vts.InputSet, o
 		if opts.Universe != nil {
 			// Load the library resource pointed to by the input, and read ELF
 			// information. This should effectively verify its a valid ELF library.
-			libR, err := opts.Universe.FindByPath(lib)
+			libR, err := opts.Universe.FindByPath(lib, opts)
 			if err != nil {
 				return vts.WrapWithPath(fmt.Errorf("finding input library %q: %v", lib, err), lib)
 			}

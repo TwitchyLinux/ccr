@@ -304,6 +304,11 @@ func (u *Universe) Build(targets []vts.TargetRef, findOpts *FindOptions, basePat
 
 	// Track special targets separately.
 	for _, t := range u.allTargets {
+		// Track all global checkers.
+		if chkr, isChecker := t.(*vts.Checker); isChecker && chkr.Kind == vts.ChkKindGlobal {
+			u.globalCheckers = append(u.globalCheckers, chkr)
+		}
+
 		if _, isDetailed := t.(vts.DetailedTarget); !isDetailed {
 			continue
 		}
@@ -321,11 +326,6 @@ func (u *Universe) Build(targets []vts.TargetRef, findOpts *FindOptions, basePat
 				vts.WrapWithActionTarget(vts.WrapWithTarget(errors.New("multiple targets declared the same path"), e), t), path))
 		}
 		u.pathTargets[path] = t
-
-		// Track all global checkers.
-		if chkr, isChecker := t.(*vts.Checker); isChecker && chkr.Kind == vts.ChkKindGlobal {
-			u.globalCheckers = append(u.globalCheckers, chkr)
-		}
 	}
 	u.resolved = true
 	return nil

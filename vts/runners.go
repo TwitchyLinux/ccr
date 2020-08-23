@@ -13,10 +13,11 @@ type RunnerEnv struct {
 
 // UniverseResolver allows resolution of targets within the universe.
 type UniverseResolver interface {
-	FindByPath(path string) (Target, error)
+	FindByPath(path string, env *RunnerEnv) (Target, error)
 	AllTargets() []GlobalTarget
 	GetData(key string) (interface{}, bool)
 	SetData(key string, data interface{})
+	Inject(t Target) (Target, error)
 }
 
 type checkerRunner interface {
