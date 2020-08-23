@@ -126,7 +126,24 @@ func (rb *RunningBuild) patchToPath(gc GenerationContext, path string, pt vts.Ta
 	return vts.WrapWithPath(fmt.Errorf("cannot patch using source target of type %T", pt), path)
 }
 
-func (rb *RunningBuild) inject(gc GenerationContext, pt vts.Target) error {
+func (rb *RunningBuild) Inject(gc GenerationContext, injections []vts.TargetRef) error {
+	doneTargets := make(map[vts.Target]struct{}, 128)
+	for _, inj := range injections {
+		if err := rb.inject(gc, inj.Target, doneTargets); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (rb *RunningBuild) inject(gc GenerationContext, pt vts.Target, doneTargets map[vts.Target]struct{}) error {
+	if _, isComponent := pt.(*vts.Component); !isComponent {
+		if _, done := doneTargets[pt]; done {
+			return nil
+		}
+		doneTargets[pt] = struct{}{}
+	}
+
 	switch t := pt.(type) {
 	case *vts.Build, *vts.Sieve:
 		fsr, err := filesetForSource(gc, t)
@@ -138,7 +155,7 @@ func (rb *RunningBuild) inject(gc GenerationContext, pt vts.Target) error {
 
 	case *vts.Component:
 		for _, d := range t.Dependencies() {
-			if err := rb.inject(gc, d.Target); err != nil {
+			if err := rb.inject(gc, d.Target, doneTargets); err != nil {
 				return vts.WrapWithActionTarget(err, t)
 			}
 		}
@@ -317,11 +334,9 @@ func generateBuild(gc GenerationContext, b *vts.Build) error {
 		return vts.WrapWithTarget(fmt.Errorf("creating build environment: %v", err), b)
 	}
 	rb := RunningBuild{env: env, steps: b.Steps, fs: osfs.New("/"), contractDir: b.ContractDir}
-	for _, inj := range b.Injections {
-		if err := rb.inject(gc, inj.Target); err != nil {
-			rb.Close()
-			return vts.WrapWithTarget(err, b)
-		}
+	if err := rb.Inject(gc, b.Injections); err != nil {
+		rb.Close()
+		return vts.WrapWithTarget(fmt.Errorf("failed to apply injections: %v", err), b)
 	}
 
 	if err := rb.Patch(gc, b.PatchIns); err != nil {

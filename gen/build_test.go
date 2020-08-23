@@ -1152,10 +1152,8 @@ func TestBuildInjections(t *testing.T) {
 					FS:  osfs.New(outDir),
 					Dir: outDir,
 				}}
-			for _, inj := range tc.b.Injections {
-				if err := rb.inject(gc, inj.Target); err != nil {
-					t.Fatalf("inject(%v) failed: %v", inj.Target, err)
-				}
+			if err := rb.Inject(gc, tc.b.Injections); err != nil {
+				t.Fatalf("rb.Inject() failed: %v", err)
 			}
 
 			for p, m := range tc.expectFiles {
