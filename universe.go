@@ -8,10 +8,12 @@ import (
 	"path/filepath"
 
 	"github.com/twitchylinux/ccr/cache"
+	"github.com/twitchylinux/ccr/log"
 	"github.com/twitchylinux/ccr/proc"
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/common"
 	"go.starlark.net/starlark"
+	"go.starlark.net/syntax"
 	"gopkg.in/src-d/go-billy.v4/osfs"
 )
 
@@ -22,6 +24,13 @@ type ErrNotExists string
 
 func (e ErrNotExists) Error() string {
 	return fmt.Sprintf("target %q does not exist", string(e))
+}
+
+type opTrack interface {
+	Error(category log.MsgCategory, err error) error
+	Warning(category log.MsgCategory, message string)
+	Info(category log.MsgCategory, message string)
+	IsInteractive() bool
 }
 
 // Universe stores a tree representation of targets.
@@ -69,17 +78,17 @@ func (u *Universe) linkTarget(t vts.Target) error {
 	case *vts.Component:
 		for i := range n.Deps {
 			if n.Deps[i], err = u.makeTargetRef(n.Deps[i]); err != nil {
-				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
+				return u.logger.Error(log.MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		for i := range n.Details {
 			if n.Details[i], err = u.makeTargetRef(n.Details[i]); err != nil {
-				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
+				return u.logger.Error(log.MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		for i := range n.Checks {
 			if n.Checks[i], err = u.makeTargetRef(n.Checks[i]); err != nil {
-				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
+				return u.logger.Error(log.MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		return nil
@@ -87,49 +96,49 @@ func (u *Universe) linkTarget(t vts.Target) error {
 	case *vts.ResourceClass:
 		for i := range n.Deps {
 			if n.Deps[i], err = u.makeTargetRef(n.Deps[i]); err != nil {
-				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
+				return u.logger.Error(log.MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		for i := range n.Checks {
 			if n.Checks[i], err = u.makeTargetRef(n.Checks[i]); err != nil {
-				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
+				return u.logger.Error(log.MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		return nil
 
 	case *vts.Resource:
 		if n.Parent, err = u.makeTargetRef(n.Parent); err != nil {
-			return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
+			return u.logger.Error(log.MsgBadRef, vts.WrapWithTarget(err, t))
 		}
 		if n.Source != nil {
 			tmp, err := u.makeTargetRef(*n.Source)
 			if err != nil {
-				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
+				return u.logger.Error(log.MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 			n.Source = &tmp
 		}
 		for i := range n.Deps {
 			if n.Deps[i], err = u.makeTargetRef(n.Deps[i]); err != nil {
-				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
+				return u.logger.Error(log.MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		for i := range n.Details {
 			if n.Details[i], err = u.makeTargetRef(n.Details[i]); err != nil {
-				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
+				return u.logger.Error(log.MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		return nil
 
 	case *vts.Attr:
 		if n.Parent, err = u.makeTargetRef(n.Parent); err != nil {
-			return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
+			return u.logger.Error(log.MsgBadRef, vts.WrapWithTarget(err, t))
 		}
 		return nil
 
 	case *vts.AttrClass:
 		for i := range n.Checks {
 			if n.Checks[i], err = u.makeTargetRef(n.Checks[i]); err != nil {
-				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
+				return u.logger.Error(log.MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		return nil
@@ -137,7 +146,7 @@ func (u *Universe) linkTarget(t vts.Target) error {
 	case *vts.Generator:
 		for i := range n.Inputs {
 			if n.Inputs[i], err = u.makeTargetRef(n.Inputs[i]); err != nil {
-				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
+				return u.logger.Error(log.MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		return nil
@@ -148,12 +157,12 @@ func (u *Universe) linkTarget(t vts.Target) error {
 	case *vts.Toolchain:
 		for i := range n.Deps {
 			if n.Deps[i], err = u.makeTargetRef(n.Deps[i]); err != nil {
-				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
+				return u.logger.Error(log.MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		for i := range n.Details {
 			if n.Details[i], err = u.makeTargetRef(n.Details[i]); err != nil {
-				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
+				return u.logger.Error(log.MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		return nil
@@ -161,18 +170,18 @@ func (u *Universe) linkTarget(t vts.Target) error {
 	case *vts.Build:
 		for i := range n.HostDeps {
 			if n.HostDeps[i], err = u.makeTargetRef(n.HostDeps[i]); err != nil {
-				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
+				return u.logger.Error(log.MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		for i := range n.Injections {
 			if n.Injections[i], err = u.makeTargetRef(n.Injections[i]); err != nil {
-				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
+				return u.logger.Error(log.MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		out := make(map[string]vts.TargetRef, len(n.PatchIns))
 		for k, v := range n.PatchIns {
 			if out[k], err = u.makeTargetRef(v); err != nil {
-				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
+				return u.logger.Error(log.MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		n.PatchIns = out
@@ -181,7 +190,7 @@ func (u *Universe) linkTarget(t vts.Target) error {
 	case *vts.Sieve:
 		for i := range n.Inputs {
 			if n.Inputs[i], err = u.makeTargetRef(n.Inputs[i]); err != nil {
-				return u.logger.Error(MsgBadRef, vts.WrapWithTarget(err, t))
+				return u.logger.Error(log.MsgBadRef, vts.WrapWithTarget(err, t))
 			}
 		}
 		return nil
@@ -259,7 +268,7 @@ func (u *Universe) resolveTarget(findOpts *FindOptions, t vts.Target) error {
 	}
 
 	if err := t.Validate(); err != nil {
-		return u.logger.Error(MsgBadDef, vts.WrapWithTarget(err, t))
+		return u.logger.Error(log.MsgBadDef, vts.WrapWithTarget(err, t))
 	}
 	// After linking, a target which has a parent will reference the parent. We
 	// track all instances of a class to simplify resolving inputs of a class.
@@ -280,7 +289,16 @@ func (u *Universe) resolveRef(findOpts *FindOptions, t vts.TargetRef) error {
 	}
 	target, err := findOpts.Find(t.Path)
 	if err != nil {
-		return u.logger.Error(MsgBadFind, vts.WrapWithTarget(err, target))
+		if be, isBuildErr := err.(buildErr); isBuildErr {
+			if synErr, isSynErr := be.err.(syntax.Error); isSynErr {
+				err = vts.WrapWithPosition(errors.New(synErr.Msg), &vts.DefPosition{
+					Path:  be.path,
+					Frame: starlark.CallFrame{Pos: synErr.Pos},
+				})
+				return u.logger.Error(log.MsgBadDef, vts.WrapWithTarget(err, target))
+			}
+		}
+		return u.logger.Error(log.MsgBadFind, vts.WrapWithTarget(err, target))
 	}
 	return u.resolveTarget(findOpts, target)
 }
@@ -318,11 +336,11 @@ func (u *Universe) Build(targets []vts.TargetRef, findOpts *FindOptions, basePat
 			continue
 		}
 		if err != nil {
-			return u.logger.Error(MsgBadDef, vts.WrapWithTarget(err, t))
+			return u.logger.Error(log.MsgBadDef, vts.WrapWithTarget(err, t))
 		}
 
 		if e, exists := u.pathTargets[path]; exists {
-			return u.logger.Error(MsgBadDef, vts.WrapWithPath(
+			return u.logger.Error(log.MsgBadDef, vts.WrapWithPath(
 				vts.WrapWithActionTarget(vts.WrapWithTarget(errors.New("multiple targets declared the same path"), e), t), path))
 		}
 		u.pathTargets[path] = t
@@ -425,7 +443,7 @@ func (u *Universe) TargetRollupHash(name string) ([]byte, error) {
 // NewUniverse constructs an empty universe.
 func NewUniverse(logger opTrack, cache *cache.Cache) *Universe {
 	if logger == nil {
-		logger = &consoleOpTrack{}
+		logger = &log.Console{}
 	}
 	return &Universe{
 		cache:          cache,

@@ -1,36 +1,10 @@
-package ccr
+package log
 
 import (
 	"fmt"
 
 	"github.com/twitchylinux/ccr/vts"
 )
-
-type msgCategory string
-
-// Common message categories.
-const (
-	MsgBadDef             msgCategory = "bad target definition"
-	MsgBadFind            msgCategory = "not found"
-	MsgBadRef             msgCategory = "invalid reference"
-	MsgFailedCheck        msgCategory = "check failed"
-	MsgFailedPrecondition msgCategory = "failed precondition"
-)
-
-type opTrack interface {
-	Error(category msgCategory, err error) error
-	Warning(category msgCategory, message string)
-	Info(category msgCategory, message string)
-	IsInteractive() bool
-}
-
-type opMsg struct {
-	isErr    bool
-	category msgCategory
-	msg      string
-	err      error
-	t        vts.Target
-}
 
 func printComputedValueErr(cv *vts.ComputedValue) {
 	if len(cv.InlineScript) > 0 {
@@ -43,18 +17,24 @@ func printComputedValueErr(cv *vts.ComputedValue) {
 	fmt.Println()
 }
 
-func printErrSource(we vts.WrappedErr) {
-	msg := "Failing"
-	if _, isConstErr := we.Err.(vts.FailingConstraintInfo); isConstErr {
-		msg = "Constrained"
+func printErrSource(kind MsgCategory, we vts.WrappedErr) {
+	msg, thing := "Failing", "target"
+	switch kind {
+	case MsgBadDef:
+		msg, thing = "Invalid", "target defined"
+	default:
+		if _, isConstErr := we.Err.(vts.FailingConstraintInfo); isConstErr {
+			msg = "Constrained"
+		}
 	}
+
 	switch {
 	case we.Pos != nil:
 		pos := we.Pos
-		fmt.Printf("  %s target at:  \033[1;33m%s:%d:%d\033[0m\n", msg, pos.Path, pos.Frame.Pos.Line, pos.Frame.Pos.Col)
+		fmt.Printf("  %s %s at:  \033[1;33m%s:%d:%d\033[0m\n", msg, thing, pos.Path, pos.Frame.Pos.Line, pos.Frame.Pos.Col)
 	case we.Target != nil:
 		if pos := we.Target.DefinedAt(); pos != nil {
-			fmt.Printf("  %s target at:  \033[1;33m%s:%d:%d\033[0m\n", msg, pos.Path, pos.Frame.Pos.Line, pos.Frame.Pos.Col)
+			fmt.Printf("  %s %s at:  \033[1;33m%s:%d:%d\033[0m\n", msg, thing, pos.Path, pos.Frame.Pos.Line, pos.Frame.Pos.Col)
 		}
 	}
 	if we.ActionTarget != nil {
@@ -71,7 +51,7 @@ func printErrSource(we vts.WrappedErr) {
 	}
 }
 
-func printErrBanner(msg string, we vts.WrappedErr) {
+func printErrBanner(msg MsgCategory, we vts.WrappedErr) {
 	cta := "Error"
 	if we.IsHostCheck {
 		cta = "Host Error"
@@ -86,7 +66,7 @@ func printErrBanner(msg string, we vts.WrappedErr) {
 	fmt.Printf("%v\n", we)
 }
 
-func printErr(msg string, err error) {
+func printErr(msg MsgCategory, err error) {
 	we, _ := err.(vts.WrappedErr)
 	printErrBanner(msg, we)
 	if c, isConstraint := we.Err.(vts.FailingConstraintInfo); isConstraint {
@@ -101,7 +81,7 @@ func printErr(msg string, err error) {
 		fmt.Printf("  Affected path at:   \033[1;33m%s\033[0m\n", we.Path)
 	}
 
-	printErrSource(we)
+	printErrSource(msg, we)
 
 	if len(we.TargetChain) > 0 {
 		fmt.Println()
@@ -113,47 +93,4 @@ func printErr(msg string, err error) {
 	}
 
 	fmt.Println()
-}
-
-type consoleOpTrack struct {
-}
-
-func (t *consoleOpTrack) Error(category msgCategory, err error) error {
-	printErr(string(category), err)
-	return err
-}
-func (t *consoleOpTrack) Warning(category msgCategory, message string) {
-
-}
-func (t *consoleOpTrack) Info(category msgCategory, message string) {
-
-}
-func (t *consoleOpTrack) IsInteractive() bool {
-	return true
-}
-
-type silentOpTrack struct {
-	msgs []opMsg
-}
-
-func (t *silentOpTrack) Error(category msgCategory, err error) error {
-	t.msgs = append(t.msgs, opMsg{
-		isErr:    true,
-		category: category,
-		err:      err,
-	})
-	return err
-}
-func (t *silentOpTrack) Warning(category msgCategory, message string) {
-	t.msgs = append(t.msgs, opMsg{
-		category: category,
-		msg:      message,
-	})
-}
-func (t *silentOpTrack) Info(category msgCategory, message string) {
-	// Info messages are not recorded for the silent op tracker.
-}
-
-func (t *silentOpTrack) IsInteractive() bool {
-	return false
 }

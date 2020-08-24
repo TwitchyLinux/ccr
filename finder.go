@@ -26,6 +26,15 @@ func NewDirResolver(dir string) *DirResolver {
 	}
 }
 
+type buildErr struct {
+	path string
+	err  error
+}
+
+func (e buildErr) Error() string {
+	return e.err.Error()
+}
+
 // DirResolver resolves targets laid out as children of a directory.
 type DirResolver struct {
 	dir     string
@@ -58,7 +67,7 @@ func (r *DirResolver) Resolve(fqPath string) (vts.Target, error) {
 
 	s, err := ccbuild.NewScript(d, fqPath[:cIdx], fPath, nil, nil)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %v", fqPath, err)
+		return nil, buildErr{path: fPath, err: err}
 	}
 	for _, t := range s.Targets() {
 		if gt, ok := t.(vts.GlobalTarget); ok {

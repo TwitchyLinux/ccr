@@ -12,6 +12,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/twitchylinux/ccr/cache"
+	"github.com/twitchylinux/ccr/log"
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/ccbuild"
 	"github.com/twitchylinux/ccr/vts/common"
@@ -72,7 +73,7 @@ func testResolver(path string) (vts.Target, error) {
 func TestDirResolver(t *testing.T) {
 	uv := Universe{
 		fqTargets:      map[string]vts.GlobalTarget{},
-		logger:         &silentOpTrack{},
+		logger:         &log.Silent{},
 		classedTargets: map[vts.Target][]vts.GlobalTarget{},
 	}
 	dr := DirResolver{
@@ -94,7 +95,7 @@ func TestDirResolver(t *testing.T) {
 func TestUniverseMustBuildFirst(t *testing.T) {
 	uv := Universe{
 		fqTargets:      map[string]vts.GlobalTarget{},
-		logger:         &silentOpTrack{},
+		logger:         &log.Silent{},
 		classedTargets: map[vts.Target][]vts.GlobalTarget{},
 	}
 
@@ -113,7 +114,7 @@ func TestUniverseMustBuildFirst(t *testing.T) {
 func TestUniverseBuild(t *testing.T) {
 	uv := Universe{
 		fqTargets:      map[string]vts.GlobalTarget{},
-		logger:         &silentOpTrack{},
+		logger:         &log.Silent{},
 		classedTargets: map[vts.Target][]vts.GlobalTarget{},
 		pathTargets:    map[string]vts.Target{},
 	}
@@ -442,7 +443,7 @@ func TestUniverseCheck(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			uv := NewUniverse(&silentOpTrack{}, nil)
+			uv := NewUniverse(&log.Silent{}, nil)
 			dr := NewDirResolver("testdata/checkers")
 			findOpts := FindOptions{
 				FallbackResolvers: []CCRResolver{dr.Resolve},
@@ -488,7 +489,7 @@ func TestBuildValidation(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			uv := NewUniverse(&silentOpTrack{}, nil)
+			uv := NewUniverse(&log.Silent{}, nil)
 			dr := NewDirResolver(filepath.Dir(tc.base))
 			findOpts := FindOptions{
 				FallbackResolvers: []CCRResolver{dr.Resolve},
@@ -774,7 +775,7 @@ Class: //basic:whelp
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			uv := NewUniverse(&silentOpTrack{}, cache)
+			uv := NewUniverse(&log.Silent{}, cache)
 			dr := NewDirResolver("testdata/generators")
 			findOpts := FindOptions{
 				FallbackResolvers: []CCRResolver{dr.Resolve},
@@ -862,7 +863,7 @@ func TestSystemLibraryStuff(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	uv := NewUniverse(&silentOpTrack{}, cache)
+	uv := NewUniverse(&log.Silent{}, cache)
 	dr := NewDirResolver("testdata/syslibs")
 	findOpts := FindOptions{
 		FallbackResolvers: []CCRResolver{dr.Resolve},
@@ -930,7 +931,7 @@ func TestBuildComputedAttrValues(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			uv := NewUniverse(&silentOpTrack{}, nil)
+			uv := NewUniverse(&log.Silent{}, nil)
 			dr := NewDirResolver("testdata/compute")
 			findOpts := FindOptions{
 				FallbackResolvers: []CCRResolver{dr.Resolve},
@@ -972,7 +973,7 @@ func TestBuildFailsDuplicatePaths(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	uv := NewUniverse(&silentOpTrack{}, cache)
+	uv := NewUniverse(&log.Silent{}, cache)
 	dr := NewDirResolver("testdata/basic")
 	findOpts := FindOptions{
 		FallbackResolvers: []CCRResolver{dr.Resolve},

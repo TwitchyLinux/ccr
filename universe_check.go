@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/twitchylinux/ccr/log"
 	"github.com/twitchylinux/ccr/vts"
 )
 
@@ -36,7 +37,7 @@ func (u *Universe) Check(targets []vts.TargetRef, basePath string) error {
 
 	for _, chkr := range u.globalCheckers {
 		if err := chkr.RunCheckedTarget(nil, runnerEnv); err != nil {
-			u.logger.Error(MsgFailedCheck, err)
+			u.logger.Error(log.MsgFailedCheck, err)
 			return err
 		}
 	}
@@ -71,11 +72,11 @@ func (u *Universe) checkTarget(t vts.Target, opts *vts.RunnerEnv, checked target
 		switch n := class.Class().Target.(type) {
 		case *vts.ResourceClass:
 			if err := n.RunCheckers(t.(*vts.Resource), opts); err != nil {
-				return u.logger.Error(MsgFailedCheck, vts.WrapWithTarget(err, t))
+				return u.logger.Error(log.MsgFailedCheck, vts.WrapWithTarget(err, t))
 			}
 		case *vts.AttrClass:
 			if err := n.RunCheckers(t.(*vts.Attr), opts); err != nil {
-				return u.logger.Error(MsgFailedCheck, vts.WrapWithTarget(err, t))
+				return u.logger.Error(log.MsgFailedCheck, vts.WrapWithTarget(err, t))
 			}
 		default:
 			return vts.WrapWithTarget(fmt.Errorf("cannot check against class target %T", class.Class().Target), t)
@@ -90,7 +91,7 @@ func (u *Universe) checkTarget(t vts.Target, opts *vts.RunnerEnv, checked target
 				// Do not run global checks: they run at the end.
 				if ct.Kind != vts.ChkKindGlobal {
 					if err := ct.RunCheckedTarget(n, opts); err != nil {
-						return u.logger.Error(MsgFailedCheck, vts.WrapWithTarget(err, t))
+						return u.logger.Error(log.MsgFailedCheck, vts.WrapWithTarget(err, t))
 					}
 				}
 			}
@@ -100,7 +101,7 @@ func (u *Universe) checkTarget(t vts.Target, opts *vts.RunnerEnv, checked target
 		if st, hasSrc := t.(vts.SourcedTarget); hasSrc {
 			if src := st.Src(); src != nil {
 				if err := u.checkAgainstSource(opts, t, src.Target); err != nil {
-					return u.logger.Error(MsgFailedCheck, vts.WrapWithTarget(err, t))
+					return u.logger.Error(log.MsgFailedCheck, vts.WrapWithTarget(err, t))
 				}
 				if err := u.checkTarget(src.Target, opts, checked); err != nil {
 					return vts.WrapWithTarget(err, src.Target)

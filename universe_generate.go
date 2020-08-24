@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/twitchylinux/ccr/gen"
+	"github.com/twitchylinux/ccr/log"
 	"github.com/twitchylinux/ccr/vts"
 	"gopkg.in/src-d/go-billy.v4/osfs"
 )
@@ -35,7 +36,7 @@ func (u *Universe) Generate(conf GenerateConfig, t vts.TargetRef, basePath strin
 		var ok bool
 		target, ok = u.fqTargets[t.Path]
 		if !ok {
-			u.logger.Error(MsgBadFind, ErrNotExists(t.Path))
+			u.logger.Error(log.MsgBadFind, ErrNotExists(t.Path))
 			return ErrNotExists(t.Path)
 		}
 	}
@@ -50,7 +51,7 @@ func (u *Universe) Generate(conf GenerateConfig, t vts.TargetRef, basePath strin
 		rootTarget:             target,
 		completedToolchainDeps: make(targetSet, 32),
 	}, target); err != nil {
-		u.logger.Error(MsgFailedPrecondition, err)
+		u.logger.Error(log.MsgFailedPrecondition, err)
 		return err
 	}
 
@@ -60,7 +61,7 @@ func (u *Universe) Generate(conf GenerateConfig, t vts.TargetRef, basePath strin
 	}
 	for _, chkr := range u.globalCheckers {
 		if err := chkr.RunCheckedTarget(nil, runnerEnv); err != nil {
-			u.logger.Error(MsgFailedCheck, err)
+			u.logger.Error(log.MsgFailedCheck, err)
 			return err
 		}
 	}
