@@ -195,7 +195,7 @@ func (rb *RunningBuild) Generate(c *cache.Cache) error {
 
 	for i, step := range rb.steps {
 		switch step.Kind {
-		case vts.StepUnpackGz, vts.StepUnpackXz:
+		case vts.StepUnpackGz, vts.StepUnpackXz, vts.StepUnpackBz2:
 			if err := buildstep.RunUnpack(c, rb, step); err != nil {
 				return fmt.Errorf("step %d (%s) failed: %v", i+1, step.Kind, err)
 			}

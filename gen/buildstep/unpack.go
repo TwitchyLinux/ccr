@@ -2,6 +2,7 @@ package buildstep
 
 import (
 	"archive/tar"
+	"compress/bzip2"
 	"compress/gzip"
 	"encoding/hex"
 	"fmt"
@@ -45,6 +46,9 @@ func RunUnpack(c *cache.Cache, rb RunningBuild, step *vts.BuildStep) error {
 	if step.Kind == vts.StepUnpackXz {
 		return unpackXzReader(compressedStream, rb, step)
 	}
+	if step.Kind == vts.StepUnpackBz2 {
+		return unpackBz2Reader(compressedStream, rb, step)
+	}
 	return unpackGzReader(compressedStream, rb, step)
 }
 
@@ -62,6 +66,10 @@ func unpackXzReader(gz io.Reader, rb RunningBuild, step *vts.BuildStep) error {
 		return fmt.Errorf("reading xz: %v", err)
 	}
 	return unpackTarReader(tape, rb, step)
+}
+
+func unpackBz2Reader(gz io.Reader, rb RunningBuild, step *vts.BuildStep) error {
+	return unpackTarReader(bzip2.NewReader(gz), rb, step)
 }
 
 func unpackTarReader(tape io.Reader, rb RunningBuild, step *vts.BuildStep) error {

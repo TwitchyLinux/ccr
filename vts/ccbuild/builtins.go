@@ -105,12 +105,13 @@ func (s *Script) makeBuiltins() (starlark.StringDict, error) {
 			}),
 		}),
 		"step": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
-			"unpack_gz": makeBuildStep(s, vts.StepUnpackGz),
-			"unpack_xz": makeBuildStep(s, vts.StepUnpackXz),
-			"shell_cmd": makeBuildStep(s, vts.StepShellCmd),
-			"configure": makeBuildStep(s, vts.StepConfigure),
-			"patch":     makeBuildStep(s, vts.StepPatch),
-			"write":     makeBuildStep(s, vts.StepWrite),
+			"unpack_gz":  makeBuildStep(s, vts.StepUnpackGz),
+			"unpack_xz":  makeBuildStep(s, vts.StepUnpackXz),
+			"unpack_bz2": makeBuildStep(s, vts.StepUnpackBz2),
+			"shell_cmd":  makeBuildStep(s, vts.StepShellCmd),
+			"configure":  makeBuildStep(s, vts.StepConfigure),
+			"patch":      makeBuildStep(s, vts.StepPatch),
+			"write":      makeBuildStep(s, vts.StepWrite),
 		}),
 		"host": starlarkstruct.FromStringDict(starlarkstruct.Default, starlark.StringDict{
 			"recommended_cpus": starlark.MakeInt(recommendedCPUs()),
@@ -134,7 +135,7 @@ func makeBuildStep(s *Script, kind vts.StepKind) *starlark.Builtin {
 			patchLevel            int
 		)
 		switch kind {
-		case vts.StepUnpackGz, vts.StepUnpackXz:
+		case vts.StepUnpackGz, vts.StepUnpackXz, vts.StepUnpackBz2:
 			if err := starlark.UnpackArgs(string(kind), args, kwargs,
 				"to?", &to, "path?", &path, "sha256?", &sha256, "url?", &url); err != nil {
 				return starlark.None, err

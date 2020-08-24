@@ -15,6 +15,7 @@ type StepKind string
 const (
 	StepUnpackGz  = "unpack_gz"
 	StepUnpackXz  = "unpack_xz"
+	StepUnpackBz2 = "unpack_bz2"
 	StepShellCmd  = "bash_cmd"
 	StepConfigure = "configure"
 	StepPatch     = "patch"
@@ -51,7 +52,7 @@ func (t *BuildStep) IsClassTarget() bool {
 
 func (t *BuildStep) Validate() error {
 	switch t.Kind {
-	case StepUnpackGz, StepUnpackXz:
+	case StepUnpackGz, StepUnpackXz, StepUnpackBz2:
 		if t.URL != "" && t.SHA256 == "" {
 			return errors.New("sha256 must be specified for all URLs")
 		} else if t.Path == "" {
