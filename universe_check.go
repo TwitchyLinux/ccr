@@ -19,7 +19,7 @@ func (u *Universe) Check(targets []vts.TargetRef, basePath string) error {
 
 	var (
 		evaluatedTargets = make(targetSet, 4096)
-		runnerEnv        = u.makeEnv(basePath)
+		runnerEnv        = u.MakeEnv(basePath)
 	)
 	for _, t := range targets {
 		target := t.Target

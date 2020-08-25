@@ -1020,3 +1020,84 @@ func TestBuildFailsDuplicatePaths(t *testing.T) {
 		t.Fatalf("universe.Build(%q) failed: \n%s", "//dupe_paths:fail", diff)
 	}
 }
+
+func TestUniverseCollectOrderedTargets(t *testing.T) {
+	tcs := []struct {
+		name   string
+		base   string
+		target vts.TargetRef
+		err    string
+		want   [][]string
+	}{
+		{
+			name:   "chain",
+			base:   "testdata/collect",
+			target: vts.TargetRef{Path: "//core:base"},
+			want: [][]string{
+				[]string{"3a", "3b", "3c"},
+				[]string{"2a", "2b", "2c"},
+				[]string{"1a"},
+				[]string{"0"},
+				[]string{"last"},
+			},
+		},
+		{
+			name:   "circular_component",
+			base:   "testdata/collect",
+			target: vts.TargetRef{Path: "//circular:circ_component"},
+			err:    "circular dependency: //circular:gen -> //circular:circ_component -> //circular:c1 -> //circular:gen",
+		},
+		{
+			name:   "circular_resource",
+			target: vts.TargetRef{Path: "//circular:circ_resource"},
+			base:   "testdata/collect",
+			err:    "circular dependency: //circular:gen2 -> //circular:r2 -> //circular:c3 -> //circular:gen2",
+		},
+		{
+			name:   "circular_build",
+			target: vts.TargetRef{Path: "//circular:circ_build"},
+			base:   "testdata/collect",
+			err:    "circular dependency: //circular:gen3 -> //circular:r3 -> //circular:c5 -> //circular:gen3",
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			uv := NewUniverse(&log.Silent{}, nil)
+			dr := NewDirResolver("testdata/collect")
+			findOpts := FindOptions{
+				FallbackResolvers: []CCRResolver{dr.Resolve},
+				PrefixResolvers: map[string]CCRResolver{
+					"common": common.Resolve,
+				},
+			}
+
+			if err := uv.Build([]vts.TargetRef{tc.target}, &findOpts, tc.base); err != nil {
+				t.Fatalf("universe.Build(%q) failed: %v", tc.target, err)
+			}
+
+			out, err := uv.TargetsDependencyOrder(GenerateConfig{}, tc.target, tc.base, vts.TargetBuild)
+			switch {
+			case err == nil && tc.err != "":
+				t.Errorf("universe.CollectOrderedTargets(%q) returned no error, want %q", tc.target, tc.err)
+			case err != nil && tc.err != err.Error():
+				t.Errorf("universe.CollectOrderedTargets(%q) returned %q, want %q", tc.target, err, tc.err)
+			}
+
+			if err == nil {
+				got := make([][]string, 0, len(out))
+				for _, level := range out {
+					out2 := make([]string, len(level))
+					for i := range level {
+						out2[i] = level[i].(*vts.Build).Name
+					}
+					got = append(got, out2)
+				}
+
+				if diff := cmp.Diff(tc.want, got); diff != "" {
+					t.Errorf("output differs (+got,-want):\n%s", diff)
+				}
+			}
+		})
+	}
+}

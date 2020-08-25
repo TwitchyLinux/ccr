@@ -41,7 +41,7 @@ func (u *Universe) Generate(conf GenerateConfig, t vts.TargetRef, basePath strin
 		}
 	}
 
-	runnerEnv := u.makeEnv(basePath)
+	runnerEnv := u.MakeEnv(basePath)
 	if err := u.generateTarget(generationState{
 		basePath:               basePath,
 		conf:                   &conf,

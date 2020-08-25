@@ -69,6 +69,8 @@ func run() error {
 		return doQueryCmd(flag.Arg(1))
 	case "buildgen", "build-gen":
 		return doBuildgenCmd(flag.Arg(1))
+	case "parallel-build", "para-build", "parabuild":
+		return doParabuildCmd(flag.Arg(1))
 	case "":
 		fmt.Fprintf(os.Stderr, "Error: Expected command \"fmt\", \"lint\", \"check\", or \"generate\".\n")
 		os.Exit(1)

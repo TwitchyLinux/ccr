@@ -306,7 +306,7 @@ func (u *Universe) resolveRef(findOpts *FindOptions, t vts.TargetRef) error {
 	return u.resolveTarget(findOpts, target)
 }
 
-func (u *Universe) makeEnv(basePath string) *vts.RunnerEnv {
+func (u *Universe) MakeEnv(basePath string) *vts.RunnerEnv {
 	return &vts.RunnerEnv{
 		Dir:      basePath,
 		FS:       osfs.New(basePath),
@@ -334,7 +334,7 @@ func (u *Universe) Build(targets []vts.TargetRef, findOpts *FindOptions, basePat
 			continue
 		}
 		// Track targets that declare a path.
-		path, err := determinePath(t, u.makeEnv(basePath))
+		path, err := determinePath(t, u.MakeEnv(basePath))
 		if err == errNoAttr {
 			continue
 		}
@@ -411,7 +411,7 @@ func (u *Universe) query(basePath, target, attr string, byParent bool) (starlark
 
 		attrib := at.Target.(*vts.Attr)
 		if (!byParent && attrib.Name == attr) || (byParent && attrib.Parent.Target.(*vts.AttrClass).Path == attr) {
-			return attrib.Value(detailedTarget, u.makeEnv(basePath), proc.EvalComputedAttribute)
+			return attrib.Value(detailedTarget, u.MakeEnv(basePath), proc.EvalComputedAttribute)
 		}
 	}
 
@@ -440,7 +440,7 @@ func (u *Universe) TargetRollupHash(name string) ([]byte, error) {
 	if !ok {
 		return nil, fmt.Errorf("target %T cannot be hashed", t)
 	}
-	return rt.RollupHash(u.makeEnv("/"), proc.EvalComputedAttribute)
+	return rt.RollupHash(u.MakeEnv("/"), proc.EvalComputedAttribute)
 }
 
 // NewUniverse constructs an empty universe.

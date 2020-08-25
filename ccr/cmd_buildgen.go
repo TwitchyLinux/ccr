@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -53,12 +52,6 @@ func doBuildgenCmd(target string) error {
 			"common": common.Resolve,
 		},
 	}
-
-	td, err := ioutil.TempDir("", "")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(td)
 
 	if err := uv.Build([]vts.TargetRef{{Path: target}}, &findOpts, *baseDir); err != nil {
 		return err

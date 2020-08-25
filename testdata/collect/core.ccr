@@ -1,0 +1,105 @@
+build(
+  name = '3a',
+)
+build(
+  name = '3b',
+)
+build(
+  name = '3c',
+)
+
+build(
+  name   = '2a',
+  inject = [
+    ':3a',
+  ],
+)
+
+resource(
+  name   = "patch",
+  parent = "common://resources:file",
+  path   = "/patch",
+  mode   = "0644",
+  source = ":3b",
+)
+
+build(
+  name         = '2b',
+  patch_inputs = {
+   '/thing': ':patch',
+  },
+)
+
+build(
+  name         = '2c',
+  patch_inputs = {
+   '/thing': ':3b',
+   '/kek':   sieve_prefix(':3c', '/'),
+  },
+)
+
+build(
+  name   = '1a',
+  inject = [
+    ':2a',
+    ':2b',
+  ],
+)
+
+resource(
+  name   = "res1",
+  parent = "common://resources:file",
+  path   = "/1a",
+  mode   = "0644",
+  source = ":1a",
+)
+
+resource(
+  name   = "res2",
+  parent = "common://resources:file",
+  path   = "/2c",
+  mode   = "0644",
+  source = ":2c",
+)
+
+build(
+  name   = '0',
+  inject = [
+    ':1a',
+    ':2c',
+  ],
+)
+
+build(
+  name   = 'last',
+  inject = [
+    ':0',
+  ],
+)
+
+resource(
+  name   = "indirect",
+  parent = "common://resources:file",
+  path   = "/indirect",
+  mode   = "0644",
+  source = ":last",
+)
+
+resource(
+  name   = "res3",
+  parent = "common://resources:file",
+  path   = "/last",
+  mode   = "0644",
+  deps   = [
+    ":indirect",
+  ],
+)
+
+component(
+  name  = 'base',
+  deps  = [
+    ':res1',
+    ':res2',
+    ':res3',
+  ],
+)

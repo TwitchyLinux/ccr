@@ -89,11 +89,7 @@ func (t *Generator) RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error)
 	hash := sha256.New()
 	fmt.Fprintf(hash, "%q\n%q\n", t.Path, t.Name)
 	if t.Runner != nil {
-		rh, err := t.Runner.Hash()
-		if err != nil {
-			return nil, err
-		}
-		fmt.Fprintf(hash, "%v\n", rh)
+		fmt.Fprintf(hash, "%v\n", t.Runner.String())
 	}
 
 	for _, dep := range t.Inputs {
