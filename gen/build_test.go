@@ -14,6 +14,7 @@ import (
 	"github.com/gobwas/glob"
 	"github.com/google/crfs/stargz"
 	"github.com/twitchylinux/ccr/cache"
+	"github.com/twitchylinux/ccr/log"
 	"github.com/twitchylinux/ccr/proc"
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/common"
@@ -131,7 +132,7 @@ func TestStepUnpackGz(t *testing.T) {
 		},
 	}
 
-	if err := rb.Generate(c); err != nil {
+	if err := rb.Generate(c, os.Stdout, os.Stderr); err != nil {
 		t.Errorf("Generate() failed: %v", err)
 	}
 
@@ -176,7 +177,7 @@ func TestStepPatch(t *testing.T) {
 		},
 	}
 
-	if err := rb.Generate(c); err != nil {
+	if err := rb.Generate(c, os.Stdout, os.Stderr); err != nil {
 		t.Errorf("Generate() failed: %v", err)
 	}
 
@@ -209,7 +210,7 @@ func TestStepUnpackXz(t *testing.T) {
 		},
 	}
 
-	if err := rb.Generate(c); err != nil {
+	if err := rb.Generate(c, os.Stdout, os.Stderr); err != nil {
 		t.Errorf("Generate() failed: %v", err)
 	}
 
@@ -233,7 +234,7 @@ func TestStepShellCmd(t *testing.T) {
 		},
 	}
 
-	if err := rb.Generate(c); err != nil {
+	if err := rb.Generate(c, os.Stdout, os.Stderr); err != nil {
 		t.Errorf("Generate() failed: %v", err)
 	}
 
@@ -254,7 +255,7 @@ func TestStepShellCmdErrors(t *testing.T) {
 		},
 	}
 
-	err := rb.Generate(c)
+	err := rb.Generate(c, os.Stdout, os.Stderr)
 	switch {
 	case err == nil:
 		t.Error("Generate() = nil, want non-nil error")
@@ -280,7 +281,7 @@ func TestStepConfigure(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := rb.Generate(c); err != nil {
+	if err := rb.Generate(c, os.Stdout, os.Stderr); err != nil {
 		t.Errorf("Generate() failed: %v", err)
 	}
 }
@@ -487,7 +488,8 @@ func TestPatchingBuildEnv(t *testing.T) {
 			rb := RunningBuild{env: env, fs: osfs.New("/"), contractDir: tc.b.ContractDir}
 			defer rb.Close()
 			if err := rb.Patch(GenerationContext{
-				Cache: c,
+				Cache:   c,
+				Console: &log.Silent{},
 				RunnerEnv: &vts.RunnerEnv{
 					FS:  osfs.New(outDir),
 					Dir: outDir,
@@ -647,7 +649,8 @@ func TestPopulateResourceFromBuild(t *testing.T) {
 				w.Close()
 			}
 			if err := PopulateResource(GenerationContext{
-				Cache: c,
+				Cache:   c,
+				Console: &log.Silent{},
 				RunnerEnv: &vts.RunnerEnv{
 					FS:  osfs.New(outDir),
 					Dir: outDir,
@@ -767,7 +770,8 @@ func TestGenerateBuild(t *testing.T) {
 			}
 
 			if err := Generate(GenerationContext{
-				Cache: c,
+				Cache:   c,
+				Console: &log.Silent{},
 				RunnerEnv: &vts.RunnerEnv{
 					FS:  osfs.New(outDir),
 					Dir: outDir,
@@ -1147,7 +1151,8 @@ func TestBuildInjections(t *testing.T) {
 			defer rb.Close()
 
 			gc := GenerationContext{
-				Cache: c,
+				Cache:   c,
+				Console: &log.Silent{},
 				RunnerEnv: &vts.RunnerEnv{
 					FS:  osfs.New(outDir),
 					Dir: outDir,

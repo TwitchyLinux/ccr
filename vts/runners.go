@@ -1,6 +1,8 @@
 package vts
 
 import (
+	"io"
+
 	billy "gopkg.in/src-d/go-billy.v4"
 )
 
@@ -9,6 +11,13 @@ type RunnerEnv struct {
 	Dir      string
 	FS       billy.Filesystem
 	Universe UniverseResolver
+}
+
+type Console interface {
+	Operation(key, msg, prefix string) Console
+	Done() error
+	Stdout() io.Writer
+	Stderr() io.Writer
 }
 
 // UniverseResolver allows resolution of targets within the universe.

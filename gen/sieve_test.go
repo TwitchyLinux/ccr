@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/gobwas/glob"
+	"github.com/twitchylinux/ccr/log"
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/match"
 )
@@ -25,7 +26,7 @@ func TestSievePrefixFastpath(t *testing.T) {
 		},
 	}
 
-	if err := rb.Generate(c); err != nil {
+	if err := rb.Generate(c, os.Stdout, os.Stderr); err != nil {
 		t.Errorf("Generate() failed: %v", err)
 	}
 
@@ -54,7 +55,7 @@ func TestSievePrefixFastpath(t *testing.T) {
 		t.Fatalf("sieve is not a directory prefix")
 	}
 
-	fs, err := filesetForSieve(GenerationContext{Cache: c}, s)
+	fs, err := filesetForSieve(GenerationContext{Cache: c, Console: &log.Silent{}}, s)
 	if err != nil {
 		t.Fatalf("filesetForSieve() failed: %v", err)
 	}
@@ -117,7 +118,7 @@ func TestSieveFilesets(t *testing.T) {
 		t.Fatal("sieve should not be a directory prefix")
 	}
 
-	fs, err := filesetForSieve(GenerationContext{}, s)
+	fs, err := filesetForSieve(GenerationContext{Console: &log.Silent{}}, s)
 	if err != nil {
 		t.Fatalf("filesetForSieve() failed: %v", err)
 	}

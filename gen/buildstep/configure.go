@@ -2,6 +2,7 @@ package buildstep
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -10,7 +11,7 @@ import (
 )
 
 // RunConfigure runs a configure script in the build environment.
-func RunConfigure(rb RunningBuild, step *vts.BuildStep) error {
+func RunConfigure(rb RunningBuild, step *vts.BuildStep, o, e io.Writer) error {
 	cmd, wd := filepath.Join(step.Dir, "configure"), step.Dir
 	if step.Path != "" {
 		cmd = step.Path
@@ -29,7 +30,7 @@ func RunConfigure(rb RunningBuild, step *vts.BuildStep) error {
 	}
 
 	// fmt.Fprintf(os.Stdout, "+ Running %s %s from %s.\n", cmd, strings.Join(args, " "), wd)
-	ec, err := rb.ExecBlocking(wd, append([]string{cmd}, args...), os.Stdout, os.Stderr)
+	ec, err := rb.ExecBlocking(wd, append([]string{cmd}, args...), o, e)
 	if err != nil || ec != 0 {
 		p := filepath.Join(rb.OverlayUpperPath(), step.Dir, "config.log")
 		if _, err := os.Stat(p); err == nil {

@@ -223,6 +223,7 @@ func (u *Universe) generateTarget(s generationState, t vts.Target) error {
 	if err := gen.Generate(gen.GenerationContext{
 		Cache:     u.cache,
 		RunnerEnv: s.runnerEnv,
+		Console:   u.logger.(vts.Console),
 	}, t); err != nil {
 		return err
 	}
@@ -266,6 +267,7 @@ func (u *Universe) populateResourceFromSource(s generationState, resource *vts.R
 		Cache:     u.cache,
 		RunnerEnv: s.runnerEnv,
 		Inputs:    &info,
+		Console:   u.logger.(vts.Console),
 	}
 	return gen.PopulateResource(gc, resource, source)
 }

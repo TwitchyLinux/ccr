@@ -3,6 +3,12 @@
 package log
 
 import (
+	"bufio"
+	"bytes"
+	"io"
+	"os"
+	"sync"
+
 	"github.com/twitchylinux/ccr/vts"
 )
 
@@ -25,8 +31,22 @@ type opMsg struct {
 	t        vts.Target
 }
 
+type lockingWriter struct {
+	io.Writer
+	l sync.Mutex
+}
+
+func (w *lockingWriter) Write(b []byte) (int, error) {
+	w.l.Lock()
+	defer w.l.Unlock()
+	return w.Writer.Write(b)
+}
+
 // Console writes messages to stdout.
 type Console struct {
+	ops map[string]*SubConsole
+	out *lockingWriter
+	err *lockingWriter
 }
 
 func (t *Console) Error(category MsgCategory, err error) error {
@@ -42,10 +62,53 @@ func (t *Console) Info(category MsgCategory, message string) {
 func (t *Console) IsInteractive() bool {
 	return true
 }
+func (t *Console) Stdout() io.Writer {
+	if t.out == nil {
+		t.out = &lockingWriter{Writer: os.Stdout}
+	}
+	return t.out
+}
+func (t *Console) Stderr() io.Writer {
+	if t.err == nil {
+		t.err = &lockingWriter{Writer: os.Stderr}
+	}
+	return t.err
+}
+
+func (t *Console) Operation(key, msg, prefix string) vts.Console {
+	if t.ops == nil {
+		t.ops = make(map[string]*SubConsole, 12)
+	}
+	s := &SubConsole{parentConsole: t,
+		key:    key,
+		msg:    msg,
+		prefix: prefix,
+		out:    bufio.NewWriter(t.Stdout()),
+		err:    bufio.NewWriter(t.Stderr()),
+	}
+	t.ops[key] = s
+
+	io.Copy(t.Stdout(), bytes.NewReader([]byte(msg)))
+	return s
+}
+
+func (t *Console) Done() error {
+	return nil
+}
+
+func (t *Console) finishedOperation(key string) error {
+	if _, ok := t.ops[key]; !ok {
+		return os.ErrNotExist
+	}
+	delete(t.ops, key)
+	return nil
+}
 
 // Silent stores messages internally, without writing them.
 type Silent struct {
-	msgs []opMsg
+	msgs   []opMsg
+	stdout bytes.Buffer
+	stderr bytes.Buffer
 }
 
 func (t *Silent) Error(category MsgCategory, err error) error {
@@ -68,4 +131,17 @@ func (t *Silent) Info(category MsgCategory, message string) {
 
 func (t *Silent) IsInteractive() bool {
 	return false
+}
+
+func (t *Silent) Stdout() io.Writer {
+	return &t.stdout
+}
+func (t *Silent) Stderr() io.Writer {
+	return &t.stderr
+}
+func (t *Silent) Operation(key, kind, name string) vts.Console {
+	return t
+}
+func (t *Silent) Done() error {
+	return nil
 }

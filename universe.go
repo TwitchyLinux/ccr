@@ -4,6 +4,7 @@ package ccr
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -31,6 +32,8 @@ type opTrack interface {
 	Warning(category log.MsgCategory, message string)
 	Info(category log.MsgCategory, message string)
 	IsInteractive() bool
+	Stdout() io.Writer
+	Stderr() io.Writer
 }
 
 // Universe stores a tree representation of targets.

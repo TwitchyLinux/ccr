@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/twitchylinux/ccr/cache"
+	"github.com/twitchylinux/ccr/log"
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/common"
 	"go.starlark.net/starlark"
@@ -117,7 +118,8 @@ func TestFilePopulateResource(t *testing.T) {
 			defer os.RemoveAll(outDir)
 
 			gc := GenerationContext{
-				Cache: c,
+				Cache:   c,
+				Console: &log.Silent{},
 				RunnerEnv: &vts.RunnerEnv{
 					FS: osfs.New(outDir),
 				},

@@ -15,6 +15,7 @@ type GenerationContext struct {
 	RunnerEnv *vts.RunnerEnv
 	Cache     *cache.Cache
 	Inputs    *vts.InputSet
+	Console   vts.Console
 }
 
 // Generate is called to generate a target, typically writing the output
