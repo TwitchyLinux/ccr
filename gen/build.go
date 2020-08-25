@@ -71,6 +71,11 @@ func (rb *RunningBuild) EnsurePatched(path string) error {
 
 func (rb *RunningBuild) Patch(gc GenerationContext, patches map[string]vts.TargetRef) error {
 	for path, patch := range patches {
+		if t, isGlobal := patch.Target.(vts.GlobalTarget); isGlobal {
+			io.Copy(gc.Console.Stdout(), bytes.NewReader([]byte(fmt.Sprintf("-Patching \033[1;33m%s\033[0m into \033[1;33m%s\033[0m\n", t.GlobalPath(), path))))
+		} else {
+			io.Copy(gc.Console.Stdout(), bytes.NewReader([]byte(fmt.Sprintf("-Patching anonymous target \033[1;33m%v\033[0m into \033[1;33m%s\033[0m\n", patch, path))))
+		}
 		if err := rb.patch(gc, path, patch); err != nil {
 			return err
 		}
@@ -132,9 +137,9 @@ func (rb *RunningBuild) Inject(gc GenerationContext, injections []vts.TargetRef)
 	doneTargets := make(map[vts.Target]struct{}, 128)
 	for _, inj := range injections {
 		if t, isGlobal := inj.Target.(vts.GlobalTarget); isGlobal {
-			io.Copy(gc.Console.Stdout(), bytes.NewReader([]byte(fmt.Sprintf(" - Injecting \033[1;33m%s\033[0m\n", t.GlobalPath()))))
+			io.Copy(gc.Console.Stdout(), bytes.NewReader([]byte(fmt.Sprintf("-Injecting \033[1;33m%s\033[0m\n", t.GlobalPath()))))
 		} else {
-			io.Copy(gc.Console.Stdout(), bytes.NewReader([]byte(fmt.Sprintf(" - Injecting  anonymous target \033[1;33m%v\033[0m\n", inj))))
+			io.Copy(gc.Console.Stdout(), bytes.NewReader([]byte(fmt.Sprintf("-Injecting anonymous target \033[1;33m%v\033[0m\n", inj))))
 		}
 
 		if err := rb.inject(gc, inj.Target, doneTargets); err != nil {
@@ -343,8 +348,8 @@ func generateBuild(gc GenerationContext, b *vts.Build) error {
 		prefix = strings.Split(prefix, ":")[0]
 	}
 	msg := fmt.Sprintf("Starting \033[1;36m%s\033[0m of \033[1;33m%s\033[0m\n", "build", b.GlobalPath())
-	lop := gc.Console.Operation(base64.RawURLEncoding.EncodeToString(bh)[:36], msg, prefix)
-	defer lop.Done()
+	gc.Console = gc.Console.Operation(base64.RawURLEncoding.EncodeToString(bh)[:36], msg, prefix)
+	defer gc.Console.Done()
 
 	// If we got this far, the build output is not cached, we need to complete the build manually.
 	env, err := proc.NewEnv(false)
@@ -361,7 +366,7 @@ func generateBuild(gc GenerationContext, b *vts.Build) error {
 		rb.Close()
 		return vts.WrapWithTarget(fmt.Errorf("failed to apply patch-ins: %v", err), b)
 	}
-	if err := rb.Generate(gc.Cache, lop.Stdout(), lop.Stderr()); err != nil {
+	if err := rb.Generate(gc.Cache, gc.Console.Stdout(), gc.Console.Stderr()); err != nil {
 		rb.Close()
 		return vts.WrapWithTarget(fmt.Errorf("build failed: %v", err), b)
 	}

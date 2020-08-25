@@ -55,21 +55,31 @@ type proxyWriter struct {
 
 func (w *proxyWriter) Write(b []byte) (int, error) {
 	l, s := len(b), string(b)
-	pfx := fmt.Sprintf("\n[%s] ", w.name)
+	trailingNewline := strings.HasSuffix(s, "\n")
+	pfx := fmt.Sprintf("[%s] ", w.name)
 
 	if w.addPrefixAtNext {
 		w.Writer.WriteString(pfx)
 		w.addPrefixAtNext = false
 	}
 
-	if strings.HasSuffix(s, "\n") {
+	var m string
+	if trailingNewline {
 		s = s[:len(s)-1]
 		w.addPrefixAtNext = true
+		m = strings.Replace(s, "\n", "\n"+pfx, -1) + "\n"
+	} else {
+		m = strings.Replace(s, "\n", "\n"+pfx, -1)
 	}
 
-	d := bytes.NewReader([]byte(strings.Replace(s, "\n", pfx, -1)))
-	if _, err := io.Copy(w.Writer, d); err != nil {
+	if _, err := io.Copy(w.Writer, bytes.NewReader([]byte(m))); err != nil {
 		return 0, err
 	}
-	return l, w.Writer.Flush()
+
+	if trailingNewline {
+		if err := w.Writer.Flush(); err != nil {
+			return 0, err
+		}
+	}
+	return l, nil
 }
