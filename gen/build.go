@@ -326,6 +326,18 @@ func writeMultiFiles(c *cache.Cache, fs billy.Filesystem, p string, fr fileset) 
 	return nil
 }
 
+func determinePrefix(prefix string) string {
+	if i := strings.LastIndex(prefix, ":"); i > 0 && !strings.HasSuffix(prefix, ":build") {
+		prefix = prefix[i+1:]
+		if base := filepath.Base(prefix); base != "build" {
+			prefix = base
+		}
+	} else {
+		prefix = strings.Split(prefix, ":")[0]
+	}
+	return prefix
+}
+
 // generateBuild executes a build if the result is not already cached.
 func generateBuild(gc GenerationContext, b *vts.Build) error {
 	bh, err := b.RollupHash(gc.RunnerEnv, proc.EvalComputedAttribute)
@@ -341,12 +353,7 @@ func generateBuild(gc GenerationContext, b *vts.Build) error {
 		return nil
 	}
 
-	prefix := b.GlobalPath()
-	if i := strings.LastIndex(prefix, ":"); i > 0 && !strings.HasSuffix(prefix, ":build") {
-		prefix = prefix[i+1:]
-	} else {
-		prefix = strings.Split(prefix, ":")[0]
-	}
+	prefix := determinePrefix(b.GlobalPath())
 	msg := fmt.Sprintf("Starting \033[1;36m%s\033[0m of \033[1;33m%s\033[0m\n", "build", b.GlobalPath())
 	gc.Console = gc.Console.Operation(base64.RawURLEncoding.EncodeToString(bh)[:36], msg, prefix)
 	defer gc.Console.Done()

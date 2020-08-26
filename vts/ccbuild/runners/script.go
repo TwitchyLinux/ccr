@@ -59,7 +59,7 @@ func (*scriptValidRunner) Run(resource *vts.Resource, chkr *vts.Checker, opts *v
 	if !strings.HasPrefix(firstLine, "#!") {
 		return vts.WrapWithPath(errors.New("sheban missing from script"), fileInfo.Path)
 	}
-	interp := strings.TrimSpace(strings.TrimPrefix(firstLine, "#!"))
+	interp := strings.Split(strings.TrimSpace(strings.TrimPrefix(firstLine, "#!")), " ")[0]
 
 	t, err := opts.Universe.FindByPath(interp, opts)
 	if err != nil {
