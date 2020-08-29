@@ -329,11 +329,11 @@ func writeMultiFiles(c *cache.Cache, fs billy.Filesystem, p string, fr fileset) 
 func determinePrefix(prefix string) string {
 	if i := strings.LastIndex(prefix, ":"); i > 0 && !strings.HasSuffix(prefix, ":build") {
 		prefix = prefix[i+1:]
+	} else {
+		prefix = strings.Split(prefix, ":")[0]
 		if base := filepath.Base(prefix); base != "build" {
 			prefix = base
 		}
-	} else {
-		prefix = strings.Split(prefix, ":")[0]
 	}
 	return prefix
 }

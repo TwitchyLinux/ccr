@@ -44,6 +44,7 @@ func (w *lockingWriter) Write(b []byte) (int, error) {
 
 // Console writes messages to stdout.
 type Console struct {
+	l   sync.Mutex
 	ops map[string]*SubConsole
 	out *lockingWriter
 	err *lockingWriter
@@ -76,6 +77,8 @@ func (t *Console) Stderr() io.Writer {
 }
 
 func (t *Console) Operation(key, msg, prefix string) vts.Console {
+	t.l.Lock()
+	defer t.l.Unlock()
 	if t.ops == nil {
 		t.ops = make(map[string]*SubConsole, 12)
 	}
@@ -97,6 +100,8 @@ func (t *Console) Done() error {
 }
 
 func (t *Console) finishedOperation(key string) error {
+	t.l.Lock()
+	defer t.l.Unlock()
 	if _, ok := t.ops[key]; !ok {
 		return os.ErrNotExist
 	}
