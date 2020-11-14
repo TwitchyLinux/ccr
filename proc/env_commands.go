@@ -22,6 +22,7 @@ type procCommand struct {
 
 	Args []string
 	Dir  string
+	Env  map[string]string
 
 	ProcID string
 }

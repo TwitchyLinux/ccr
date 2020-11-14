@@ -370,11 +370,11 @@ func makeBuild(s *Script) *starlark.Builtin {
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 		var name string
 		var deps, steps, inject *starlark.List
-		var outputs, inputs *starlark.Dict
+		var outputs, inputs, env *starlark.Dict
 		if err := starlark.UnpackArgs(t.String(), args, kwargs,
 			"name?", &name, "host_deps?", &deps, "steps?", &steps,
 			"patch_inputs?", &inputs, "output?", &outputs,
-			"inject?", &inject); err != nil {
+			"inject?", &inject, "env?", &env); err != nil {
 			return starlark.None, err
 		}
 
@@ -448,6 +448,23 @@ func makeBuild(s *Script) *starlark.Builtin {
 					return nil, fmt.Errorf("invalid inject: %v", err)
 				}
 				b.Injections = append(b.Injections, v)
+			}
+		}
+		if env != nil {
+			b.Env = make(map[string]starlark.Value, env.Len())
+			for i, v := range env.Items() {
+				k, ok := v[0].(starlark.String)
+				if !ok {
+					return nil, fmt.Errorf("env[%d] invalid: cannot use type %T as key", i, v[0])
+				}
+				switch v := v[1].(type) {
+				case starlark.String:
+					b.Env[string(k)] = v
+				case *vts.ComputedValue:
+					b.Env[string(k)] = v
+				default:
+					return nil, fmt.Errorf("env[%d] invalid: cannot use type %T as value", i, v)
+				}
 			}
 		}
 

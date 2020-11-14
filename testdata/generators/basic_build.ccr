@@ -27,8 +27,8 @@ build(
 build(
   name      = "exec_build",
   steps     = [
-    step.shell_cmd('sha256sum /to_hash > /tmp/in.txt'),
-    step.shell_cmd('chmod 0600 /tmp/in.txt'),
+    step.shell_cmd('sha256sum /to_hash > /tmp/$IN.txt'),
+    step.shell_cmd('chmod 0600 /tmp/$IN.txt'),
   ],
   output    = {
     '/tmp/in.txt': 'out.txt',
@@ -40,6 +40,9 @@ build(
   ],
   patch_inputs = {
     "/to_hash": file('fake.txt'),
+  },
+  env = {
+    "IN": "in",
   },
 )
 

@@ -137,8 +137,12 @@ func TestRollupHash(t *testing.T) {
 					},
 				},
 				PatchIns: map[string]TargetRef{"/cool.txt": TargetRef{Target: &Puesdo{Kind: FileRef, Path: "cool.txt"}}},
+				Env: map[string]starlark.Value{
+					"yeet": starlark.String("123"),
+					"noot": starlark.String(":)"),
+				},
 			},
-			mustDecodeHex(t, "F9E2BD6B014E155E3C55C46C7C648C599C760C5FB1B303663B9064751DA6EB56"),
+			mustDecodeHex(t, "A038737A2811E5418749D64ECFCD33942FDAEC80FFA7F12E712E43B1C18427EF"),
 			"",
 		},
 	}

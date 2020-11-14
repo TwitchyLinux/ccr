@@ -46,14 +46,14 @@ type envProc struct {
 }
 
 // RunBlocking runs the specified command.
-func (e *Env) RunBlocking(dir string, args ...string) ([]byte, []byte, int, error) {
-	resp, err := e.sendCommand(procCommand{Code: cmdRunBlocking, Args: args, Dir: dir})
+func (e *Env) RunBlocking(dir string, env map[string]string, args ...string) ([]byte, []byte, int, error) {
+	resp, err := e.sendCommand(procCommand{Code: cmdRunBlocking, Args: args, Dir: dir, Env: env})
 	return resp.Stdout, resp.Stderr, resp.ExitCode, err
 }
 
 // RunStreaming runs the specified command without blocking.
-func (e *Env) RunStreaming(dir string, out, err io.Writer, args ...string) (string, error) {
-	c := procCommand{Code: cmdRunStreaming, Args: args, Dir: dir}
+func (e *Env) RunStreaming(dir string, out, err io.Writer, env map[string]string, args ...string) (string, error) {
+	c := procCommand{Code: cmdRunStreaming, Args: args, Dir: dir, Env: env}
 	var rData [16]byte
 	if _, err := rand.Read(rData[:]); err != nil {
 		return "", err

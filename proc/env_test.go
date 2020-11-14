@@ -36,7 +36,7 @@ func TestRunBlocking(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	out, se, _, err := e.RunBlocking(wd, "echo", "mmmyay", "1")
+	out, se, _, err := e.RunBlocking(wd, nil, "echo", "mmmyay", "1")
 	if err != nil {
 		e.Close()
 		t.Errorf("RunBlocking(%q) failed: %v", "echo", err)
@@ -45,7 +45,7 @@ func TestRunBlocking(t *testing.T) {
 	if want := []byte("mmmyay 1\n"); !bytes.Equal(out, want) {
 		t.Errorf("Output = %q, want %q", string(out), string(want))
 	}
-	out, _, _, err = e.RunBlocking(wd, "echo", "mmmyay", "2")
+	out, _, _, err = e.RunBlocking(wd, nil, "echo", "mmmyay", "2")
 	if err != nil {
 		e.Close()
 		t.Errorf("RunBlocking(%q) failed: %v", "echo", err)
@@ -54,7 +54,7 @@ func TestRunBlocking(t *testing.T) {
 		t.Errorf("Output = %q, want %q", string(out), string(want))
 	}
 
-	_, _, code, err := e.RunBlocking(wd, "bash", "-c", "exit 12")
+	_, _, code, err := e.RunBlocking(wd, nil, "bash", "-c", "exit 12")
 	if err != nil && err.Error() != "exit status 12" {
 		e.Close()
 		t.Errorf("RunBlocking(%q) failed: %v", "exit", err)
@@ -63,12 +63,21 @@ func TestRunBlocking(t *testing.T) {
 		t.Errorf("code = %d, want %d", code, 12)
 	}
 
-	out, _, _, err = e.RunBlocking(wd, "pwd")
+	out, _, _, err = e.RunBlocking(wd, nil, "pwd")
 	if err != nil {
 		e.Close()
 		t.Errorf("RunBlocking(%q) failed: %v", "pwd", err)
 	}
 	if want := []byte(wd + "\n"); !bytes.Equal(out, want) {
+		t.Errorf("Output = %q, want %q", string(out), string(want))
+	}
+
+	out, _, _, err = e.RunBlocking(wd, map[string]string{"blue": "green"}, "bash", "-c", "echo $blue")
+	if err != nil {
+		e.Close()
+		t.Errorf("RunBlocking(%q) failed: %v", "pwd", err)
+	}
+	if want := []byte("green" + "\n"); !bytes.Equal(out, want) {
 		t.Errorf("Output = %q, want %q", string(out), string(want))
 	}
 
@@ -85,15 +94,15 @@ func TestRunStreaming(t *testing.T) {
 	}
 
 	var stdout, stderr bytes.Buffer
-	id, err := e.RunStreaming("/", &stdout, &stderr, "echo", "yeow")
+	id, err := e.RunStreaming("/", &stdout, &stderr, nil, "echo", "yeow")
 	if err != nil {
 		t.Fatalf("RunStreaming() failed: %v", err)
 	}
-	id2, err2 := e.RunStreaming("/", &stdout, &stderr, "bash", "-c", "sleep 0.1 && >&2 echo noot")
+	id2, err2 := e.RunStreaming("/", &stdout, &stderr, nil, "bash", "-c", "sleep 0.1 && >&2 echo noot")
 	if err2 != nil {
 		t.Fatalf("RunStreaming() failed: %v", err2)
 	}
-	id3, err3 := e.RunStreaming("/", &stdout, &stderr, "false")
+	id3, err3 := e.RunStreaming("/", &stdout, &stderr, nil, "false")
 	if err3 != nil {
 		t.Fatalf("RunStreaming() failed: %v", err2)
 	}
@@ -136,7 +145,7 @@ func TestFilePersistance(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	o, s, _, err := e.RunBlocking("/tmp", "touch", "yee")
+	o, s, _, err := e.RunBlocking("/tmp", nil, "touch", "yee")
 	if err != nil {
 		e.Close()
 		t.Errorf("RunBlocking(%q) failed: %v", "echo", err)
@@ -158,7 +167,7 @@ func TestDevSetup(t *testing.T) {
 	}
 	defer e.Close()
 
-	o, s, _, err := e.RunBlocking("/tmp", "ls", "-l", "/dev/null")
+	o, s, _, err := e.RunBlocking("/tmp", nil, "ls", "-l", "/dev/null")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,7 +179,7 @@ func TestDevSetup(t *testing.T) {
 		t.Logf("stderr = %s\n", string(s))
 	}
 
-	if o, s, _, err = e.RunBlocking("/tmp", "cat", "/dev/null"); err != nil {
+	if o, s, _, err = e.RunBlocking("/tmp", nil, "cat", "/dev/null"); err != nil {
 		t.Errorf("Failed to read from /dev/null: %v", err)
 	}
 	if string(o) != "" || string(s) != "" {
@@ -206,7 +215,7 @@ func TestTmpMasked(t *testing.T) {
 	}
 	defer e.Close()
 
-	out, _, _, err := e.RunBlocking("/tmp", "ls")
+	out, _, _, err := e.RunBlocking("/tmp", nil, "ls")
 	if err != nil {
 		t.Errorf("RunBlocking(%q) failed: %v", "echo", err)
 	}
@@ -231,7 +240,7 @@ func TestPatchPath(t *testing.T) {
 		e.Close()
 		t.Fatal(err)
 	}
-	o, s, _, err := e.RunBlocking("/tmp", "cat", "/usr/somefile")
+	o, s, _, err := e.RunBlocking("/tmp", nil, "cat", "/usr/somefile")
 	if err != nil {
 		t.Errorf("RunBlocking(%q) failed: %v", "cat", err)
 		t.Logf("stdout = %q\nstderr = %q", string(o), string(s))
@@ -263,7 +272,7 @@ func TestEnsurePatched(t *testing.T) {
 	if err := e.EnsurePatched("somefile"); err != nil {
 		t.Errorf("EnsurePatch(%q) failed: %v", "somefile", err)
 	}
-	o, s, _, err := e.RunBlocking("/tmp", "cat", "/somefile")
+	o, s, _, err := e.RunBlocking("/tmp", nil, "cat", "/somefile")
 	if err != nil {
 		t.Errorf("RunBlocking(%q) failed: %v", "cat", err)
 		t.Logf("stdout = %q\nstderr = %q", string(o), string(s))
@@ -275,7 +284,7 @@ func TestEnsurePatched(t *testing.T) {
 	if err := e.EnsurePatched("somedir"); err != nil {
 		t.Errorf("EnsurePatch(%q) failed: %v", "somedir", err)
 	}
-	o, s, _, err = e.RunBlocking("/tmp", "touch", "/somedir/yeets")
+	o, s, _, err = e.RunBlocking("/tmp", nil, "touch", "/somedir/yeets")
 	if err != nil {
 		t.Errorf("RunBlocking(%q) failed: %v", "touch", err)
 		t.Logf("stdout = %q\nstderr = %q", string(o), string(s))

@@ -230,15 +230,18 @@ func TestStepShellCmd(t *testing.T) {
 	rb.steps = []*vts.BuildStep{
 		{
 			Kind: vts.StepShellCmd,
-			Args: []string{"touch blueberries"},
+			Args: []string{"touch $NAME"},
 		},
+	}
+	rb.envVars = map[string]string{
+		"NAME": "beanies",
 	}
 
 	if err := rb.Generate(c, os.Stdout, os.Stderr); err != nil {
 		t.Errorf("Generate() failed: %v", err)
 	}
 
-	_, err := ioutil.ReadFile(filepath.Join(rb.OverlayUpperPath(), "tmp", "blueberries"))
+	_, err := ioutil.ReadFile(filepath.Join(rb.OverlayUpperPath(), "tmp", "beanies"))
 	if err != nil {
 		t.Fatalf("failed to read file: %v", err)
 	}

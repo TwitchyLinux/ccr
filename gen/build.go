@@ -16,6 +16,7 @@ import (
 	"github.com/twitchylinux/ccr/proc"
 	"github.com/twitchylinux/ccr/vts"
 	"github.com/twitchylinux/ccr/vts/common"
+	"go.starlark.net/starlark"
 	"gopkg.in/src-d/go-billy.v4"
 	"gopkg.in/src-d/go-billy.v4/osfs"
 )
@@ -26,6 +27,7 @@ type RunningBuild struct {
 
 	contractDir string
 	fs          billy.Filesystem
+	envVars     map[string]string
 	steps       []*vts.BuildStep
 }
 
@@ -54,7 +56,7 @@ func (rb *RunningBuild) Close() error {
 }
 
 func (rb *RunningBuild) ExecBlocking(wd string, args []string, stdout, stderr io.Writer) (int, error) {
-	id, err := rb.env.RunStreaming(wd, stdout, stderr, args...)
+	id, err := rb.env.RunStreaming(wd, stdout, stderr, rb.envVars, args...)
 	if err != nil {
 		return 0, err
 	}
@@ -353,6 +355,15 @@ func generateBuild(gc GenerationContext, b *vts.Build) error {
 		return nil
 	}
 
+	envVars := make(map[string]string, len(b.Env))
+	for k, v := range b.Env {
+		if ss, ok := v.(starlark.String); ok {
+			envVars[k] = string(ss)
+		} else {
+			envVars[k] = v.String()
+		}
+	}
+
 	prefix := determinePrefix(b.GlobalPath())
 	msg := fmt.Sprintf("Starting \033[1;36m%s\033[0m of \033[1;33m%s\033[0m\n", "build", b.GlobalPath())
 	gc.Console = gc.Console.Operation(base64.RawURLEncoding.EncodeToString(bh)[:36], msg, prefix)
@@ -363,7 +374,13 @@ func generateBuild(gc GenerationContext, b *vts.Build) error {
 	if err != nil {
 		return vts.WrapWithTarget(fmt.Errorf("creating build environment: %v", err), b)
 	}
-	rb := RunningBuild{env: env, steps: b.Steps, fs: osfs.New("/"), contractDir: b.ContractDir}
+	rb := RunningBuild{
+		env:         env,
+		steps:       b.Steps,
+		fs:          osfs.New("/"),
+		envVars:     envVars,
+		contractDir: b.ContractDir,
+	}
 	if err := rb.Inject(gc, b.Injections); err != nil {
 		rb.Close()
 		return vts.WrapWithTarget(fmt.Errorf("failed to apply injections: %v", err), b)

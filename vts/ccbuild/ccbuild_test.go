@@ -282,6 +282,9 @@ var newScriptTestcases = []struct {
 				Injections: []vts.TargetRef{
 					{Path: "//some/other:target"},
 				},
+				Env: map[string]starlark.Value{
+					"PATH": starlark.String("/usr/bin:/bin:/sbin"),
+				},
 			},
 		},
 	},

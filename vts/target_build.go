@@ -24,6 +24,7 @@ type Build struct {
 	Output     *match.FilenameRules
 	PatchIns   map[string]TargetRef
 	Injections []TargetRef
+	Env        map[string]starlark.Value
 
 	cachedRollupHash []byte
 }
@@ -151,6 +152,16 @@ func (t *Build) RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error) {
 			return nil, err
 		}
 		hash.Write(h)
+	}
+	if len(t.Env) > 0 {
+		ordered := make([]string, 0, len(t.Env))
+		for k := range t.Env {
+			ordered = append(ordered, k)
+		}
+		sort.Strings(ordered)
+		for _, k := range ordered {
+			fmt.Fprintf(hash, "Env[%s] = %q\n", k, t.Env[k].String())
+		}
 	}
 
 	t.cachedRollupHash = hash.Sum(nil)

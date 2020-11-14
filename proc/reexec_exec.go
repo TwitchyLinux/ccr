@@ -3,6 +3,7 @@ package proc
 import (
 	"bytes"
 	"encoding/gob"
+	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
@@ -30,6 +31,14 @@ func runBlocking(cmd procCommand, pivotDir string, readOnly bool) procResp {
 	c.SysProcAttr = &syscall.SysProcAttr{
 		Cloneflags: syscall.CLONE_NEWNS,
 	}
+
+	if len(cmd.Env) > 0 {
+		c.Env = os.Environ()
+		for k, v := range cmd.Env {
+			c.Env = append(c.Env, fmt.Sprintf("%s=%s", k, v))
+		}
+	}
+
 	resp := procResp{Code: cmd.Code}
 	if err := c.Run(); err != nil {
 		resp.Error = err.Error()
@@ -119,6 +128,11 @@ func (m *execManager) RunStreaming(cmd procCommand, pivotDir string, readOnly bo
 	c.Stderr = &streamWriter{m: m, id: cmd.ProcID, isErr: true}
 	c.SysProcAttr = &syscall.SysProcAttr{Cloneflags: syscall.CLONE_NEWNS}
 	c.Env = []string{"PATH=/usr/local/bin:/usr/bin:/bin:/sbin:/usr/local/go/bin", "TMPDIR=/tmp", "FORCE_UNSAFE_CONFIGURE=1"}
+	if len(cmd.Env) > 0 {
+		for k, v := range cmd.Env {
+			c.Env = append(c.Env, fmt.Sprintf("%s=%s", k, v))
+		}
+	}
 	resp := procResp{Code: cmd.Code}
 
 	if err := c.Start(); err != nil {
