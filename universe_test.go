@@ -485,6 +485,18 @@ func TestBuildValidation(t *testing.T) {
 			base:    "testdata/basic/nested",
 			targets: []vts.TargetRef{{Path: "//build:cat"}},
 		},
+		{
+			name:    "invalid_chroot",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//invalid_chroot:bad_build"}},
+			err:     "using_chroot is type *vts.Resource, but must be type *vts.Build",
+		},
+		{
+			name:    "build_chroot_is_not_rootfs",
+			base:    "testdata/checkers/base",
+			targets: []vts.TargetRef{{Path: "//invalid_chroot:not_rootfs"}},
+			err:     "target referenced as chroot does not set root_fs",
+		},
 	}
 
 	for _, tc := range tcs {

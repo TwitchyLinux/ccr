@@ -1,0 +1,21 @@
+resource(
+  name   = "some_resource",
+  parent = "common://resources:file",
+  path   = "/some/path",
+)
+
+
+build(
+  name         = "bad_build",
+  using_chroot = ":some_resource",
+)
+
+
+build(
+  name         = "not_rootfs",
+  using_chroot = ":good_build",
+)
+
+build(
+  name = "good_build",
+)

@@ -188,6 +188,13 @@ func (u *Universe) linkTarget(t vts.Target) error {
 			}
 		}
 		n.PatchIns = out
+		if n.UsingRoot != nil {
+			tmp, err := u.makeTargetRef(*n.UsingRoot)
+			if err != nil {
+				return u.logger.Error(log.MsgBadRef, vts.WrapWithTarget(err, t))
+			}
+			n.UsingRoot = &tmp
+		}
 		return nil
 
 	case *vts.Sieve:
@@ -263,6 +270,11 @@ func (u *Universe) resolveTarget(findOpts *FindOptions, t vts.Target) error {
 	}
 	if st, isSrcdTarget := gt.(vts.SourcedTarget); isSrcdTarget && st.Src() != nil {
 		if err := u.resolveRef(findOpts, *st.Src()); err != nil {
+			return err
+		}
+	}
+	if ct, usesChrootTarget := gt.(vts.UsingRootFSTarget); usesChrootTarget && ct.UsingRootFS() != nil {
+		if err := u.resolveRef(findOpts, *ct.UsingRootFS()); err != nil {
 			return err
 		}
 	}

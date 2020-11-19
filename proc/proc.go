@@ -88,7 +88,7 @@ func (p *proc) runBuiltin() *starlark.Builtin {
 	return starlark.NewBuiltin("run", func(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, _ []starlark.Tuple) (starlark.Value, error) {
 		var err error
 		if p.env == nil {
-			if p.env, err = NewEnv(p.readOnly); err != nil {
+			if p.env, err = NewEnv(p.readOnly, "/"); err != nil {
 				return starlark.None, fmt.Errorf("initializing environment: %v", err)
 			}
 		}

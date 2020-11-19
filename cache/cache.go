@@ -158,7 +158,57 @@ func (c *Cache) Clean() error {
 		}
 	}
 
+	roots, err := ioutil.ReadDir(filepath.Join(c.dir, "chroots"))
+	if err != nil {
+		return err
+	}
+	for _, root := range roots {
+		if root.ModTime().Add(36 * time.Hour).Before(now) {
+			if err := os.RemoveAll(filepath.Join(c.dir, "chroots", root.Name())); err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
+}
+
+// Chroot returns the path to the base filesystem of the rootFS with that hash.
+// If create is set, the directory will be created if it doesnt exist, and
+// cleared of contents if it does.
+func (c *Cache) Chroot(h []byte, create bool) (string, error) {
+	hash := c.hashString(h)
+	p := filepath.Join(c.dir, "chroots", hash)
+
+	s, err := os.Stat(p)
+	if err != nil {
+		if os.IsNotExist(err) {
+			if create {
+				return p, os.Mkdir(p, 0755)
+			}
+			return "", ErrCacheMiss
+		}
+		return "", err
+	}
+
+	if create {
+		if err := os.RemoveAll(p); err != nil {
+			return "", err
+		}
+		return p, os.Mkdir(p, 0755)
+	}
+
+	// If the mod time is more than an hour, we boop it. Doing this
+	// allows us to use the mod time as a signal for recent use of this
+	// cache entry, but avoid unnecessary disk writes that would happen
+	// if we unconditionally updated the modtime.
+	if n := time.Now(); s.ModTime().Add(time.Hour).Before(n) {
+		nt := unix.NsecToTimeval(n.UnixNano())
+		if err := unix.Lutimes(p, []unix.Timeval{nt, nt}); err != nil {
+			return "", fmt.Errorf("failed to update mtime: %v", err)
+		}
+	}
+	return p, nil
 }
 
 func defaultCacheDir() (string, error) {
@@ -190,6 +240,9 @@ func NewCache(dir string) (*Cache, error) {
 		return nil, err
 	}
 	if err := os.MkdirAll(filepath.Join(dir, "named"), 0755); err != nil {
+		return nil, err
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "chroots"), 0755); err != nil {
 		return nil, err
 	}
 

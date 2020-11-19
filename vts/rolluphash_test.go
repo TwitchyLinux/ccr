@@ -141,8 +141,9 @@ func TestRollupHash(t *testing.T) {
 					"yeet": starlark.String("123"),
 					"noot": starlark.String(":)"),
 				},
+				ProducesRootFS: true,
 			},
-			mustDecodeHex(t, "A038737A2811E5418749D64ECFCD33942FDAEC80FFA7F12E712E43B1C18427EF"),
+			mustDecodeHex(t, "9BC1CCB739FBF1CE36284EEB41FB912A2799A85CE4C2D3520323499E671BBFAE"),
 			"",
 		},
 	}

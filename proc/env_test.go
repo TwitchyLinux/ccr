@@ -14,7 +14,7 @@ import (
 
 func TestRunEnv(t *testing.T) {
 	t.Parallel()
-	e, err := NewEnv(true)
+	e, err := NewEnv(true, "/")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -26,7 +26,7 @@ func TestRunEnv(t *testing.T) {
 
 func TestRunBlocking(t *testing.T) {
 	t.Parallel()
-	e, err := NewEnv(true)
+	e, err := NewEnv(true, "/")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,7 +88,7 @@ func TestRunBlocking(t *testing.T) {
 
 func TestRunStreaming(t *testing.T) {
 	t.Parallel()
-	e, err := NewEnv(true)
+	e, err := NewEnv(true, "/")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,7 +140,7 @@ func TestRunStreaming(t *testing.T) {
 
 func TestFilePersistance(t *testing.T) {
 	t.Parallel()
-	e, err := NewEnv(false)
+	e, err := NewEnv(false, "/")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +161,7 @@ func TestFilePersistance(t *testing.T) {
 }
 
 func TestDevSetup(t *testing.T) {
-	e, err := NewEnv(false)
+	e, err := NewEnv(false, "/")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -209,7 +209,7 @@ func TestTmpMasked(t *testing.T) {
 	}
 
 	t.Parallel()
-	e, err := NewEnv(true)
+	e, err := NewEnv(true, "/")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -227,7 +227,7 @@ func TestTmpMasked(t *testing.T) {
 
 func TestPatchPath(t *testing.T) {
 	t.Parallel()
-	e, err := NewEnv(false)
+	e, err := NewEnv(false, "/")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -256,7 +256,7 @@ func TestPatchPath(t *testing.T) {
 
 func TestEnsurePatched(t *testing.T) {
 	t.Parallel()
-	e, err := NewEnv(false)
+	e, err := NewEnv(false, "/")
 	if err != nil {
 		t.Fatal(err)
 	}

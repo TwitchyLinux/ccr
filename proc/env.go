@@ -141,7 +141,7 @@ func dependenciesInstalled() (bool, error) {
 	return true, nil
 }
 
-func NewEnv(readOnly bool) (*Env, error) {
+func NewEnv(readOnly bool, rootDir string) (*Env, error) {
 	good, err := dependenciesInstalled()
 	if err != nil {
 		return nil, err
@@ -176,7 +176,7 @@ func NewEnv(readOnly bool) (*Env, error) {
 		return nil, err
 	}
 
-	out.p = reexec.Command("reexecEntry", "env", strconv.FormatBool(readOnly))
+	out.p = reexec.Command("reexecEntry", "env", strconv.FormatBool(readOnly), rootDir)
 	out.p.Stderr = os.Stderr
 	out.p.Stdout = os.Stdout
 	out.p.Stdin = os.Stdin

@@ -2,6 +2,7 @@ package vts
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"sort"
 
@@ -19,12 +20,14 @@ type Build struct {
 	ContractDir  string
 	ContractPath string
 
-	HostDeps   []TargetRef
-	Steps      []*BuildStep
-	Output     *match.FilenameRules
-	PatchIns   map[string]TargetRef
-	Injections []TargetRef
-	Env        map[string]starlark.Value
+	HostDeps       []TargetRef
+	Steps          []*BuildStep
+	Output         *match.FilenameRules
+	PatchIns       map[string]TargetRef
+	Injections     []TargetRef
+	Env            map[string]starlark.Value
+	UsingRoot      *TargetRef
+	ProducesRootFS bool
 
 	cachedRollupHash []byte
 }
@@ -50,6 +53,17 @@ func (t *Build) TargetName() string {
 }
 
 func (t *Build) Validate() error {
+	if t.UsingRoot != nil {
+		if t.UsingRoot.Target != nil {
+			b, ok := t.UsingRoot.Target.(*Build)
+			if !ok {
+				return fmt.Errorf("using_chroot is type %T, but must be type %T", t.UsingRoot.Target, t)
+			}
+			if !b.ProducesRootFS {
+				return errors.New("target referenced as chroot does not set root_fs")
+			}
+		}
+	}
 	return nil
 }
 
@@ -66,6 +80,10 @@ func (t *Build) NeedInputs() []TargetRef {
 		out = append(out, t)
 	}
 	return out
+}
+
+func (t *Build) UsingRootFS() *TargetRef {
+	return t.UsingRoot
 }
 
 func (t *Build) String() string {
@@ -162,6 +180,21 @@ func (t *Build) RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error) {
 		for _, k := range ordered {
 			fmt.Fprintf(hash, "Env[%s] = %q\n", k, t.Env[k].String())
 		}
+	}
+
+	if t.ProducesRootFS {
+		fmt.Fprintln(hash, "RootFS = true")
+	}
+	if t.UsingRoot != nil {
+		rt, isHashable := t.UsingRoot.Target.(ReproducibleTarget)
+		if !isHashable {
+			return nil, WrapWithTarget(fmt.Errorf("cannot compute rollup hash on non-reproducible target of type %T", t.UsingRoot), t.UsingRoot.Target)
+		}
+		h, err := rt.RollupHash(env, eval)
+		if err != nil {
+			return nil, err
+		}
+		hash.Write(h)
 	}
 
 	t.cachedRollupHash = hash.Sum(nil)

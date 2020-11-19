@@ -39,14 +39,14 @@ func commandChannels() (*gob.Encoder, *gob.Decoder, *gob.Encoder, error) {
 	return gob.NewEncoder(respWriter), gob.NewDecoder(instReader), gob.NewEncoder(streamWriter), nil
 }
 
-func envMainloop(cmdW *gob.Encoder, cmdR *gob.Decoder, respW *gob.Encoder, readOnly bool) error {
+func envMainloop(cmdW *gob.Encoder, cmdR *gob.Decoder, respW *gob.Encoder, readOnly bool, rootDir string) error {
 	wd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
 
 	var fs fs
-	fs, err = setupEnvFS(wd)
+	fs, err = setupEnvFS(wd, rootDir)
 	if err != nil {
 		return err
 	}
@@ -109,12 +109,13 @@ func isolatedMain() {
 		os.Exit(reexecExitCode)
 	}
 
-	if len(os.Args) > 2 && os.Args[1] == "env" {
+	if len(os.Args) > 3 && os.Args[1] == "env" {
 		readOnly, err := strconv.ParseBool(os.Args[2])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed parsing read-only argument: %v\n", err)
 			os.Exit(reexecExitCode)
 		}
+		rootDir := os.Args[3]
 
 		cmdW, cmdR, respW, err := commandChannels()
 		if err != nil {
@@ -122,7 +123,7 @@ func isolatedMain() {
 			os.Exit(reexecExitCode)
 		}
 
-		if err := envMainloop(cmdW, cmdR, respW, readOnly); err != nil {
+		if err := envMainloop(cmdW, cmdR, respW, readOnly, rootDir); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(reexecExitCode)
 		}

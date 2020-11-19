@@ -285,6 +285,8 @@ var newScriptTestcases = []struct {
 				Env: map[string]starlark.Value{
 					"PATH": starlark.String("/usr/bin:/bin:/sbin"),
 				},
+				UsingRoot:      &vts.TargetRef{Path: "//test:blue"},
+				ProducesRootFS: true,
 			},
 		},
 	},

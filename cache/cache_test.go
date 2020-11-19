@@ -114,3 +114,42 @@ func TestCacheUpdatesModtime(t *testing.T) {
 		t.Errorf("modtime is too old: %v, want ~%v", mt, time.Minute)
 	}
 }
+
+func TestCacheChroot(t *testing.T) {
+	tmp, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmp)
+	ne := sha256.Sum256([]byte(t.Name()))
+
+	c, err := NewCache(tmp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.Chroot(ne[:], false); err != ErrCacheMiss {
+		t.Errorf("Chroot(<non-existent>, false).err = %v, want %v", err, ErrCacheMiss)
+	}
+
+	p, err := c.Chroot(ne[:], true)
+	if err != nil {
+		t.Fatalf("Chroot(%v, true) failed: %v", ne, err)
+	}
+
+	if err := os.Chtimes(p, time.Now().Add(-2*time.Hour), time.Now().Add(-2*time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := c.Chroot(ne[:], false); err != nil {
+		t.Errorf("Chroot(%v, false) failed: %v", ne, err)
+	}
+
+	// Expect the mtime to have been updated.
+	s, err := os.Stat(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mt := time.Now().Sub(s.ModTime()); mt > time.Minute {
+		t.Errorf("modtime is too old: %v, want ~%v", mt, time.Minute)
+	}
+}

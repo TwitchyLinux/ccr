@@ -26,6 +26,7 @@ type fs interface {
 // overlayFS will use.
 type overlayLayout struct {
 	base  string
+	root  string
 	binds []string
 }
 
@@ -43,7 +44,7 @@ func (l overlayLayout) Close() error {
 }
 
 // LowerBindPath returns the absolute path to the read-only bind mount,
-// which maps to the system root ('/') path.
+// which maps to the rootDir (typically the system root ('/') path).
 func (l overlayLayout) LowerBindPath() string {
 	return filepath.Join(l.base, "l")
 }
@@ -164,7 +165,7 @@ func (l overlayLayout) Setup() error {
 		return fmt.Errorf("dev: %v", err)
 	}
 
-	if err := syscall.Mount("/", l.LowerBindPath(), "", bindROFlags, ""); err != nil {
+	if err := syscall.Mount(l.root, l.LowerBindPath(), "", bindROFlags, ""); err != nil {
 		return err
 	}
 	return nil
@@ -272,8 +273,8 @@ func (fs *overlayFS) Close() error {
 	return fs.layout.Close()
 }
 
-func setupEnvFS(baseDir string) (outFS fs, err error) {
-	l := overlayLayout{base: baseDir}
+func setupEnvFS(baseDir, rootDir string) (outFS fs, err error) {
+	l := overlayLayout{base: baseDir, root: rootDir}
 	if err := l.Setup(); err != nil {
 		return nil, err
 	}

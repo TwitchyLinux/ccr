@@ -43,7 +43,7 @@ func makeEnv(t *testing.T, copySrc ...string) (*RunningBuild, *cache.Cache, stri
 		}
 	}
 
-	env, err := proc.NewEnv(false)
+	env, err := proc.NewEnv(false, "/")
 	if err != nil {
 		t.Fatalf("creating new environment: %v", err)
 	}
@@ -484,7 +484,7 @@ func TestPatchingBuildEnv(t *testing.T) {
 				w.Close()
 			}
 
-			env, err := proc.NewEnv(false)
+			env, err := proc.NewEnv(false, "/")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -747,6 +747,32 @@ func TestGenerateBuild(t *testing.T) {
 			},
 			expectFiles: map[string]os.FileMode{"somefile.txt": os.FileMode(0644)},
 		},
+		{
+			name: "rootfs in chroot cache",
+			b: &vts.Build{
+				Path: "//test:fake_file_build",
+				Name: "fake_file_build",
+				PatchIns: map[string]vts.TargetRef{
+					"/somefile.txt": {Target: &vts.Puesdo{
+						Kind:         vts.FileRef,
+						ContractPath: "testdata/something.ccr",
+						Path:         "file.txt",
+					}},
+					"/should_get_output.o": {Target: &vts.Puesdo{
+						Kind:         vts.FileRef,
+						ContractPath: "testdata/something.ccr",
+						Path:         "file.txt",
+					}},
+				},
+				Output: &match.FilenameRules{
+					Rules: []match.MatchRule{
+						{P: glob.MustCompile("*.txt"), Out: &match.StripPrefixOutputMapper{Prefix: "/"}},
+					},
+				},
+				ProducesRootFS: true,
+			},
+			expectFiles: map[string]os.FileMode{"somefile.txt": os.FileMode(0644)},
+		},
 	}
 
 	cd, err := ioutil.TempDir("", "")
@@ -780,6 +806,18 @@ func TestGenerateBuild(t *testing.T) {
 					Dir: outDir,
 				}}, tc.b); err != nil {
 				t.Errorf("Generate(%v) failed: %v", tc.b, err)
+			}
+
+			if tc.b.ProducesRootFS {
+				chroot, err := c.Chroot(h, false)
+				if err != nil {
+					t.Errorf("cache.Chroot(%v) failed: %v", h, err)
+				}
+				for p, _ := range tc.expectFiles {
+					if _, err := os.Stat(filepath.Join(chroot, p)); os.IsNotExist(err) {
+						t.Errorf("%q: missing from chroot", p)
+					}
+				}
 			}
 
 			fr, err := c.FilesetReader(h)
@@ -1146,7 +1184,7 @@ func TestBuildInjections(t *testing.T) {
 				w.Close()
 			}
 
-			env, err := proc.NewEnv(false)
+			env, err := proc.NewEnv(false, "/")
 			if err != nil {
 				t.Fatal(err)
 			}

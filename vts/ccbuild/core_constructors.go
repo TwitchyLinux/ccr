@@ -368,13 +368,18 @@ func makeBuild(s *Script) *starlark.Builtin {
 	t := vts.TargetBuild
 
 	return starlark.NewBuiltin(t.String(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-		var name string
-		var deps, steps, inject *starlark.List
-		var outputs, inputs, env *starlark.Dict
+		var (
+			name                 string
+			deps, steps, inject  *starlark.List
+			outputs, inputs, env *starlark.Dict
+			rootFS               bool
+			chroot               starlark.Value
+		)
 		if err := starlark.UnpackArgs(t.String(), args, kwargs,
 			"name?", &name, "host_deps?", &deps, "steps?", &steps,
 			"patch_inputs?", &inputs, "output?", &outputs,
-			"inject?", &inject, "env?", &env); err != nil {
+			"inject?", &inject, "env?", &env,
+			"root_fs?", &rootFS, "using_chroot?", &chroot); err != nil {
 			return starlark.None, err
 		}
 
@@ -393,6 +398,7 @@ func makeBuild(s *Script) *starlark.Builtin {
 				Path:  s.fPath,
 				Frame: thread.CallFrame(1),
 			},
+			ProducesRootFS: rootFS,
 		}
 
 		if deps != nil {
@@ -466,6 +472,14 @@ func makeBuild(s *Script) *starlark.Builtin {
 					return nil, fmt.Errorf("env[%d] invalid: cannot use type %T as value", i, v)
 				}
 			}
+		}
+
+		if chroot != nil {
+			root, err := toBuildTarget(s.path, chroot)
+			if err != nil {
+				return nil, fmt.Errorf("using_chroot invalid: %v", err)
+			}
+			b.UsingRoot = &root
 		}
 
 		// If theres no name, it must be an anonymous build as part of

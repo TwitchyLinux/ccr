@@ -133,6 +133,13 @@ type ReproducibleTarget interface {
 	RollupHash(env *RunnerEnv, eval computeEval) ([]byte, error)
 }
 
+// UsingRootFSTarget describes a node whose build should use
+// the referenced build artifacts as its chroot filesystem.
+type UsingRootFSTarget interface {
+	Target
+	UsingRootFS() *TargetRef
+}
+
 // TargetRef refers to another target either by path or by
 // a pointer to its object.
 type TargetRef struct {

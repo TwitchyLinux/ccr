@@ -77,3 +77,16 @@ func toGeneratorTarget(currentPath string, v starlark.Value) (vts.TargetRef, err
 	}
 	return vts.TargetRef{}, fmt.Errorf("cannot reference generator with starklark type %T (%s)", v, v.String())
 }
+
+func toBuildTarget(currentPath string, v starlark.Value) (vts.TargetRef, error) {
+	if a, ok := v.(*vts.Build); ok {
+		return vts.TargetRef{Target: a}, nil
+	}
+	if s, ok := v.(starlark.String); ok {
+		if strings.HasPrefix(string(s), ":") {
+			return vts.TargetRef{Path: currentPath + string(s)}, nil
+		}
+		return vts.TargetRef{Path: string(s)}, nil
+	}
+	return vts.TargetRef{}, fmt.Errorf("cannot reference generator with starklark type %T (%s)", v, v.String())
+}

@@ -7,9 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/twitchylinux/ccr/cache"
 	"github.com/twitchylinux/ccr/gen/buildstep"
@@ -370,7 +373,7 @@ func generateBuild(gc GenerationContext, b *vts.Build) error {
 	defer gc.Console.Done()
 
 	// If we got this far, the build output is not cached, we need to complete the build manually.
-	env, err := proc.NewEnv(false)
+	env, err := proc.NewEnv(false, "/")
 	if err != nil {
 		return vts.WrapWithTarget(fmt.Errorf("creating build environment: %v", err), b)
 	}
@@ -394,9 +397,47 @@ func generateBuild(gc GenerationContext, b *vts.Build) error {
 		rb.Close()
 		return vts.WrapWithTarget(fmt.Errorf("build failed: %v", err), b)
 	}
+
+	var (
+		wg          sync.WaitGroup
+		makeRootErr error
+	)
+	if b.ProducesRootFS {
+		// Our artifacts are a chroot base for someone else. Lets write everything to
+		// a chroot directory in parallel.
+		cachePath, err := gc.Cache.Chroot(bh, true)
+		if err != nil {
+			return err
+		}
+
+		wg.Add(1)
+		go func(upperPath, cachePath string) {
+			defer wg.Done()
+			files, err := ioutil.ReadDir(upperPath)
+			if err != nil {
+				makeRootErr = err
+				return
+			}
+			rootFiles := make([]string, len(files))
+			for i, f := range files {
+				rootFiles[i] = f.Name()
+			}
+
+			cmd := exec.Command("cp", append([]string{"-prP", "-t", cachePath}, rootFiles...)...)
+			cmd.Dir = upperPath
+			makeRootErr = cmd.Run()
+		}(rb.env.OverlayUpperPath(), cachePath)
+	}
+
 	if err := rb.WriteToCache(gc.Cache, b, bh); err != nil {
 		rb.Close()
 		return vts.WrapWithTarget(fmt.Errorf("gathering output: %v", err), b)
+	}
+
+	wg.Wait()
+	if makeRootErr != nil {
+		rb.Close()
+		return vts.WrapWithTarget(fmt.Errorf("finalizing root FS: %v", err), b)
 	}
 	return rb.Close()
 }
