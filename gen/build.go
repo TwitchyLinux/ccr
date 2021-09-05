@@ -373,14 +373,25 @@ func generateBuild(gc GenerationContext, b *vts.Build) error {
 	defer gc.Console.Done()
 
 	// If we got this far, the build output is not cached, we need to complete the build manually.
-	env, err := proc.NewEnv(false, "/")
+	rootDir := "/"
+	if b.UsingRoot != nil {
+		rootHash, err := b.UsingRoot.Target.(*vts.Build).RollupHash(gc.RunnerEnv, proc.EvalComputedAttribute)
+		if err != nil {
+			return vts.WrapWithTarget(err, b.UsingRoot.Target)
+		}
+		if rootDir, err = gc.Cache.Chroot(rootHash, false); err != nil {
+			return err
+		}
+	}
+
+	env, err := proc.NewEnv(false, rootDir)
 	if err != nil {
 		return vts.WrapWithTarget(fmt.Errorf("creating build environment: %v", err), b)
 	}
 	rb := RunningBuild{
 		env:         env,
 		steps:       b.Steps,
-		fs:          osfs.New("/"),
+		fs:          osfs.New(rootDir),
 		envVars:     envVars,
 		contractDir: b.ContractDir,
 	}
